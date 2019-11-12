@@ -4,6 +4,7 @@ const config = require("./config/config.json");
 const SQLite = require("better-sqlite3");
 const sql = new SQLite('./config/database.sqlite');
 const schedule = require('node-schedule');
+const Tautulli = require('tautulli-api');
 
 const DEBUG = 0;
 
@@ -15,6 +16,7 @@ const defaultGuildSettings = {
 }
 
 client.login(config.botToken);
+var tautulli = new Tautulli(config.tautulli_ip, config.tautulli_port, config.tautulli_api_key); // ip and port of Tautulli and YOUR Tautulli API token
 
 client.on('ready', ()=> {
   console.log('The bot is now online!');
@@ -66,4 +68,7 @@ client.on('message', async message => {
 
 var j = schedule.scheduleJob('* /1 * * * *', function(){
   console.log('Repeat every minute');
+  tautulli.get('get_activity').fetch(function(res) {
+    console.log(res);
+  });
 });
