@@ -64,7 +64,7 @@ client.on('message', async message => {
   if (command === "test") {
     message.channel.send("Test complete.");
   }
-}
+});
 
 var j = schedule.scheduleJob('* /1 * * * *', function(){
   console.log('Repeat every minute');
