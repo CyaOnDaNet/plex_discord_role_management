@@ -1,0 +1,31 @@
+{
+  "name": "plex-discord-watching-role-assignment",
+  "version": "0.1.0",
+  "description": "Don't use this repository, it is extremely early stages and not ready for use.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CyaOnDaNet/plex-discord-watching-role-assignment.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bufferutil": "^4.0.1",
+    "erlpack": "^0.1.3",
+    "libsodium-wrappers": "^0.7.6",
+    "node-opus": "^0.3.3",
+    "opusscript": "^0.0.7",
+    "plex-api": "^5.2.5",
+    "discord.js": "^11.5.1",
+    "better-sqlite3": "^5.4.3",
+    "node-schedule": "^1.3.2"
+  },
+  "bugs": {
+    "url": "https://github.com/CyaOnDaNet/plex-discord-watching-role-assignment/issues"
+  },
+  "homepage": "https://github.com/CyaOnDaNet/plex-discord-watching-role-assignment#readme"
+}
