@@ -1,4 +1,7 @@
 {
     "botToken": "YOUR-DISCORD-BOT-TOKEN",
-    "defaultPrefix": "!"
+    "defaultPrefix": "!",
+    "tautulli-ip": "YOUR-TAUTULLI-IP-ADDRESS",
+    "tautulli-port": "YOUR-TAUTULLI-PORT",
+    "tautulli-api-key": "YOUR-TAUTULLI-API-KEY"
 }
