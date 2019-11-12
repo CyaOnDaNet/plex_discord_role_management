@@ -66,9 +66,9 @@ client.on('message', async message => {
   }
 });
 
-var j = schedule.scheduleJob('* /1 * * * *', function(){
+var j = schedule.scheduleJob('*/1 * * * *', function(){
   console.log('Repeat every minute');
-  tautulli.get('get_activity').fetch(function(res) {
+  tautulli.get('get_activity').then(function(res) {
     console.log(res);
   });
 });
