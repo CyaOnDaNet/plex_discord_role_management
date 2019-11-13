@@ -160,6 +160,32 @@ client.on('message', async message => {
       return message.channel.send('You do not have permissions to use `' + prefix + 'link`!');
     }
   }
+  else if (command === "unlink") {
+    if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
+      // link a discord user and plex user
+      let mentionedUser = message.mentions.users.first();
+      if(!mentionedUser) {
+        return message.channel.send("You did not specify a valid user to link!");
+      }
+      let userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+
+      if (!userLinkList) {
+        userLinkList = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: null };
+        client.setUserLinkList.run(userLinkList);
+        userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+      }
+      else {
+        userLinkList.plexUserName = null;
+        client.setUserLinkList.run(userLinkList);
+        userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+      }
+
+      message.channel.send('Succesfully unlinked **' + mentionedUser.username + '** from a Plex account.');
+
+    } else {
+      return message.channel.send('You do not have permissions to use `' + prefix + 'unlink`!');
+    }
+  }
 });
 
 var j = schedule.scheduleJob('*/30 * * * * *', function() {
