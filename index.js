@@ -67,8 +67,20 @@ client.on('message', async message => {
 });
 
 var j = schedule.scheduleJob('*/1 * * * *', function(){
-  console.log('Repeat every minute');
+  // Checks the plex server for activity using Tautulli and repeats every minute
+
   tautulli.get('get_activity').then(function(res) {
-    console.log(res);
+    //console.log(res);
+    //console.log(res.response.data.sessions);
+
+    var activeStreams = res.response.data.sessions;
+    if (activeStreams === undefined || activeStreams.length === 0) {
+      // Make sure nobody has the watching role
+    }
+    else {
+      for (var i = 0; i < activeStreams.length; i++) {
+        console.log(activeStreams[i].user);
+      }
+    }
   });
 });
