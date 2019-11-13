@@ -37,6 +37,22 @@ client.on('ready', ()=> {
   client.getGuildSettings = sql.prepare("SELECT * FROM guildSettings WHERE guild = ?");
   client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, adminRole, watchingRole) VALUES (@id, @guild, @prefix, @logChannel, @adminRole, @watchingRole);");
 
+  // Check if the table "userLinkList" exists.
+  const tableUserLinkList = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'userLinkList';").get();
+  if (!tableUserLinkList['count(*)']) {
+    // If the table isn't there, create it and setup the database correctly.
+    sql.prepare("CREATE TABLE userLinkList (id TEXT PRIMARY KEY, guild TEXT, discordUserID TEXT, plexUserName TEXT);").run();
+    // Ensure that the "id" row is always unique and indexed.
+    sql.prepare("CREATE UNIQUE INDEX idx_userLinkList_id ON userLinkList (id);").run();
+    sql.pragma("synchronous = 1");
+    sql.pragma("journal_mode = wal");
+  }
+
+  // And then we have prepared statements to get and set userLinkList data.
+  client.getGuildUserLinkList = sql.prepare("SELECT * FROM userLinkList WHERE guild = ?");
+  client.getLinkByDiscordUserID = sql.prepare("SELECT * FROM userLinkList WHERE discordUserID = ?");
+  client.getLinkByPlexUserName = sql.prepare("SELECT * FROM userLinkList WHERE plexUserName = ?");
+  client.setUserLinkList = sql.prepare("INSERT OR REPLACE INTO userLinkList (id, guild, discordUserID, plexUserName) VALUES (@id, @guild, @discordUserID, @plexUserName);");
 });
 
 client.on('message', async message => {
@@ -66,20 +82,29 @@ client.on('message', async message => {
   }
 });
 
-var j = schedule.scheduleJob('*/1 * * * *', function(){
-  // Checks the plex server for activity using Tautulli and repeats every minute
+var j = schedule.scheduleJob('*/30 * * * * *', function() {
+  // Checks the plex server for activity using Tautulli and repeats every 30 seconds
+  //console.log(new Date());
+  let userLink;
 
   tautulli.get('get_activity').then(function(res) {
     //console.log(res);
     //console.log(res.response.data.sessions);
 
     var activeStreams = res.response.data.sessions;
-    if (activeStreams === undefined || activeStreams.length === 0) {
+    if (activeStreams.length === 0) {
       // Make sure nobody has the watching role
     }
     else {
       for (var i = 0; i < activeStreams.length; i++) {
-        console.log(activeStreams[i].user);
+        //console.log(activeStreams[i].user);
+        userLink = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
+        if (userLink === undefined) {
+          // No record of plex username exists in database; therefore it has not been setup and we do nothing.
+        } else {
+          // This is where we assign the watching role
+          //console.log(userLink);
+        }
       }
     }
   });
