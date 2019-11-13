@@ -11,6 +11,7 @@ const DEBUG = 0;
 const defaultGuildSettings = {
   prefix: config.defaultPrefix,
   logChannel: "plex_watching_logs",
+  logChannelBoolean: "off",
   adminRole: "Admin",
   watchingRole: "Watching Plex"
 }
@@ -26,7 +27,7 @@ client.on('ready', ()=> {
   const tableGuildSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'guildSettings';").get();
   if (!tableGuildSettings['count(*)']) {
     // If the table isn't there, create it and setup the database correctly.
-    sql.prepare("CREATE TABLE guildSettings (id TEXT PRIMARY KEY, guild TEXT, prefix TEXT, logChannel TEXT, adminRole TEXT, watchingRole TEXT);").run();
+    sql.prepare("CREATE TABLE guildSettings (id TEXT PRIMARY KEY, guild TEXT, prefix TEXT, logChannel TEXT, logChannelBoolean TEXT, adminRole TEXT, watchingRole TEXT);").run();
     // Ensure that the "id" row is always unique and indexed.
     sql.prepare("CREATE UNIQUE INDEX idx_guildSettings_id ON guildSettings (id);").run();
     sql.pragma("synchronous = 1");
@@ -35,7 +36,7 @@ client.on('ready', ()=> {
 
   // And then we have prepared statements to get and set guildSettings data.
   client.getGuildSettings = sql.prepare("SELECT * FROM guildSettings WHERE guild = ?");
-  client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, adminRole, watchingRole) VALUES (@id, @guild, @prefix, @logChannel, @adminRole, @watchingRole);");
+  client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, adminRole, watchingRole) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @adminRole, @watchingRole);");
 
   // Check if the table "userLinkList" exists.
   const tableUserLinkList = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'userLinkList';").get();
@@ -57,14 +58,13 @@ client.on('ready', ()=> {
 
 client.on('message', async message => {
   if (message.author.bot) return;
-  let score;
   let guildSettings;
 
   if (message.guild) {
     // Sets default server settings
     guildSettings = client.getGuildSettings.get(message.guild.id);
     if (!guildSettings) {
-      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole };
+      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, logChannelBoolean: defaultGuildSettings.logChannelBoolean, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole };
       client.setGuildSettings.run(guildSettings);
       guildSettings = client.getGuildSettings.get(message.guild.id);
     }
@@ -77,8 +77,61 @@ client.on('message', async message => {
   var args = message.content.slice(prefix.length).trim().split(/ +/g);
   var command = args.shift().toLowerCase();
 
-  if (command === "test") {
-    message.channel.send("Test complete.");
+  if (command === "bot") {
+  // This is where we change bot information
+    if (args.length > 0) {
+      command = args.shift().toLowerCase();
+    } else {
+      command = "help";
+    }
+
+    if (command === "prefix") {
+      if (args.length > 0) {
+        if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
+          command = args.shift().toLowerCase();
+          guildSettings.prefix = command;
+          client.setGuildSettings.run(guildSettings);
+          guildSettings = client.getGuildSettings.get(message.guild.id);
+          message.channel.send("Prefix changed to `" + guildSettings.prefix + "`");
+        }
+        else {
+          return message.channel.send('You do not have permissions to use `' + prefix + 'bot prefix` in <#' + message.channel.id + '>!');
+        }
+      } else {
+        return message.channel.send("The current prefix is `" + guildSettings.prefix + "`\nTo change it type: `" + guildSettings.prefix + "bot prefix ??` (where *??* is the prefix)");
+      }
+    }
+    else if (command === "logchannel") {
+      if (args.length > 0) {
+        let mentionedChannel = message.mentions.channels.first();
+        if(!mentionedChannel) {
+          command = args.shift().toLowerCase();
+          if (command === "off") {
+            // disable logChannel
+            guildSettings.logChannelBoolean = "off";
+            client.setGuildSettings.run(guildSettings);
+            guildSettings = client.getGuildSettings.get(message.guild.id);
+            message.channel.send("Logging disabled!");
+          } else {
+            return message.channel.send("You did not specify a valid channel to set the log channel to!");
+          }
+        }
+        else if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
+          guildSettings.logChannel = mentionedChannel.id;
+          guildSettings.logChannelBoolean = "on";
+          client.setGuildSettings.run(guildSettings);
+          guildSettings = client.getGuildSettings.get(message.guild.id);
+          message.channel.send("Log channel changed to <#" + guildSettings.logChannel + ">!");
+        } else {
+          return message.channel.send('You do not have permissions to use `' + prefix + 'bot logchannel` in <#' + message.channel.id + '>!');
+        }
+      } else {
+        return message.channel.send("The current log channel is <#" + guildSettings.logChannel + ">!\nTo change it type: `" + guildSettings.prefix + "bot logchannel #logs` (where **#logs** is the desired channel)\nTo disable it type: `" + guildSettings.prefix + "bot logchannel off`");
+      }
+    }
+    else if (command === "help") {
+      // help message goes here
+    }
   }
 });
 
