@@ -133,6 +133,33 @@ client.on('message', async message => {
       // help message goes here
     }
   }
+  else if (command === "link") {
+    if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
+      // link a discord user and plex user
+      let mentionedUser = message.mentions.users.first();
+      if(!mentionedUser) {
+        return message.channel.send("You did not specify a valid user to link!");
+      }
+      var plexUserName = message.content.slice(message.content.indexOf(mentionedUser.id) + mentionedUser.id.length + 1).trim();
+      let userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+
+      if (!userLinkList) {
+        userLinkList = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: plexUserName };
+        client.setUserLinkList.run(userLinkList);
+        userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+      }
+      else {
+        userLinkList.plexUserName = plexUserName;
+        client.setUserLinkList.run(userLinkList);
+        userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+      }
+
+      message.channel.send('Succesfully linked **' + mentionedUser.username + '** as Plex user: `' + plexUserName + '`');
+
+    } else {
+      return message.channel.send('You do not have permissions to use `' + prefix + 'link`!');
+    }
+  }
 });
 
 var j = schedule.scheduleJob('*/30 * * * * *', function() {
