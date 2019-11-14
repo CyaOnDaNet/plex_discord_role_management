@@ -38,22 +38,22 @@ client.on('ready', ()=> {
   client.getGuildSettings = sql.prepare("SELECT * FROM guildSettings WHERE guild = ?");
   client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, adminRole, watchingRole) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @adminRole, @watchingRole);");
 
-  // Check if the table "userLinkList" exists.
-  const tableUserLinkList = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'userLinkList';").get();
-  if (!tableUserLinkList['count(*)']) {
+  // Check if the table "userList" exists.
+  const tableUserList = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'userList';").get();
+  if (!tableUserList['count(*)']) {
     // If the table isn't there, create it and setup the database correctly.
-    sql.prepare("CREATE TABLE userLinkList (id TEXT PRIMARY KEY, guild TEXT, discordUserID TEXT, plexUserName TEXT);").run();
+    sql.prepare("CREATE TABLE userList (id TEXT PRIMARY KEY, guild TEXT, discordUserID TEXT, plexUserName TEXT, watching TEXT);").run();
     // Ensure that the "id" row is always unique and indexed.
-    sql.prepare("CREATE UNIQUE INDEX idx_userLinkList_id ON userLinkList (id);").run();
+    sql.prepare("CREATE UNIQUE INDEX idx_userList_id ON userList (id);").run();
     sql.pragma("synchronous = 1");
     sql.pragma("journal_mode = wal");
   }
 
-  // And then we have prepared statements to get and set userLinkList data.
-  client.getGuildUserLinkList = sql.prepare("SELECT * FROM userLinkList WHERE guild = ?");
-  client.getLinkByDiscordUserID = sql.prepare("SELECT * FROM userLinkList WHERE discordUserID = ?");
-  client.getLinkByPlexUserName = sql.prepare("SELECT * FROM userLinkList WHERE plexUserName = ?");
-  client.setUserLinkList = sql.prepare("INSERT OR REPLACE INTO userLinkList (id, guild, discordUserID, plexUserName) VALUES (@id, @guild, @discordUserID, @plexUserName);");
+  // And then we have prepared statements to get and set userList data.
+  client.getGuildUserList = sql.prepare("SELECT * FROM userList WHERE guild = ?");
+  client.getLinkByDiscordUserID = sql.prepare("SELECT * FROM userList WHERE discordUserID = ?");
+  client.getLinkByPlexUserName = sql.prepare("SELECT * FROM userList WHERE plexUserName = ?");
+  client.setUserList = sql.prepare("INSERT OR REPLACE INTO userList (id, guild, discordUserID, plexUserName, watching) VALUES (@id, @guild, @discordUserID, @plexUserName, @watching);");
 });
 
 client.on('message', async message => {
@@ -141,17 +141,17 @@ client.on('message', async message => {
         return message.channel.send("You did not specify a valid user to link!");
       }
       var plexUserName = message.content.slice(message.content.indexOf(mentionedUser.id) + mentionedUser.id.length + 1).trim();
-      let userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+      let userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
 
-      if (!userLinkList) {
-        userLinkList = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: plexUserName };
-        client.setUserLinkList.run(userLinkList);
-        userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+      if (!userList) {
+        userList = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: plexUserName, watching: "false" };
+        client.setUserList.run(userList);
+        userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
       }
       else {
-        userLinkList.plexUserName = plexUserName;
-        client.setUserLinkList.run(userLinkList);
-        userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+        userList.plexUserName = plexUserName;
+        client.setUserList.run(userList);
+        userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
       }
 
       message.channel.send('Succesfully linked **' + mentionedUser.username + '** as Plex user: `' + plexUserName + '`');
@@ -167,17 +167,17 @@ client.on('message', async message => {
       if(!mentionedUser) {
         return message.channel.send("You did not specify a valid user to link!");
       }
-      let userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+      let userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
 
-      if (!userLinkList) {
-        userLinkList = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: null };
-        client.setUserLinkList.run(userLinkList);
-        userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+      if (!userList) {
+        userList = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: null };
+        client.setUserList.run(userList);
+        userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
       }
       else {
-        userLinkList.plexUserName = null;
-        client.setUserLinkList.run(userLinkList);
-        userLinkList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+        userList.plexUserName = null;
+        client.setUserList.run(userList);
+        userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
       }
 
       message.channel.send('Succesfully unlinked **' + mentionedUser.username + '** from a Plex account.');
