@@ -87,7 +87,26 @@ client.on('message', async message => {
       command = "help";
     }
 
-    if (command === "prefix") {
+    if (command === "settings") {
+      embed = new Discord.RichEmbed()
+        .setAuthor(client.user.username, client.user.avatarURL)
+        .setDescription("Below is a list of bot settings\n")
+        .addField("Prefix: ", '`' + prefix + '`',  true)
+        .addField("Watching Role: ", '<@&' + guildSettings.watchingRole + '>')
+        .addField("Log Channel: ", '<#' + guildSettings.logChannel + '>')
+        .setFooter("Fetched")
+        .setTimestamp(new Date())
+        .setColor(0x00AE86);
+
+      if (guildSettings.logChannelBoolean === "off") {
+        embed.addField("Logging Status: ", '**Disabled**');
+      }
+      else if (guildSettings.logChannelBoolean === "on") {
+        embed.addField("Logging Status: ", '**Enabled**');
+      }
+      message.channel.send({embed});
+    }
+    else if (command === "prefix") {
       if (args.length > 0) {
         if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
           command = args.shift().toLowerCase();
@@ -205,6 +224,9 @@ client.on('message', async message => {
     }
   }
   else if (command === "linklist") {
+    if (!message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
+      return message.channel.send('You do not have permissions to use `' + prefix + command + '`! It contains sensitive information.');
+    }
     embed = new Discord.RichEmbed()
       .setAuthor(client.user.username, client.user.avatarURL)
       .setDescription("Below is a list of linked Discord-Plex accounts\n")
@@ -213,7 +235,7 @@ client.on('message', async message => {
       .setColor(0x00AE86);
 
     for (const linkQuery of client.searchGuildUserList.iterate()) {
-      if (linkQuery.guild === message.guild.id) {
+      if (linkQuery.guild === message.guild.id && linkQuery.plexUserName != null) {
         embed.addField(linkQuery.plexUserName,'is linked to: <@' + linkQuery.discordUserID + '>',  true);
       }
     }
@@ -301,57 +323,55 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
       }
     }
 
-      // Now we recheck activeStreams to set watching to false for everyone else
-      for (const watchingQuery of client.searchGuildUserList.iterate()) {
-        if (watchingQuery.watching === 'true') {
-          var bypass = false;
-          for (var i = 0; i < activeStreams.length; i++) {
-            if (watchingQuery.plexUserName === activeStreams[i].user) {
-              bypass = true;
+    // Now we recheck activeStreams to set watching to false for everyone else
+    for (const watchingQuery of client.searchGuildUserList.iterate()) {
+      if (watchingQuery.watching === 'true') {
+        var bypass = false;
+        for (var i = 0; i < activeStreams.length; i++) {
+          if (watchingQuery.plexUserName === activeStreams[i].user) {
+            bypass = true;
+          }
+        }
+        if (!Boolean(bypass)) {
+          // This is where we remove the watching role
+          let userToModify = client.guilds.get(watchingQuery.guild).members.get(watchingQuery.discordUserID);
+          let guildSettings = client.getGuildSettings.get(watchingQuery.guild);
+          var bypassAgain = true;
+          var roles = userToModify._roles;
+
+          for (var i = 0; i < roles.length; i++) {
+            if (roles[i] === guildSettings.watchingRole) {
+              bypassAgain = false;
             }
           }
-          if (!Boolean(bypass)) {
-            // This is where we remove the watching role
-            let userToModify = client.guilds.get(watchingQuery.guild).members.get(watchingQuery.discordUserID);
-            let guildSettings = client.getGuildSettings.get(watchingQuery.guild);
-            var bypassAgain = true;
-            var roles = userToModify._roles;
 
-            for (var i = 0; i < roles.length; i++) {
-              if (roles[i] === guildSettings.watchingRole) {
-                bypassAgain = false;
-              }
+          if (!Boolean(bypassAgain)) {
+            userToModify.removeRole(guildSettings.watchingRole)
+              .catch(console.error);
+          }
+
+          if (guildSettings.logChannelBoolean === "on") {
+            var channelOption = 0;
+            if (client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel) === undefined) {
+              // Channel is invalid
+              console.log("Invalid logging channel detected, please re-apply logchannel command.");
+              break;
+            } else {
+              channelOption = 1;
             }
-
-            if (!Boolean(bypassAgain)) {
-              userToModify.removeRole(guildSettings.watchingRole)
-                .catch(console.error);
+            if (client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
+              // Channel is invalid
+              console.log("Invalid logging channel detected, please re-apply logchannel command.");
+              break;
             }
-
-            if (guildSettings.logChannelBoolean === "on") {
-              var channelOption = 0;
-              if (client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel) === undefined) {
-                // Channel is invalid
-                console.log("Invalid logging channel detected, please re-apply logchannel command.");
-                break;
-              } else {
-                channelOption = 1;
-              }
-              if (client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
-                // Channel is invalid
-                console.log("Invalid logging channel detected, please re-apply logchannel command.");
-                break;
-              }
-              if (!Boolean(bypassAgain) && channelOption === 1) {
-                client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
-              } else if (!Boolean(bypassAgain)) {
-                client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
-              }
+            if (!Boolean(bypassAgain) && channelOption === 1) {
+              client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+            } else if (!Boolean(bypassAgain)) {
+              client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
             }
           }
         }
-      //}
-
+      }
     }
   }).catch((error) => {
     console.log("Couldn't connect to Tautulli, check your settings.");
