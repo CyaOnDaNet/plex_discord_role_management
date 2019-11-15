@@ -242,11 +242,16 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
             }
           }
 
+          var roleOption = 0;
           if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
             // Role is invalid
             console.log("Invalid watching role detected, please re-apply role command.");
             break;
-          } else if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null) {
+          } else {
+            roleOption = 1;
+          }
+
+          if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
             // Role is invalid
             console.log("Invalid watching role detected, please re-apply role command.");
             break;
@@ -255,6 +260,27 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
           if (!Boolean(bypass)) {
             userToModify.addRole(guildSettings.watchingRole)
               .catch(console.error);
+          }
+
+          if (guildSettings.logChannelBoolean === "on") {
+            var sendOption = 0;
+            if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+              // Channel is invalid
+              console.log("Invalid logging channel detected, please re-apply logchannel command.");
+              break;
+            } else {
+              sendOption = 1;
+            }
+            if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+              // Channel is invalid
+              console.log("Invalid logging channel detected, please re-apply logchannel command.");
+              break;
+            }
+            if (!Boolean(bypass) && sendOption === 1) {
+              client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+            } else {
+              client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+            }
           }
         }
       }
@@ -284,6 +310,27 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
             if (!Boolean(bypassAgain)) {
               userToModify.removeRole(guildSettings.watchingRole)
                 .catch(console.error);
+            }
+
+            if (guildSettings.logChannelBoolean === "on") {
+              var channelOption = 0;
+              if (client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel) === undefined) {
+                // Channel is invalid
+                console.log("Invalid logging channel detected, please re-apply logchannel command.");
+                break;
+              } else {
+                channelOption = 1;
+              }
+              if (client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
+                // Channel is invalid
+                console.log("Invalid logging channel detected, please re-apply logchannel command.");
+                break;
+              }
+              if (!Boolean(bypassAgain) && channelOption === 1) {
+                client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+              } else {
+                client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+              }
             }
           }
         }
