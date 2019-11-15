@@ -53,7 +53,8 @@ client.on('ready', ()=> {
   client.getGuildUserList = sql.prepare("SELECT * FROM userList WHERE guild = ?");
   client.getLinkByDiscordUserID = sql.prepare("SELECT * FROM userList WHERE discordUserID = ?");
   client.getLinkByPlexUserName = sql.prepare("SELECT * FROM userList WHERE plexUserName = ?");
-  client.getLinkByWatchingRole = sql.prepare("SELECT * FROM userList WHERE watching = ?");
+  //client.getLinkByWatchingRole = sql.prepare("SELECT * FROM userList WHERE watching = ?");
+  client.getLinkByWatchingRole = sql.prepare("SELECT * FROM userList");
   client.setUserList = sql.prepare("INSERT OR REPLACE INTO userList (id, guild, discordUserID, plexUserName, watching) VALUES (@id, @guild, @discordUserID, @plexUserName, @watching);");
 });
 
@@ -187,12 +188,28 @@ client.on('message', async message => {
       return message.channel.send('You do not have permissions to use `' + prefix + 'unlink`!');
     }
   }
+  else if (command === "role" || command === "watchingrole" || command === "watching role") {
+    if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
+      // link a discord user and plex user
+      let mentionedRole = message.mentions.roles.first();
+      if(!mentionedRole) {
+        return message.channel.send("You did not specify a valid role for watching assignment!");
+      } else {
+        guildSettings.watchingRole = mentionedRole.id;
+        client.setGuildSettings.run(guildSettings);
+        guildSettings = client.getGuildSettings.get(message.guild.id);
+        message.channel.send("The watching role was succesfully set to <@&" + guildSettings.watchingRole + ">");
+      }
+    } else {
+      return message.channel.send('You do not have permissions to use `' + prefix + command + '`!');
+    }
+  }
 });
 
 var j = schedule.scheduleJob('*/30 * * * * *', function() {
   // Checks the plex server for activity using Tautulli and repeats every 30 seconds
   //console.log(new Date());
-  let userLink;
+  let userList;
 
   tautulli.get('get_activity').then((result) => {
     //console.log(result);
@@ -204,17 +221,17 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
     }
     else {
       for (var i = 0; i < activeStreams.length; i++) {
-        //console.log(activeStreams[i].user);
-        userLink = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
-        if (userLink === undefined) {
+        userList = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
+        if (userList === undefined) {
           // No record of plex username exists in database; therefore it has not been setup and we do nothing.
         } else {
           // This is where we assign the watching role
-          userLink.watching = "true";
+          let guildSettings = client.getGuildSettings.get(userList.guild);
+          userList.watching = "true";
           client.setUserList.run(userList);
-          userLink = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
+          userList = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
 
-          let userToModify = client.guilds.find(userLink.guild).members.find(userLink.discordUserID);
+          let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
 
           var bypass = false;
           var roles = userToModify._roles;
@@ -243,7 +260,8 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
           }
           if (!Boolean(bypass)) {
             // This is where we remove the watching role
-            let userToModify = client.guilds.find(userLink.guild).members.find(userLink.discordUserID);
+            let userToModify = client.guilds.get(watchingQuery.guild).members.get(watchingQuery.discordUserID);
+            let guildSettings = client.getGuildSettings.get(watchingQuery.guild);
             var bypassAgain = true;
             var roles = userToModify._roles;
 
@@ -264,6 +282,7 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
     }
   }).catch((error) => {
     console.log("Couldn't connect to Tautulli, check your settings.");
+    console.log(error);
     // do we need to remove roles if this is the case? Maybe we don't...
   });
 });
