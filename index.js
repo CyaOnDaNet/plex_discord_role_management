@@ -229,7 +229,7 @@ client.on('message', async message => {
     }
     embed = new Discord.RichEmbed()
       .setAuthor(client.user.username, client.user.avatarURL)
-      .setDescription("Below is a list of linked Discord-Plex accounts\n")
+      .setDescription("Below is a list of linked Discord-Plex accounts:\n\n")
       .setFooter("Fetched")
       .setTimestamp(new Date())
       .setColor(0x00AE86);
