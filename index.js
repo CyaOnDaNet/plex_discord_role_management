@@ -214,10 +214,8 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
           client.setUserList.run(userList);
           userLink = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
 
-          console.log(userLink);
           let userToModify = client.guilds.find(userLink.guild).members.find(userLink.discordUserID);
 
-          var success = true;
           var bypass = false;
           var roles = userToModify._roles;
 
@@ -228,18 +226,44 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
           }
 
           if (!Boolean(bypass)) {
-            userToModify.addRole(roleToAdd)
+            userToModify.addRole(guildSettings.watchingRole)
               .catch(console.error);
           }
         }
       }
+
+      // Now we recheck activeStreams to set watching to false for everyone else
+      for (const watchingQuery of client.getLinkByWatchingRole.iterate()) {
+        if (watchingQuery.watching === 'true') {
+          var bypass = false;
+          for (var i = 0; i < activeStreams.length; i++) {
+            if (watchingQuery.plexUserName === activeStreams[i].user) {
+              bypass = true;
+            }
+          }
+          if (!Boolean(bypass)) {
+            // This is where we remove the watching role
+            let userToModify = client.guilds.find(userLink.guild).members.find(userLink.discordUserID);
+            var bypassAgain = true;
+            var roles = userToModify._roles;
+
+            for (var i = 0; i < roles.length; i++) {
+              if (roles[i] === guildSettings.watchingRole) {
+                bypassAgain = false;
+              }
+            }
+
+            if (!Boolean(bypassAgain)) {
+              userToModify.removeRole(guildSettings.watchingRole)
+                .catch(console.error);
+            }
+          }
+        }
+      }
+
     }
-    // Now we recheck activeStreams to set watching to false for everyone else
-    console.log("True:");
-    console.log(client.getLinkByWatchingRole.get("true"));
-    console.log("False:");
-    console.log(client.getLinkByWatchingRole.get("false"));
   }).catch((error) => {
     console.log("Couldn't connect to Tautulli, check your settings.");
+    // do we need to remove roles if this is the case? Maybe we don't...
   });
 });
