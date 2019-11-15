@@ -242,6 +242,16 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
             }
           }
 
+          if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
+            // Role is invalid
+            console.log("Invalid watching role detected, please re-apply role command.");
+            break;
+          } else if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null) {
+            // Role is invalid
+            console.log("Invalid watching role detected, please re-apply role command.");
+            break;
+          }
+
           if (!Boolean(bypass)) {
             userToModify.addRole(guildSettings.watchingRole)
               .catch(console.error);
