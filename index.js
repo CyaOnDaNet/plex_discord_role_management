@@ -53,6 +53,7 @@ client.on('ready', ()=> {
   client.getGuildUserList = sql.prepare("SELECT * FROM userList WHERE guild = ?");
   client.getLinkByDiscordUserID = sql.prepare("SELECT * FROM userList WHERE discordUserID = ?");
   client.getLinkByPlexUserName = sql.prepare("SELECT * FROM userList WHERE plexUserName = ?");
+  client.getLinkByWatchingRole = sql.prepare("SELECT * FROM userList WHERE watching = ?");
   client.setUserList = sql.prepare("INSERT OR REPLACE INTO userList (id, guild, discordUserID, plexUserName, watching) VALUES (@id, @guild, @discordUserID, @plexUserName, @watching);");
 });
 
@@ -170,7 +171,7 @@ client.on('message', async message => {
       let userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
 
       if (!userList) {
-        userList = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: null };
+        userList = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: null, watching: "false" };
         client.setUserList.run(userList);
         userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
       }
@@ -193,11 +194,11 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
   //console.log(new Date());
   let userLink;
 
-  tautulli.get('get_activity').then(function(res) {
-    //console.log(res);
-    //console.log(res.response.data.sessions);
+  tautulli.get('get_activity').then((result) => {
+    //console.log(result);
+    //console.log(result.response.data.sessions);
 
-    var activeStreams = res.response.data.sessions;
+    var activeStreams = result.response.data.sessions;
     if (activeStreams.length === 0) {
       // Make sure nobody has the watching role
     }
@@ -209,9 +210,36 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
           // No record of plex username exists in database; therefore it has not been setup and we do nothing.
         } else {
           // This is where we assign the watching role
-          //console.log(userLink);
+          userLink.watching = "true";
+          client.setUserList.run(userList);
+          userLink = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
+
+          console.log(userLink);
+          let userToModify = client.guilds.find(userLink.guild).members.find(userLink.discordUserID);
+
+          var success = true;
+          var bypass = false;
+          var roles = userToModify._roles;
+
+          for (var i = 0; i < roles.length; i++) {
+            if (roles[i] === guildSettings.watchingRole) {
+              bypass = true;
+            }
+          }
+
+          if (!Boolean(bypass)) {
+            userToModify.addRole(roleToAdd)
+              .catch(console.error);
+          }
         }
       }
     }
+    // Now we recheck activeStreams to set watching to false for everyone else
+    console.log("True:");
+    console.log(client.getLinkByWatchingRole.get("true"));
+    console.log("False:");
+    console.log(client.getLinkByWatchingRole.get("false"));
+  }).catch((error) => {
+    console.log("Couldn't connect to Tautulli, check your settings.");
   });
 });
