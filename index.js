@@ -278,7 +278,7 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
             }
             if (!Boolean(bypass) && sendOption === 1) {
               client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
-            } else {
+            } else if (!Boolean(bypass)) {
               client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
             }
           }
@@ -328,7 +328,7 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
               }
               if (!Boolean(bypassAgain) && channelOption === 1) {
                 client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
-              } else {
+              } else if (!Boolean(bypassAgain)) {
                 client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
               }
             }
