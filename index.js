@@ -36,6 +36,7 @@ client.on('ready', ()=> {
 
   // And then we have prepared statements to get and set guildSettings data.
   client.getGuildSettings = sql.prepare("SELECT * FROM guildSettings WHERE guild = ?");
+  client.searchGuildSettings = sql.prepare("SELECT * FROM guildSettings");
   client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, adminRole, watchingRole) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @adminRole, @watchingRole);");
 
   // Check if the table "userList" exists.
@@ -53,8 +54,7 @@ client.on('ready', ()=> {
   client.getGuildUserList = sql.prepare("SELECT * FROM userList WHERE guild = ?");
   client.getLinkByDiscordUserID = sql.prepare("SELECT * FROM userList WHERE discordUserID = ?");
   client.getLinkByPlexUserName = sql.prepare("SELECT * FROM userList WHERE plexUserName = ?");
-  //client.getLinkByWatchingRole = sql.prepare("SELECT * FROM userList WHERE watching = ?");
-  client.getLinkByWatchingRole = sql.prepare("SELECT * FROM userList");
+  client.searchGuildUserList = sql.prepare("SELECT * FROM userList");
   client.setUserList = sql.prepare("INSERT OR REPLACE INTO userList (id, guild, discordUserID, plexUserName, watching) VALUES (@id, @guild, @discordUserID, @plexUserName, @watching);");
 });
 
@@ -146,7 +146,7 @@ client.on('message', async message => {
       let userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
 
       if (!userList) {
-        userList = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: plexUserName, watching: "false" };
+        userList = { id: `${message.guild.id}-${client.user.id}-${mentionedUser.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: plexUserName, watching: "false" };
         client.setUserList.run(userList);
         userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
       }
@@ -172,7 +172,7 @@ client.on('message', async message => {
       let userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
 
       if (!userList) {
-        userList = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: null, watching: "false" };
+        userList = { id: `${message.guild.id}-${client.user.id}-${mentionedUser.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: null, watching: "false" };
         client.setUserList.run(userList);
         userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
       }
@@ -203,6 +203,21 @@ client.on('message', async message => {
     } else {
       return message.channel.send('You do not have permissions to use `' + prefix + command + '`!');
     }
+  }
+  else if (command === "linklist") {
+    embed = new Discord.RichEmbed()
+      .setAuthor(client.user.username, client.user.avatarURL)
+      .setDescription("Below is a list of linked Discord-Plex accounts\n")
+      .setFooter("Fetched")
+      .setTimestamp(new Date())
+      .setColor(0x00AE86);
+
+    for (const linkQuery of client.searchGuildUserList.iterate()) {
+      if (linkQuery.guild === message.guild.id) {
+        embed.addField(linkQuery.plexUserName,'is linked to: <@' + linkQuery.discordUserID + '>',  true);
+      }
+    }
+    message.channel.send({embed});
   }
 });
 
@@ -284,9 +299,10 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
           }
         }
       }
+    }
 
       // Now we recheck activeStreams to set watching to false for everyone else
-      for (const watchingQuery of client.getLinkByWatchingRole.iterate()) {
+      for (const watchingQuery of client.searchGuildUserList.iterate()) {
         if (watchingQuery.watching === 'true') {
           var bypass = false;
           for (var i = 0; i < activeStreams.length; i++) {
@@ -334,7 +350,7 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
             }
           }
         }
-      }
+      //}
 
     }
   }).catch((error) => {
