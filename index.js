@@ -5,6 +5,7 @@ const SQLite = require("better-sqlite3");
 const sql = new SQLite('./config/database.sqlite');
 const schedule = require('node-schedule');
 const Tautulli = require('tautulli-api');
+const fetch = require('node-fetch');
 
 const DEBUG = 0;
 
@@ -36,7 +37,6 @@ client.on('ready', ()=> {
 
   // And then we have prepared statements to get and set guildSettings data.
   client.getGuildSettings = sql.prepare("SELECT * FROM guildSettings WHERE guild = ?");
-  client.searchGuildSettings = sql.prepare("SELECT * FROM guildSettings");
   client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, adminRole, watchingRole) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @adminRole, @watchingRole);");
 
   // Check if the table "userList" exists.
@@ -51,7 +51,6 @@ client.on('ready', ()=> {
   }
 
   // And then we have prepared statements to get and set userList data.
-  client.getGuildUserList = sql.prepare("SELECT * FROM userList WHERE guild = ?");
   client.getLinkByDiscordUserID = sql.prepare("SELECT * FROM userList WHERE discordUserID = ?");
   client.getLinkByPlexUserName = sql.prepare("SELECT * FROM userList WHERE plexUserName = ?");
   client.searchGuildUserList = sql.prepare("SELECT * FROM userList");
@@ -267,16 +266,23 @@ client.on('message', async message => {
     });
 
   }
+  else if (command === "test") {
+    tautulli.get('get_library_media_info').then((result) => {
+      console.log(result.response.data);
+      console.log(result);
+    }).catch((error) => {
+      console.log("Couldn't connect to Tautulli, check your settings.");
+      console.log(error);
+      // do we need to remove roles if this is the case? Maybe we don't...
+    });
+  }
 });
 
 var j = schedule.scheduleJob('*/30 * * * * *', function() {
   // Checks the plex server for activity using Tautulli and repeats every 30 seconds
-  //console.log(new Date());
   let userList;
 
   tautulli.get('get_activity').then((result) => {
-    //console.log(result);
-    //console.log(result.response.data.sessions);
 
     var activeStreams = result.response.data.sessions;
     if (activeStreams.length === 0) {
