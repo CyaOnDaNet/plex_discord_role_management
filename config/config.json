@@ -3,5 +3,7 @@
     "defaultPrefix": "!",
     "tautulli_ip": "YOUR_TAUTULLI_IP_ADDRESS",
     "tautulli_port": "YOUR_TAUTULLI_PORT",
-    "tautulli_api_key": "YOUR_TAUTULLI_API_KEY"
+    "tautulli_api_key": "YOUR_TAUTULLI_API_KEY",
+    "sonarr_web_address": "YOUR_SONARR_IP_ADDRESS(INCLUDE_PORT)_OR_WEB_ADDRESS",
+    "sonarr_api_key": "YOUR_SONARR_API_KEY"
 }
