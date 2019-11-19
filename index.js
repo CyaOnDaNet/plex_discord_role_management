@@ -268,6 +268,10 @@ client.on('message', async message => {
   }
   else if (command === "showlist" || command === "showslist") {
     var url = config.sonarr_web_address;
+    if (!url) {
+      console.log("No sonarr settings detected in `./config/config.json`!");
+      return message.channel.send("No sonarr settings detected in `./config/config.json`!");
+    }
     if (!url.startsWith("http://") && !url.startsWith("http://")) {
       // we need an http or https specified so we will asumme http
       console.log("Please adjust your config.sonarr_web_address to include http:// or https://. Since it was not included, I am assuming it is http://");
@@ -439,4 +443,34 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
     console.log(error);
     // do we need to remove roles if this is the case? Maybe we don't...
   });
+});
+
+
+// This makes the events used a bit more readable
+const events = {
+	MESSAGE_REACTION_ADD: 'messageReactionAdd',
+	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
+};
+
+// This event handles adding/removing users from the role(s) they chose based on message reactions
+client.on('raw', async event => {
+    if (!events.hasOwnProperty(event.t)) return;
+
+    const { d: data } = event;
+    const user = client.users.get(data.user_id);
+    const channel = client.channels.get(data.channel_id);
+
+    const message = await channel.fetchMessage(data.message_id);
+    const member = message.guild.members.get(user.id);
+
+    const emojiKey = (data.emoji.id) ? `${data.emoji.name}:${data.emoji.id}` : data.emoji.name;
+    let reaction = message.reactions.get(emojiKey);
+
+    if (!reaction) {
+        // Create an object that can be passed through the event like normal
+        const emoji = new Emoji(client.guilds.get(data.guild_id), data.emoji);
+        reaction = new MessageReaction(message, emoji, 1, data.user_id === client.user.id);
+    }
+    // Everything above grabs the emoji that was clicked by a user, I need add stuff below that then matches the emoji to the role and adds or remvoves it.
+    //console.log(reaction);
 });
