@@ -13,6 +13,8 @@ const defaultGuildSettings = {
   prefix: config.defaultPrefix,
   logChannel: "plex_watching_logs",
   logChannelBoolean: "off",
+  notificationChannel: "plex_notifications",
+  notificationChannelBoolean: "off",
   adminRole: "Admin",
   watchingRole: "Watching Plex"
 }
@@ -28,7 +30,7 @@ client.on('ready', ()=> {
   const tableGuildSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'guildSettings';").get();
   if (!tableGuildSettings['count(*)']) {
     // If the table isn't there, create it and setup the database correctly.
-    sql.prepare("CREATE TABLE guildSettings (id TEXT PRIMARY KEY, guild TEXT, prefix TEXT, logChannel TEXT, logChannelBoolean TEXT, adminRole TEXT, watchingRole TEXT);").run();
+    sql.prepare("CREATE TABLE guildSettings (id TEXT PRIMARY KEY, guild TEXT, prefix TEXT, logChannel TEXT, logChannelBoolean TEXT, notificationChannel TEXT, notificationChannelBoolean TEXT, adminRole TEXT, watchingRole TEXT);").run();
     // Ensure that the "id" row is always unique and indexed.
     sql.prepare("CREATE UNIQUE INDEX idx_guildSettings_id ON guildSettings (id);").run();
     sql.pragma("synchronous = 1");
@@ -37,7 +39,7 @@ client.on('ready', ()=> {
 
   // And then we have prepared statements to get and set guildSettings data.
   client.getGuildSettings = sql.prepare("SELECT * FROM guildSettings WHERE guild = ?");
-  client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, adminRole, watchingRole) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @adminRole, @watchingRole);");
+  client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, notificationChannel, notificationChannelBoolean, adminRole, watchingRole) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @notificationChannel, @notificationChannelBoolean, @adminRole, @watchingRole);");
 
   // Check if the table "userList" exists.
   const tableUserList = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'userList';").get();
@@ -65,7 +67,7 @@ client.on('message', async message => {
     // Sets default server settings
     guildSettings = client.getGuildSettings.get(message.guild.id);
     if (!guildSettings) {
-      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, logChannelBoolean: defaultGuildSettings.logChannelBoolean, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole };
+      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, logChannelBoolean: defaultGuildSettings.logChannelBoolean, notificationChannel: defaultGuildSettings.notificationChannel, notificationChannelBoolean: defaultGuildSettings.notificationChannelBoolean, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole };
       client.setGuildSettings.run(guildSettings);
       guildSettings = client.getGuildSettings.get(message.guild.id);
     }
@@ -309,6 +311,105 @@ client.on('message', async message => {
       // do we need to remove roles if this is the case? Maybe we don't...
     });
   }
+  else if (command === "notifications" || command === "n") {
+  // This is where we change notification information
+  var ogCommand = command;
+    if (args.length > 0) {
+      command = args.shift().toLowerCase();
+    } else {
+      command = "help";
+    }
+
+    if (command === "refresh") {
+      // grabs list of currently airing shows and adds them to notifications channel
+      var url = config.sonarr_web_address;
+      if (!url) {
+        console.log("No sonarr settings detected in `./config/config.json`!");
+        return message.channel.send("No sonarr settings detected in `./config/config.json`!");
+      }
+      if (!url.startsWith("http://") && !url.startsWith("http://")) {
+        // we need an http or https specified so we will asumme http
+        console.log("Please adjust your config.sonarr_web_address to include http:// or https://. Since it was not included, I am assuming it is http://");
+        url = "http://" + url;
+      }
+      if (!url.endsWith('/')) {
+        url = url + '/';
+      }
+      url = url + "api/series?apikey=" + config.sonarr_api_key;
+
+      fetch(url,  {
+          method: 'GET'
+      })
+      .then(res => res.json())
+      .then(json => {
+        let showsList = {};
+        var count = 0;
+        for (var i = 0; i < json.length; i++) {
+          if (json[i].status === "continuing") {
+            showsList[count] = {count : json[i].title};
+            count++;
+          }
+        }
+
+        // This is where the embed list of notifying shows would be updated
+
+
+      })
+      .catch((error) => {
+        console.log("Couldn't connect to Sonarr, check your settings.");
+        message.channel.send("Couldn't connect to Sonarr, check your settings.");
+        console.log(error);
+      });
+    }
+    else if (command === "resort") {
+      // Alphabetically re-sort items in notfication settings embed
+    }
+    else if (command === "include") {
+      // Manually include a show in notification settings embed
+    }
+    else if (command === "exclude") {
+      // Manually exclude a show in notification settings embed
+    }
+    else if (command === "group") {
+      // Group up Multiple Items
+    }
+    else if (command === "ungroup") {
+      // Ungroup up Multiple Items
+    }
+    else if (command === "list") {
+      // List the items that have been manually added as well as currently airing
+    }
+    else if (command === "channel") {
+      // Sets the notification channel or turns it off
+      if (args.length > 0) {
+        let mentionedChannel = message.mentions.channels.first();
+        if(!mentionedChannel) {
+          command = args.shift().toLowerCase();
+          if (command === "off") {
+            // disable notification channel
+            guildSettings.notificationChannelBoolean = "off";
+            client.setGuildSettings.run(guildSettings);
+            guildSettings = client.getGuildSettings.get(message.guild.id);
+            message.channel.send("Notifications disabled!");
+          } else {
+            return message.channel.send("You did not specify a valid channel to set the notification channel to!");
+          }
+        }
+        else if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
+          guildSettings.notificationChannel = mentionedChannel.id;
+          guildSettings.notificationChannelBoolean = "on";
+          client.setGuildSettings.run(guildSettings);
+          guildSettings = client.getGuildSettings.get(message.guild.id);
+          message.channel.send("Notification channel changed to <#" + guildSettings.logChannel + ">!");
+        } else {
+          return message.channel.send('You do not have permissions to use `' + prefix + ogCommand + ' channel` in <#' + message.channel.id + '>!');
+        }
+      } else {
+        return message.channel.send("The current notification channel is <#" + guildSettings.logChannel + ">!\nTo change it type: `" + guildSettings.prefix + ogCommand + " channel #logs` (where **#logs** is the desired channel)\nTo disable it type: `" + guildSettings.prefix + ogCommand + " channel off`");
+      }
+    }
+
+  }
 });
 
 var j = schedule.scheduleJob('*/30 * * * * *', function() {
@@ -326,6 +427,26 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
         userList = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
         if (userList === undefined) {
           // No record of plex username exists in database; therefore it has not been setup and we do nothing.
+          console.log("Undefined active streamer: " + `${activeStreams[i].user}`);
+
+          if (guildSettings.logChannelBoolean === "on") {
+            var sendOption = 0;
+            if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+              // Channel is invalid
+              break;
+            } else {
+              sendOption = 1;
+            }
+            if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+              // Channel is invalid
+              break;
+            }
+            if (!Boolean(bypass) && sendOption === 1) {
+              client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Undefined active streamer: " + `${activeStreams[i].user}`);
+            } else if (!Boolean(bypass)) {
+              client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Undefined active streamer: " + `${activeStreams[i].user}`);
+            }
+          }
         } else {
           // This is where we assign the watching role
           let guildSettings = client.getGuildSettings.get(userList.guild);
@@ -338,8 +459,8 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
           var bypass = false;
           var roles = userToModify._roles;
 
-          for (var i = 0; i < roles.length; i++) {
-            if (roles[i] === guildSettings.watchingRole) {
+          for (var y = 0; y < roles.length; y++) {
+            if (roles[y] === guildSettings.watchingRole) {
               bypass = true;
             }
           }
