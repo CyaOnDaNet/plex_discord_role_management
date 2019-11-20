@@ -57,6 +57,22 @@ client.on('ready', ()=> {
   client.getLinkByPlexUserName = sql.prepare("SELECT * FROM userList WHERE plexUserName = ?");
   client.searchGuildUserList = sql.prepare("SELECT * FROM userList");
   client.setUserList = sql.prepare("INSERT OR REPLACE INTO userList (id, guild, discordUserID, plexUserName, watching) VALUES (@id, @guild, @discordUserID, @plexUserName, @watching);");
+
+  // Check if the table "notificationSettings" exists.
+  const tableNotificationSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'notificationSettings';").get();
+  if (!tableNotificationSettings['count(*)']) {
+    // If the table isn't there, create it and setup the database correctly.
+    sql.prepare("CREATE TABLE notificationSettings (id TEXT PRIMARY KEY, guild TEXT, title TEXT, cleanTitle TEXT, sortTitle TEXT, imdbID_or_themoviedbID TEXT, status TEXT, group TEXT, groupName TEXT, groupRole TEXT, exclude TEXT, include TEXT);").run();
+    // Ensure that the "id" row is always unique and indexed.
+    sql.prepare("CREATE UNIQUE INDEX idx_notificationSettings_id ON notificationSettings (id);").run();
+    sql.pragma("synchronous = 1");
+    sql.pragma("journal_mode = wal");
+  }
+
+  // And then we have prepared statements to get and set notificationSettings data.
+  client.getNotificationSettings = sql.prepare("SELECT * FROM notificationSettings WHERE id = ?");
+  client.setNotificationSettings = sql.prepare("INSERT OR REPLACE INTO notificationSettings (id, guild, title, cleanTitle, sortTitle, imdbID_or_themoviedbID, status, group, groupName, groupRole, exclude, include) VALUES (@id, @guild, @title, @cleanTitle, @sortTitle, @imdbID_or_themoviedbID, @status, @group, @groupName, @groupRole, @exclude, @include);");
+
 });
 
 client.on('message', async message => {
@@ -274,7 +290,7 @@ client.on('message', async message => {
       console.log("No sonarr settings detected in `./config/config.json`!");
       return message.channel.send("No sonarr settings detected in `./config/config.json`!");
     }
-    if (!url.startsWith("http://") && !url.startsWith("http://")) {
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
       // we need an http or https specified so we will asumme http
       console.log("Please adjust your config.sonarr_web_address to include http:// or https://. Since it was not included, I am assuming it is http://");
       url = "http://" + url;
@@ -313,6 +329,8 @@ client.on('message', async message => {
   }
   else if (command === "notifications" || command === "n") {
   // This is where we change notification information
+  let notificationSettings;
+
   var ogCommand = command;
     if (args.length > 0) {
       command = args.shift().toLowerCase();
@@ -327,7 +345,7 @@ client.on('message', async message => {
         console.log("No sonarr settings detected in `./config/config.json`!");
         return message.channel.send("No sonarr settings detected in `./config/config.json`!");
       }
-      if (!url.startsWith("http://") && !url.startsWith("http://")) {
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
         // we need an http or https specified so we will asumme http
         console.log("Please adjust your config.sonarr_web_address to include http:// or https://. Since it was not included, I am assuming it is http://");
         url = "http://" + url;
@@ -347,6 +365,14 @@ client.on('message', async message => {
         for (var i = 0; i < json.length; i++) {
           if (json[i].status === "continuing") {
             showsList[count] = {count : json[i].title};
+
+            notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+            if (!notificationSettings) {
+              notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle imdbID_or_themoviedbID: json[i].imdbId, status: json[i].status, group: null, groupName: null, groupRole: null, exclude: null, include: null };
+              client.setGuildSettings.run(notificationSettings);
+              notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+            }
+
             count++;
           }
         }
@@ -361,7 +387,7 @@ client.on('message', async message => {
         console.log(error);
       });
     }
-    else if (command === "resort") {
+    else if (command === "reset") {
       // Alphabetically re-sort items in notfication settings embed
     }
     else if (command === "include") {
