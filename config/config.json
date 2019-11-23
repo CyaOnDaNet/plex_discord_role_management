@@ -6,5 +6,6 @@
     "tautulli_api_key": "YOUR_TAUTULLI_API_KEY",
     "sonarr_web_address": "YOUR_SONARR_IP_ADDRESS(INCLUDE_PORT)_OR_WEB_ADDRESS",
     "sonarr_api_key": "YOUR_SONARR_API_KEY",
+    "node_hook_ip": "THE_IP_ADDRESS_OF_THIS_NODEJS_BOT",
     "node_hook_port": "3000"
 }
