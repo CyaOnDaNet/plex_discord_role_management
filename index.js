@@ -6,6 +6,8 @@ const sql = new SQLite('./config/database.sqlite');
 const schedule = require('node-schedule');
 const Tautulli = require('tautulli-api');
 const fetch = require('node-fetch');
+const tautulliHook = require('./src/tautulli.js');
+var undefinedStreamers = [];
 
 const DEBUG = 0;
 
@@ -25,6 +27,8 @@ var tautulli = new Tautulli(config.tautulli_ip, config.tautulli_port, config.tau
 client.on('ready', ()=> {
   console.log('The bot is now online!');
   client.user.setActivity('Plex | ' + defaultGuildSettings.prefix, { type: 'WATCHING' })
+
+  const app = tautulliHook(config.node_hook_port);
 
   // Check if the table "guildSettings" exists.
   const tableGuildSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'guildSettings';").get();
@@ -62,7 +66,7 @@ client.on('ready', ()=> {
   const tableNotificationSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'notificationSettings';").get();
   if (!tableNotificationSettings['count(*)']) {
     // If the table isn't there, create it and setup the database correctly.
-    sql.prepare("CREATE TABLE notificationSettings (id TEXT PRIMARY KEY, guild TEXT, title TEXT, cleanTitle TEXT, sortTitle TEXT, imdbID_or_themoviedbID TEXT, status TEXT, group TEXT, groupName TEXT, groupRole TEXT, exclude TEXT, include TEXT);").run();
+    sql.prepare("CREATE TABLE notificationSettings (id TEXT PRIMARY KEY, guild TEXT, title TEXT, cleanTitle TEXT, sortTitle TEXT, imdbID_or_themoviedbID TEXT, status TEXT, is_group TEXT, groupName TEXT, groupRole TEXT, exclude TEXT, include TEXT);").run();
     // Ensure that the "id" row is always unique and indexed.
     sql.prepare("CREATE UNIQUE INDEX idx_notificationSettings_id ON notificationSettings (id);").run();
     sql.pragma("synchronous = 1");
@@ -71,7 +75,8 @@ client.on('ready', ()=> {
 
   // And then we have prepared statements to get and set notificationSettings data.
   client.getNotificationSettings = sql.prepare("SELECT * FROM notificationSettings WHERE id = ?");
-  client.setNotificationSettings = sql.prepare("INSERT OR REPLACE INTO notificationSettings (id, guild, title, cleanTitle, sortTitle, imdbID_or_themoviedbID, status, group, groupName, groupRole, exclude, include) VALUES (@id, @guild, @title, @cleanTitle, @sortTitle, @imdbID_or_themoviedbID, @status, @group, @groupName, @groupRole, @exclude, @include);");
+  client.searchNotificationSettings = sql.prepare("SELECT * FROM notificationSettings");
+  client.setNotificationSettings = sql.prepare("INSERT OR REPLACE INTO notificationSettings (id, guild, title, cleanTitle, sortTitle, imdbID_or_themoviedbID, status, is_group, groupName, groupRole, exclude, include) VALUES (@id, @guild, @title, @cleanTitle, @sortTitle, @imdbID_or_themoviedbID, @status, @is_group, @groupName, @groupRole, @exclude, @include);");
 
 });
 
@@ -330,8 +335,8 @@ client.on('message', async message => {
   else if (command === "notifications" || command === "n") {
   // This is where we change notification information
   let notificationSettings;
-
   var ogCommand = command;
+
     if (args.length > 0) {
       command = args.shift().toLowerCase();
     } else {
@@ -368,7 +373,7 @@ client.on('message', async message => {
 
             notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
             if (!notificationSettings) {
-              notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle imdbID_or_themoviedbID: json[i].imdbId, status: json[i].status, group: null, groupName: null, groupRole: null, exclude: null, include: null };
+              notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null };
               client.setGuildSettings.run(notificationSettings);
               notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
             }
@@ -404,6 +409,30 @@ client.on('message', async message => {
     }
     else if (command === "list") {
       // List the items that have been manually added as well as currently airing
+      if (!message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
+        return message.channel.send('You do not have permissions to use `' + prefix + ogCommand + " " + command + '`!');
+      }
+      var notificationsList = "\n\n>>> ";
+      for (const notificationQuery of client.searchNotificationSettings.iterate()) {
+        if (notificationQuery.guild === message.guild.id && notificationQuery.exclude === null) {
+          if (notificationQuery.groupName != null) {
+
+          }
+          else {
+            notificationsList = notificationsList + notificationQuery.title + "\n";
+            // add a reaction role
+          }
+        }
+      }
+
+      embed = new Discord.RichEmbed()
+        .setAuthor(client.user.username, client.user.avatarURL)
+        .setDescription("Below is a list of Notification Roles on this server:" + notificationsList)
+        .setFooter("Fetched")
+        .setTimestamp(new Date())
+        .setColor(0x00AE86);
+
+      message.channel.send({embed});
     }
     else if (command === "channel") {
       // Sets the notification channel or turns it off
@@ -453,8 +482,14 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
         userList = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
         if (userList === undefined) {
           // No record of plex username exists in database; therefore it has not been setup and we do nothing.
-          console.log("Undefined active streamer: " + `${activeStreams[i].user}`);
+          if (undefinedStreamers.indexOf(activeStreams[i].user) === -1) {
+            // prevents logs from filling up with duplicate entries
+            console.log("Undefined active streamer: " + `${activeStreams[i].user}`);
+            undefinedStreamers.push(activeStreams[i].user);
+          }
 
+          // I wanted to log this but realized i dont know the guild with guildSettings
+          /*
           if (guildSettings.logChannelBoolean === "on") {
             var sendOption = 0;
             if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
@@ -472,7 +507,7 @@ var j = schedule.scheduleJob('*/30 * * * * *', function() {
             } else if (!Boolean(bypass)) {
               client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Undefined active streamer: " + `${activeStreams[i].user}`);
             }
-          }
+          } */
         } else {
           // This is where we assign the watching role
           let guildSettings = client.getGuildSettings.get(userList.guild);
