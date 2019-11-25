@@ -4,6 +4,7 @@ const fetch = require('node-fetch');
 const axios = require('axios');
 const jtfd = require("json-to-form-data");
 
+const mainNode = require("../index.js");
 const config = require("../config/config.json");
 const apiName = 'Plex-Discord Role Management API';
 
@@ -158,20 +159,9 @@ module.exports = async(port) => {
   // parse application/json
   app.use(bodyParser.json())
 
-  app.post('/hook/tautulli', async (req, res) => {
-    console.log(req.body);
-
-    // Process incoming webhooks
-
+  app.post('/hooks/tautulli', async (req, res) => {
     res.status(200).send('OK');
-    //console.log(res);
-    /*
-    var events = req.body;
-    events.forEach(function (event) {
-      // Here, you now have each event and can process them how you like
-  	  processEvent(event);
-    });
-    */
+    mainNode.processHook(req.body); // Process incoming webhooks
   });
 
   var server = app.listen(port, function() {
