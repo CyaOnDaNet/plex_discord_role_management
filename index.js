@@ -465,6 +465,88 @@ client.on('message', async message => {
     }
 
   }
+  else if (command === "test2") {
+    var url = config.sonarr_web_address;
+    if (!url) {
+      console.log("No sonarr settings detected in `./config/config.json`!");
+      return message.channel.send("No sonarr settings detected in `./config/config.json`!");
+    }
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      // we need an http or https specified so we will asumme http
+      console.log("Please adjust your config.sonarr_web_address to include http:// or https://. Since it was not included, I am assuming it is http://");
+      url = "http://" + url;
+    }
+    if (!url.endsWith('/')) {
+      url = url + '/';
+    }
+    url = url + "api/series?apikey=" + config.sonarr_api_key;
+
+    //var tenNumbers = {'1':'1️⃣', '2':'2️⃣', '3':'3️⃣', '4':'4️⃣', '5':'5️⃣', '6':'6️⃣', '7':'7️⃣', '8':'8️⃣', '9':'9️⃣', '10':'🔟',};
+    //var showsList = [];
+
+    fetch(url,  {
+        method: 'GET'
+    })
+    .then(res => res.json())
+    .then(async json => {
+      var tenNumbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+      var showsList = [];
+      var count = 0;
+      for (var i = 0; i < json.length; i++) {
+        if (json[i].status === "continuing") {
+          showsList[count] = json[i].title;
+          count++;
+        }
+      }
+      var total = showsList.length;
+      for (var pages = 0; (pages*10) < total; pages++) {
+        embed = new Discord.RichEmbed()
+          .setColor(0x00AE86);
+        if (pages === 0) {
+          embed.setAuthor("Choose what individual TV Shows you would like to be notified for:")
+        }
+        else {
+          embed.setAuthor("Page " + (pages + 1));
+        }
+
+        var emojiCount = 0;
+        var pageBody = "";
+        for (var i = 0; i < tenNumbers.length; i++) {
+          if (showsList[(pages*10) + i]) {
+            if (message.guild.roles.find(role => role.name === showsList[(pages*10) + i]) != null) {
+              var role = message.guild.roles.find(role => role.name === showsList[(pages*10) + i]);
+              pageBody = pageBody + tenNumbers[i] + " " + role + "\n";
+            }
+            else {
+              pageBody = pageBody + tenNumbers[i] + " " + showsList[(pages*10) + i] + "\n";
+            }
+            emojiCount++;
+          }
+        }
+        embed.setDescription(pageBody);
+        var emojiTime = await message.channel.send({embed});
+        for (var i = 0; i < emojiCount; i++) {
+          await emojiTime.react(tenNumbers[i])
+            .then()
+            .catch(console.error);
+        }
+      }
+    })
+    .catch((error) => {
+      console.log("Couldn't connect to Sonarr, check your settings.");
+      message.channel.send("Couldn't connect to Sonarr, check your settings.");
+      console.log(error);
+      // do we need to remove roles if this is the case? Maybe we don't...
+    });
+  }
+
+
+  else if (command === "test") {
+    var emojiTest = await message.channel.send("Test emoji");
+    emojiTest.react('one')
+      .then()
+      .catch(console.error);
+  }
 });
 
 var j = schedule.scheduleJob('* */2 * * * *', function() {
@@ -652,11 +734,38 @@ client.on('raw', async event => {
 
     if (!reaction) {
         // Create an object that can be passed through the event like normal
-        const emoji = new Emoji(client.guilds.get(data.guild_id), data.emoji);
-        reaction = new MessageReaction(message, emoji, 1, data.user_id === client.user.id);
+        const emoji = new Emoji(client.guilds.get(data.guild_id), data.emoji).catch();
+        reaction = new MessageReaction(message, emoji, 1, data.user_id === client.user.id).catch();
     }
-    // Everything above grabs the emoji that was clicked by a user, I need to add stuff below that then matches the emoji to the role and adds or removes it.
-    //console.log(reaction);
+    // Everything above grabs the emoji that was clicked by a user, The below code then matches the react emoji to the role and adds or removes it.
+    if (client.user.id != message.author.id) return; //Only continue if react was to a message by this bot.
+    if (message.embeds[0] === undefined || message.embeds[0] === null) return; //Only continue if react was to a message embed.
+    if (client.user.id === data.user_id) return; //Ignore the bot setting up react roles so it doesnt add roles to itself.
+
+    var args = message.embeds[0].description.trim().split(/\r?\n/);
+    for (var i = 0; i < args.length; i++){
+      if(args[i].startsWith(emojiKey)) {
+        if (args[i].indexOf("<@&") === -1) return console.log("Invalid React Role Mention Clicked: " + args[i]);
+
+        var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].length - 1);
+        var removeRole = true;
+
+        reaction.users.tap(async user => {
+          if (data.user_id === user.id) {
+            removeRole = false;
+            let userToModify = message.guild.members.get(user.id);
+            userToModify.addRole(roleID)
+              .catch(console.error);
+          }
+        });
+        if (removeRole) {
+          let userToModify = message.guild.members.get(user.id);
+          userToModify.removeRole(roleID)
+            .catch(console.error);
+        }
+      }
+    }
+
 });
 
 
