@@ -66,7 +66,7 @@ client.on('ready', ()=> {
   const tableNotificationSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'notificationSettings';").get();
   if (!tableNotificationSettings['count(*)']) {
     // If the table isn't there, create it and setup the database correctly.
-    sql.prepare("CREATE TABLE notificationSettings (id TEXT PRIMARY KEY, guild TEXT, title TEXT, cleanTitle TEXT, sortTitle TEXT, imdbID_or_themoviedbID TEXT, status TEXT, is_group TEXT, groupName TEXT, groupRole TEXT, exclude TEXT, include TEXT);").run();
+    sql.prepare("CREATE TABLE notificationSettings (id TEXT PRIMARY KEY, guild TEXT, title TEXT, cleanTitle TEXT, sortTitle TEXT, imdbID_or_themoviedbID TEXT, status TEXT, is_group TEXT, groupName TEXT, groupRole TEXT, exclude TEXT, include TEXT, network TEXT, completeSonarr TEXT, roleID TEXT);").run();
     // Ensure that the "id" row is always unique and indexed.
     sql.prepare("CREATE UNIQUE INDEX idx_notificationSettings_id ON notificationSettings (id);").run();
     sql.pragma("synchronous = 1");
@@ -76,7 +76,9 @@ client.on('ready', ()=> {
   // And then we have prepared statements to get and set notificationSettings data.
   client.getNotificationSettings = sql.prepare("SELECT * FROM notificationSettings WHERE id = ?");
   client.searchNotificationSettings = sql.prepare("SELECT * FROM notificationSettings");
-  client.setNotificationSettings = sql.prepare("INSERT OR REPLACE INTO notificationSettings (id, guild, title, cleanTitle, sortTitle, imdbID_or_themoviedbID, status, is_group, groupName, groupRole, exclude, include) VALUES (@id, @guild, @title, @cleanTitle, @sortTitle, @imdbID_or_themoviedbID, @status, @is_group, @groupName, @groupRole, @exclude, @include);");
+  client.getNotificationSettingsBySortTitle = sql.prepare("SELECT * FROM notificationSettings WHERE sortTitle = ?");
+  client.getNotificationSettingsByGroupName = sql.prepare("SELECT * FROM notificationSettings WHERE groupName = ?");
+  client.setNotificationSettings = sql.prepare("INSERT OR REPLACE INTO notificationSettings (id, guild, title, cleanTitle, sortTitle, imdbID_or_themoviedbID, status, is_group, groupName, groupRole, exclude, include, network, completeSonarr, roleID) VALUES (@id, @guild, @title, @cleanTitle, @sortTitle, @imdbID_or_themoviedbID, @status, @is_group, @groupName, @groupRole, @exclude, @include, @network, @completeSonarr, @roleID);");
 
 });
 
@@ -345,52 +347,6 @@ client.on('message', async message => {
 
     if (command === "refresh") {
       // grabs list of currently airing shows and adds them to notifications channel
-      var url = config.sonarr_web_address;
-      if (!url) {
-        console.log("No sonarr settings detected in `./config/config.json`!");
-        return message.channel.send("No sonarr settings detected in `./config/config.json`!");
-      }
-      if (!url.startsWith("http://") && !url.startsWith("https://")) {
-        // we need an http or https specified so we will asumme http
-        console.log("Please adjust your config.sonarr_web_address to include http:// or https://. Since it was not included, I am assuming it is http://");
-        url = "http://" + url;
-      }
-      if (!url.endsWith('/')) {
-        url = url + '/';
-      }
-      url = url + "api/series?apikey=" + config.sonarr_api_key;
-
-      fetch(url,  {
-          method: 'GET'
-      })
-      .then(res => res.json())
-      .then(json => {
-        let showsList = {};
-        var count = 0;
-        for (var i = 0; i < json.length; i++) {
-          if (json[i].status === "continuing") {
-            showsList[count] = {count : json[i].title};
-
-            notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
-            if (!notificationSettings) {
-              notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null };
-              client.setGuildSettings.run(notificationSettings);
-              notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
-            }
-
-            count++;
-          }
-        }
-
-        // This is where the embed list of notifying shows would be updated
-
-
-      })
-      .catch((error) => {
-        console.log("Couldn't connect to Sonarr, check your settings.");
-        message.channel.send("Couldn't connect to Sonarr, check your settings.");
-        console.log(error);
-      });
     }
     else if (command === "reset") {
       // Alphabetically re-sort items in notfication settings embed
@@ -412,27 +368,85 @@ client.on('message', async message => {
       if (!message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
         return message.channel.send('You do not have permissions to use `' + prefix + ogCommand + " " + command + '`!');
       }
-      var notificationsList = "\n\n>>> ";
+      await updateShowList(message);
+
+      var tenNumbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+      var showsList = [];
+      var sortList = [];
+      var count = 0;
       for (const notificationQuery of client.searchNotificationSettings.iterate()) {
         if (notificationQuery.guild === message.guild.id && notificationQuery.exclude === null) {
           if (notificationQuery.groupName != null) {
-
+            var bypass = true;
+            for (var i = 0; i < sortList.length; i++) {
+              if (sortList[i] === notificationQuery.groupName) {
+                bypass = false;
+              }
+            }
+            if (bypass) {
+              sortList[count] = notificationQuery.groupName;
+              count++;
+            }
           }
           else {
-            notificationsList = notificationsList + notificationQuery.title + "\n";
-            // add a reaction role
+            sortList[count] = notificationQuery.sortTitle;
+            count++;
+          }
+        }
+      }
+      sortList = sortList.sort();
+
+      for (var i = 0; i < sortList.length; i++) {
+        notificationSettings = client.getNotificationSettingsBySortTitle.get(sortList[i]);
+        if (!notificationSettings) {
+          // GroupName
+          notificationSettings = client.getNotificationSettingsByGroupName.get(sortList[i]);
+          var role = message.guild.roles.find(role => role.id === notificationSettings.roleID);
+          if (role != null) {
+            showsList[i] = role;
+          }
+          else {
+            showsList[i] = notificationSettings.groupName;
+          }
+        }
+        else {
+          var role = message.guild.roles.find(role => role.id === notificationSettings.roleID);
+          if (role != null) {
+            showsList[i] = role;
+          }
+          else {
+            showsList[i] = notificationSettings.title;
           }
         }
       }
 
-      embed = new Discord.RichEmbed()
-        .setAuthor(client.user.username, client.user.avatarURL)
-        .setDescription("Below is a list of Notification Roles on this server:" + notificationsList)
-        .setFooter("Fetched")
-        .setTimestamp(new Date())
-        .setColor(0x00AE86);
+      var total = showsList.length;
+      for (var pages = 0; (pages*10) < total; pages++) {
+        embed = new Discord.RichEmbed()
+          .setColor(0x00AE86);
+        if (pages === 0) {
+          embed.setAuthor("Choose what individual TV Shows you would like to be notified for:")
+        }
+        else {
+          embed.setAuthor("Page " + (pages + 1));
+        }
 
-      message.channel.send({embed});
+        var emojiCount = 0;
+        var pageBody = "";
+        for (var i = 0; i < tenNumbers.length; i++) {
+          if (showsList[(pages*10) + i]) {
+            pageBody = pageBody + tenNumbers[i] + " " + showsList[(pages*10) + i] + "\n";
+            emojiCount++;
+          }
+        }
+        embed.setDescription(pageBody);
+        var emojiTime = await message.channel.send({embed});
+        for (var i = 0; i < emojiCount; i++) {
+          await emojiTime.react(tenNumbers[i])
+            .then()
+            .catch(console.error);
+        }
+      }
     }
     else if (command === "channel") {
       // Sets the notification channel or turns it off
@@ -465,7 +479,22 @@ client.on('message', async message => {
     }
 
   }
-  else if (command === "test2") {
+  else if (command === "test") {
+    /*
+    for (const notificationQuery of client.searchNotificationSettings.iterate()) {
+      if (notificationQuery.guild === message.guild.id && notificationQuery.exclude === null) {
+        if (notificationQuery.groupName != null) {
+
+        }
+        else {
+          notificationsList = notificationsList + notificationQuery.title + "\n";
+          // add a reaction role
+        }
+      }
+    }
+    */
+
+    /*
     var url = config.sonarr_web_address;
     if (!url) {
       console.log("No sonarr settings detected in `./config/config.json`!");
@@ -481,9 +510,6 @@ client.on('message', async message => {
     }
     url = url + "api/series?apikey=" + config.sonarr_api_key;
 
-    //var tenNumbers = {'1':'1️⃣', '2':'2️⃣', '3':'3️⃣', '4':'4️⃣', '5':'5️⃣', '6':'6️⃣', '7':'7️⃣', '8':'8️⃣', '9':'9️⃣', '10':'🔟',};
-    //var showsList = [];
-
     fetch(url,  {
         method: 'GET'
     })
@@ -492,60 +518,12 @@ client.on('message', async message => {
       var tenNumbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
       var showsList = [];
       var count = 0;
-      for (var i = 0; i < json.length; i++) {
-        if (json[i].status === "continuing") {
-          showsList[count] = json[i].title;
-          count++;
-        }
-      }
-      var total = showsList.length;
-      for (var pages = 0; (pages*10) < total; pages++) {
-        embed = new Discord.RichEmbed()
-          .setColor(0x00AE86);
-        if (pages === 0) {
-          embed.setAuthor("Choose what individual TV Shows you would like to be notified for:")
-        }
-        else {
-          embed.setAuthor("Page " + (pages + 1));
-        }
-
-        var emojiCount = 0;
-        var pageBody = "";
-        for (var i = 0; i < tenNumbers.length; i++) {
-          if (showsList[(pages*10) + i]) {
-            if (message.guild.roles.find(role => role.name === showsList[(pages*10) + i]) != null) {
-              var role = message.guild.roles.find(role => role.name === showsList[(pages*10) + i]);
-              pageBody = pageBody + tenNumbers[i] + " " + role + "\n";
-            }
-            else {
-              pageBody = pageBody + tenNumbers[i] + " " + showsList[(pages*10) + i] + "\n";
-            }
-            emojiCount++;
-          }
-        }
-        embed.setDescription(pageBody);
-        var emojiTime = await message.channel.send({embed});
-        for (var i = 0; i < emojiCount; i++) {
-          await emojiTime.react(tenNumbers[i])
-            .then()
-            .catch(console.error);
-        }
-      }
+      console.log(json[0]);
     })
     .catch((error) => {
-      console.log("Couldn't connect to Sonarr, check your settings.");
-      message.channel.send("Couldn't connect to Sonarr, check your settings.");
-      console.log(error);
-      // do we need to remove roles if this is the case? Maybe we don't...
+
     });
-  }
-
-
-  else if (command === "test") {
-    var emojiTest = await message.channel.send("Test emoji");
-    emojiTest.react('one')
-      .then()
-      .catch(console.error);
+    */
   }
 });
 
@@ -911,6 +889,90 @@ async function processHook(data) {
   else if (data.trigger === 'recentlyAdded') {
     console.log(data);
   }
+}
+
+
+async function updateShowList(message) {
+  // grabs list of currently airing shows and adds them to notifications channel
+  let notificationSettings;
+  var url = config.sonarr_web_address;
+  if (!url) {
+    console.log("No sonarr settings detected in `./config/config.json`!");
+    return message.channel.send("No sonarr settings detected in `./config/config.json`!");
+  }
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    // we need an http or https specified so we will asumme http
+    console.log("Please adjust your config.sonarr_web_address to include http:// or https://. Since it was not included, I am assuming it is http://");
+    url = "http://" + url;
+  }
+  if (!url.endsWith('/')) {
+    url = url + '/';
+  }
+  url = url + "api/series?apikey=" + config.sonarr_api_key;
+
+  fetch(url,  {
+      method: 'GET'
+  })
+  .then(res => res.json())
+  .then(async json => {
+    let showsList = [];
+    var count = 0;
+    for (var i = 0; i < json.length; i++) {
+      if (json[i].status === "continuing") {
+        // Create an Entry for the show in the database
+        showsList[count] = json[i].title;
+        notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+
+        if (!notificationSettings) {
+          // Create a new role with data
+          var role = await message.guild.roles.find(role => role.name === json[i].title);
+
+          if (role) {
+            notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
+            client.setNotificationSettings.run(notificationSettings);
+            notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+          }
+          else {
+            let newRole = await message.guild.createRole({
+              name: json[i].title,
+              color: 'BLUE',
+              mentionable: true
+            })
+              .then(role => {
+                //console.log(`Created new role with name ${role.name} and color ${role.color}`)
+                notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
+                client.setNotificationSettings.run(notificationSettings);
+                notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+              })
+              .catch(console.error)
+          }
+        }
+        count++;
+      }
+      else {
+        // Delete an Entry for the show in the database
+        notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+
+        if (notificationSettings && notificationSettings.include === null) {
+          message.guild.roles.find(role => role.id === notificationSettings.roleID).delete().catch(console.error);
+          let id = `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`;
+          // delete a row based on id
+          sql.run(`DELETE FROM notificationSettings WHERE id=?`, id, function(err) {
+            if (err) {
+              return console.error(err.message);
+            }
+            //console.log(`Row(s) deleted ${this.changes}`);
+          });
+        }
+      }
+    }
+    return showsList;
+  })
+  .catch((error) => {
+    console.log("Couldn't connect to Sonarr, check your settings.");
+    message.channel.send("Couldn't connect to Sonarr, check your settings.");
+    console.log(error);
+  });
 }
 
 module.exports.processHook = processHook;
