@@ -1,0 +1,79 @@
+module.exports = {
+	name: 'bot',
+	description: 'Bot Settings that can be configured',
+	async execute(message, args, prefix, guildSettings, client, Discord, tautulli) {
+    // This is where we change bot information
+    if (args.length > 0) {
+      command = args.shift().toLowerCase();
+    } else {
+      command = "help";
+    }
+
+    if (command === "settings") {
+      embed = new Discord.RichEmbed()
+        .setAuthor(client.user.username, client.user.avatarURL)
+        .setDescription("Below is a list of bot settings\n")
+        .addField("Prefix: ", '`' + prefix + '`',  true)
+        .addField("Watching Role: ", '<@&' + guildSettings.watchingRole + '>')
+        .addField("Log Channel: ", '<#' + guildSettings.logChannel + '>')
+        .setFooter("Fetched")
+        .setTimestamp(new Date())
+        .setColor(0x00AE86);
+
+      if (guildSettings.logChannelBoolean === "off") {
+        embed.addField("Logging Status: ", '**Disabled**');
+      }
+      else if (guildSettings.logChannelBoolean === "on") {
+        embed.addField("Logging Status: ", '**Enabled**');
+      }
+      message.channel.send({embed});
+    }
+    else if (command === "prefix") {
+      if (args.length > 0) {
+        if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
+          command = args.shift().toLowerCase();
+          guildSettings.prefix = command;
+          client.setGuildSettings.run(guildSettings);
+          guildSettings = client.getGuildSettings.get(message.guild.id);
+          message.channel.send("Prefix changed to `" + guildSettings.prefix + "`");
+        }
+        else {
+          return message.channel.send('You do not have permissions to use `' + prefix + 'bot prefix` in <#' + message.channel.id + '>!');
+        }
+      } else {
+        return message.channel.send("The current prefix is `" + guildSettings.prefix + "`\nTo change it type: `" + guildSettings.prefix + "bot prefix ??` (where *??* is the prefix)");
+      }
+    }
+    else if (command === "logchannel") {
+      if (args.length > 0) {
+        let mentionedChannel = message.mentions.channels.first();
+        if(!mentionedChannel) {
+          command = args.shift().toLowerCase();
+          if (command === "off") {
+            // disable logChannel
+            guildSettings.logChannelBoolean = "off";
+            client.setGuildSettings.run(guildSettings);
+            guildSettings = client.getGuildSettings.get(message.guild.id);
+            message.channel.send("Logging disabled!");
+          } else {
+            return message.channel.send("You did not specify a valid channel to set the log channel to!");
+          }
+        }
+        else if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
+          guildSettings.logChannel = mentionedChannel.id;
+          guildSettings.logChannelBoolean = "on";
+          client.setGuildSettings.run(guildSettings);
+          guildSettings = client.getGuildSettings.get(message.guild.id);
+          message.channel.send("Log channel changed to <#" + guildSettings.logChannel + ">!");
+        } else {
+          return message.channel.send('You do not have permissions to use `' + prefix + 'bot logchannel` in <#' + message.channel.id + '>!');
+        }
+      } else {
+        return message.channel.send("The current log channel is <#" + guildSettings.logChannel + ">!\nTo change it type: `" + guildSettings.prefix + "bot logchannel #logs` (where **#logs** is the desired channel)\nTo disable it type: `" + guildSettings.prefix + "bot logchannel off`");
+      }
+    }
+    else if (command === "help") {
+      // help message goes here
+    }
+	},
+};
