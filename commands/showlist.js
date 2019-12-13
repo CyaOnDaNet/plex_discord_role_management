@@ -2,6 +2,8 @@ module.exports = {
 	name: 'showlist',
   aliases: ['showslist'],
 	description: 'Displays a list of shows currently airing on the Plex server',
+	usage: '',
+	adminCommand: false,
 	async execute(message, args, prefix, guildSettings, client, Discord, tautulli) {
     var url = config.sonarr_web_address;
     if (!url) {

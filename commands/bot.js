@@ -1,6 +1,13 @@
 module.exports = {
 	name: 'bot',
 	description: 'Bot Settings that can be configured',
+	usage: '[subcommand]',
+	adminCommand: true,
+	subcommands: {
+		'settings':'',
+		'prefix':'newprefix',
+		'logchannel':'@channel',
+	},
 	async execute(message, args, prefix, guildSettings, client, Discord, tautulli) {
     // This is where we change bot information
     if (args.length > 0) {

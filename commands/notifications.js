@@ -2,6 +2,17 @@ module.exports = {
 	name: 'notifications',
   aliases: ['n'],
 	description: 'Notification Settings that can be configured',
+	usage: '[subcommand]',
+	adminCommand: true,
+	subcommands: {
+		'refresh':'',
+		'reset':'',
+		'include':'show',
+		'group':'[show1] [show2] [etc.]',
+		'ungroup':'[show1] [show2] [etc.]',
+		'list':'',
+		'channel':'',
+	},
 	async execute(message, args, prefix, guildSettings, client, Discord, tautulli) {
     // This is where we change notification information
     let notificationSettings;

@@ -1,6 +1,8 @@
 module.exports = {
 	name: 'link',
 	description: 'Link Plex Users to Discord Users',
+	usage: '@DiscordUser PlexUsername',
+	adminCommand: true,
 	async execute(message, args, prefix, guildSettings, client, Discord, tautulli) {
     if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
       // link a discord user and plex user

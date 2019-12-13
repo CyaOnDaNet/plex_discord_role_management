@@ -104,6 +104,10 @@ client.on('message', async message => {
       guildSettings = client.getGuildSettings.get(message.guild.id);
     }
   }
+  else {
+    // DM Message
+    return;
+  }
 
   const prefix = guildSettings.prefix;
 

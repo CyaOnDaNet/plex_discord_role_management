@@ -2,6 +2,8 @@ module.exports = {
 	name: 'role',
   aliases: ['watchingrole'],
 	description: 'Sets the watching role for the server',
+	usage: '@WatchingRole',
+	adminCommand: true,
 	async execute(message, args, prefix, guildSettings, client, Discord, tautulli) {
     if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
       // link a discord user and plex user
