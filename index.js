@@ -52,6 +52,7 @@ client.on('ready', ()=> {
 
   // And then we have prepared statements to get and set guildSettings data.
   client.getGuildSettings = sql.prepare("SELECT * FROM guildSettings WHERE guild = ?");
+  client.searchGuildSettings = sql.prepare("SELECT * FROM guildSettings");
   client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, notificationChannel, notificationChannelBoolean, adminRole, watchingRole) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @notificationChannel, @notificationChannelBoolean, @adminRole, @watchingRole);");
 
   // Check if the table "userList" exists.
@@ -75,7 +76,7 @@ client.on('ready', ()=> {
   const tableNotificationSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'notificationSettings';").get();
   if (!tableNotificationSettings['count(*)']) {
     // If the table isn't there, create it and setup the database correctly.
-    sql.prepare("CREATE TABLE notificationSettings (id TEXT PRIMARY KEY, guild TEXT, title TEXT, cleanTitle TEXT, sortTitle TEXT, imdbID_or_themoviedbID TEXT, status TEXT, is_group TEXT, groupName TEXT, groupRole TEXT, exclude TEXT, include TEXT, network TEXT, completeSonarr TEXT, roleID TEXT);").run();
+    sql.prepare("CREATE TABLE notificationSettings (id TEXT PRIMARY KEY, guild TEXT, title TEXT, cleanTitle TEXT, sortTitle TEXT, imdbID_or_themoviedbID TEXT, thetvdb_id TEXT, status TEXT, is_group TEXT, groupName TEXT, groupRole TEXT, exclude TEXT, include TEXT, network TEXT, completeSonarr TEXT, roleID TEXT);").run();
     // Ensure that the "id" row is always unique and indexed.
     sql.prepare("CREATE UNIQUE INDEX idx_notificationSettings_id ON notificationSettings (id);").run();
     sql.pragma("synchronous = 1");
@@ -87,7 +88,7 @@ client.on('ready', ()=> {
   client.searchNotificationSettings = sql.prepare("SELECT * FROM notificationSettings");
   client.getNotificationSettingsBySortTitle = sql.prepare("SELECT * FROM notificationSettings WHERE sortTitle = ?");
   client.getNotificationSettingsByGroupName = sql.prepare("SELECT * FROM notificationSettings WHERE groupName = ?");
-  client.setNotificationSettings = sql.prepare("INSERT OR REPLACE INTO notificationSettings (id, guild, title, cleanTitle, sortTitle, imdbID_or_themoviedbID, status, is_group, groupName, groupRole, exclude, include, network, completeSonarr, roleID) VALUES (@id, @guild, @title, @cleanTitle, @sortTitle, @imdbID_or_themoviedbID, @status, @is_group, @groupName, @groupRole, @exclude, @include, @network, @completeSonarr, @roleID);");
+  client.setNotificationSettings = sql.prepare("INSERT OR REPLACE INTO notificationSettings (id, guild, title, cleanTitle, sortTitle, imdbID_or_themoviedbID, thetvdb_id, status, is_group, groupName, groupRole, exclude, include, network, completeSonarr, roleID) VALUES (@id, @guild, @title, @cleanTitle, @sortTitle, @imdbID_or_themoviedbID, @thetvdb_id, @status, @is_group, @groupName, @groupRole, @exclude, @include, @network, @completeSonarr, @roleID);");
 
 });
 
@@ -120,7 +121,7 @@ client.on('message', async message => {
 	if (!command) return;
 
   try {
-	  command.execute(message, args, prefix, guildSettings, client, Discord, tautulli);
+	  command.execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch);
   } catch (error) {
 	  console.error(error);
 	  message.reply('there was an error trying to execute that command!');
@@ -498,6 +499,40 @@ async function processHook(data) {
 
   else if (data.trigger === 'recentlyAdded') {
     console.log(data);
+
+    for (const guildSettings of client.searchGuildSettings.iterate()) {
+      if (guildSettings.notificationChannelBoolean === "on") {
+        if (data.contentType === "show") {
+          var roleExists = "";
+					var guildID = "";
+          for (const showNotification of client.searchNotificationSettings.iterate()) {
+            if (showNotification.title === data.show_name || showNotification.thetvdb_id === data.thetvdb_id || showNotification.imdbID_or_themoviedbID === data.imdb_id) {
+							guildID = showNotification.guild;
+							if (showNotification.groupRole != null && showNotification.groupRole != undefined && showNotification.groupRole != "") {
+								roleExists = showNotification.groupRole;
+							}
+							else {
+								roleExists = showNotification.roleID;
+							}
+							if (roleExists && roleExists != "") {
+								roleExists = "<@&" + roleExists + ">";
+							}
+            }
+          }
+					// form embed and send
+					embed = new Discord.RichEmbed()
+						.setTitle(`${data.title}`)
+						.setURL(`${data.plex_url}`)
+						.setDescription(`${data.summary}`)
+						.setThumbnail(`${data.poster_url}`)
+						.addField('View Details', `[Plex Web](${data.plex_url})`)
+						.setTimestamp(new Date())
+						.setColor(0x00AE86);
+					var messageBody = data.messageContent + "\n" + roleExists;
+					client.guilds.get(guildID).channels.get(guildSettings.notificationChannel).send(messageBody, {embed}).catch(console.error);
+        }
+      }
+    }
   }
 }
 
@@ -538,7 +573,7 @@ async function updateShowList(message) {
           var role = await message.guild.roles.find(role => role.name === json[i].title);
 
           if (role) {
-            notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
+            notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
             client.setNotificationSettings.run(notificationSettings);
             notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
           }
@@ -550,7 +585,7 @@ async function updateShowList(message) {
             })
               .then(role => {
                 //console.log(`Created new role with name ${role.name} and color ${role.color}`)
-                notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
+                notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
                 client.setNotificationSettings.run(notificationSettings);
                 notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
               })
@@ -585,4 +620,5 @@ async function updateShowList(message) {
   });
 }
 
+module.exports.updateShowList = updateShowList;
 module.exports.processHook = processHook;

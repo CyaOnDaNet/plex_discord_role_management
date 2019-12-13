@@ -15,8 +15,10 @@ module.exports = {
 	},
 	async execute(message, args, prefix, guildSettings, client, Discord, tautulli) {
     // This is where we change notification information
+
     let notificationSettings;
-    var ogCommand = command;
+		var args2 = message.content.slice(prefix.length).trim().split(/ +/g);
+    var ogCommand = args2.shift().toLowerCase();
 
     if (args.length > 0) {
       command = args.shift().toLowerCase();
@@ -47,7 +49,8 @@ module.exports = {
       if (!message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
         return message.channel.send('You do not have permissions to use `' + prefix + ogCommand + " " + command + '`!');
       }
-      await updateShowList(message);
+			const mainProgram = require("../index.js");
+      await mainProgram.updateShowList(message);
 
       var tenNumbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
       var showsList = [];
@@ -148,12 +151,12 @@ module.exports = {
           guildSettings.notificationChannelBoolean = "on";
           client.setGuildSettings.run(guildSettings);
           guildSettings = client.getGuildSettings.get(message.guild.id);
-          message.channel.send("Notification channel changed to <#" + guildSettings.logChannel + ">!");
+          message.channel.send("Notification channel changed to <#" + guildSettings.notificationChannel + ">!");
         } else {
           return message.channel.send('You do not have permissions to use `' + prefix + ogCommand + ' channel` in <#' + message.channel.id + '>!');
         }
       } else {
-        return message.channel.send("The current notification channel is <#" + guildSettings.logChannel + ">!\nTo change it type: `" + guildSettings.prefix + ogCommand + " channel #logs` (where **#logs** is the desired channel)\nTo disable it type: `" + guildSettings.prefix + ogCommand + " channel off`");
+        return message.channel.send("The current notification channel is <#" + guildSettings.notificationChannel + ">!\nTo change it type: `" + guildSettings.prefix + ogCommand + " channel #logs` (where **#logs** is the desired channel)\nTo disable it type: `" + guildSettings.prefix + ogCommand + " channel off`");
       }
     }
   },
