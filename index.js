@@ -401,7 +401,7 @@ client.on('message', async message => {
         if (!notificationSettings) {
           // GroupName
           notificationSettings = client.getNotificationSettingsByGroupName.get(sortList[i]);
-          var role = message.guild.roles.find(role => role.id === notificationSettings.roleID);
+          var role = message.guild.roles.find(role => role.id === notificationSettings.groupRole);
           if (role != null) {
             showsList[i] = role;
           }
@@ -480,50 +480,7 @@ client.on('message', async message => {
 
   }
   else if (command === "test") {
-    /*
-    for (const notificationQuery of client.searchNotificationSettings.iterate()) {
-      if (notificationQuery.guild === message.guild.id && notificationQuery.exclude === null) {
-        if (notificationQuery.groupName != null) {
 
-        }
-        else {
-          notificationsList = notificationsList + notificationQuery.title + "\n";
-          // add a reaction role
-        }
-      }
-    }
-    */
-
-    /*
-    var url = config.sonarr_web_address;
-    if (!url) {
-      console.log("No sonarr settings detected in `./config/config.json`!");
-      return message.channel.send("No sonarr settings detected in `./config/config.json`!");
-    }
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      // we need an http or https specified so we will asumme http
-      console.log("Please adjust your config.sonarr_web_address to include http:// or https://. Since it was not included, I am assuming it is http://");
-      url = "http://" + url;
-    }
-    if (!url.endsWith('/')) {
-      url = url + '/';
-    }
-    url = url + "api/series?apikey=" + config.sonarr_api_key;
-
-    fetch(url,  {
-        method: 'GET'
-    })
-    .then(res => res.json())
-    .then(async json => {
-      var tenNumbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
-      var showsList = [];
-      var count = 0;
-      console.log(json[0]);
-    })
-    .catch((error) => {
-
-    });
-    */
   }
 });
 
@@ -807,7 +764,6 @@ async function processHook(data) {
     }
   }
 
-
   else if (data.trigger === 'playbackStarted') {
     let userList;
     var plexName = data.user;
@@ -884,7 +840,6 @@ async function processHook(data) {
       }
     }
   }
-
 
   else if (data.trigger === 'recentlyAdded') {
     console.log(data);
