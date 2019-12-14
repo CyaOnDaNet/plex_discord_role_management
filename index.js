@@ -155,28 +155,28 @@ var j = schedule.scheduleJob('* */2 * * * *', function() {
             // prevents logs from filling up with duplicate entries
             console.log("Unlinked active streamer detected: " + `${activeStreams[i].user}`);
             undefinedStreamers.push(activeStreams[i].user);
-          }
 
-          // I wanted to log this but realized i dont know the guild with guildSettings
-          /*
-          if (guildSettings.logChannelBoolean === "on") {
-            var sendOption = 0;
-            if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
-              // Channel is invalid
-              break;
-            } else {
-              sendOption = 1;
-            }
-            if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
-              // Channel is invalid
-              break;
-            }
-            if (!Boolean(bypass) && sendOption === 1) {
-              client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Unlinked active streamer detected: " + `${activeStreams[i].user}`);
-            } else if (!Boolean(bypass)) {
-              client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Unlinked active streamer detected: " + `${activeStreams[i].user}`);
-            }
-          } */
+						for (const guildSettings of client.searchGuildSettings.iterate()) {
+							if (guildSettings.logChannelBoolean === "on") {
+		            var sendOption = 0;
+		            if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+		              // Channel is invalid
+		              break;
+		            } else {
+		              sendOption = 1;
+		            }
+		            if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+		              // Channel is invalid
+		              break;
+		            }
+		            if (!Boolean(bypass) && sendOption === 1) {
+		              client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Unlinked active streamer detected: " + `${activeStreams[i].user}`);
+		            } else if (!Boolean(bypass)) {
+		              client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Unlinked active streamer detected: " + `${activeStreams[i].user}`);
+		            }
+		          }
+						}
+          }
         } else {
           // This is where we assign the watching role
           let guildSettings = client.getGuildSettings.get(userList.guild);
