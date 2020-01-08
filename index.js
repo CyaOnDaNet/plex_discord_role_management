@@ -17,6 +17,7 @@ for (const file of commandFiles) {
 }
 
 var undefinedStreamers = [];
+var online = false;
 
 const DEBUG = 0;
 
@@ -35,6 +36,7 @@ var tautulli = new Tautulli(config.tautulli_ip, config.tautulli_port, config.tau
 
 client.on('ready', ()=> {
   console.log('The bot is now online!');
+	online = true;
   client.user.setActivity('Plex | ' + defaultGuildSettings.prefix, { type: 'WATCHING' })
 
   const app = tautulliHook(config.node_hook_port);
@@ -131,6 +133,11 @@ client.on('message', async message => {
 var j = schedule.scheduleJob('* */2 * * * *', function() {
   // Checks the plex server for activity using Tautulli and repeats every 2 minutes, serves as a fallback in the event webhook trigger has failed.
   let userList;
+
+	if (online === false) {
+		console.log("Database not ready yet");
+		return;
+	}
 
   tautulli.get('get_activity').then(async (result) => {
 
@@ -297,7 +304,7 @@ var j = schedule.scheduleJob('* */2 * * * *', function() {
 
   }).catch((error) => {
     console.log("Couldn't connect to Tautulli, check your settings.");
-    console.log(error);
+    //console.log(error);
     // do we need to remove roles if this is the case? Maybe we don't...
   });
 });
