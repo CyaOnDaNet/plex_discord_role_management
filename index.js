@@ -28,7 +28,8 @@ const defaultGuildSettings = {
   notificationChannel: "plex_notifications",
   notificationChannelBoolean: "off",
   adminRole: "Admin",
-  watchingRole: "Watching Plex"
+  watchingRole: "Watching Plex",
+	customRoleCount: 0
 }
 
 client.login(config.botToken);
@@ -45,7 +46,7 @@ client.on('ready', ()=> {
   const tableGuildSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'guildSettings';").get();
   if (!tableGuildSettings['count(*)']) {
     // If the table isn't there, create it and setup the database correctly.
-    sql.prepare("CREATE TABLE guildSettings (id TEXT PRIMARY KEY, guild TEXT, prefix TEXT, logChannel TEXT, logChannelBoolean TEXT, notificationChannel TEXT, notificationChannelBoolean TEXT, adminRole TEXT, watchingRole TEXT);").run();
+    sql.prepare("CREATE TABLE guildSettings (id TEXT PRIMARY KEY, guild TEXT, prefix TEXT, logChannel TEXT, logChannelBoolean TEXT, notificationChannel TEXT, notificationChannelBoolean TEXT, adminRole TEXT, watchingRole TEXT, customRoleCount INTEGER);").run();
     // Ensure that the "id" row is always unique and indexed.
     sql.prepare("CREATE UNIQUE INDEX idx_guildSettings_id ON guildSettings (id);").run();
     sql.pragma("synchronous = 1");
@@ -55,7 +56,7 @@ client.on('ready', ()=> {
   // And then we have prepared statements to get and set guildSettings data.
   client.getGuildSettings = sql.prepare("SELECT * FROM guildSettings WHERE guild = ?");
   client.searchGuildSettings = sql.prepare("SELECT * FROM guildSettings");
-  client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, notificationChannel, notificationChannelBoolean, adminRole, watchingRole) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @notificationChannel, @notificationChannelBoolean, @adminRole, @watchingRole);");
+  client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, notificationChannel, notificationChannelBoolean, adminRole, watchingRole, customRoleCount) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @notificationChannel, @notificationChannelBoolean, @adminRole, @watchingRole, @customRoleCount);");
 
   // Check if the table "userList" exists.
   const tableUserList = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'userList';").get();
@@ -86,6 +87,7 @@ client.on('ready', ()=> {
   }
 
   // And then we have prepared statements to get and set tvShowsNotificationSettings data.
+	client.deleteTvShowsNotificationSettings = sql.prepare("DELETE FROM tvShowsNotificationSettings WHERE id = ?");
   client.getTvShowsNotificationSettings = sql.prepare("SELECT * FROM tvShowsNotificationSettings WHERE id = ?");
   client.searchTvShowsNotificationSettings = sql.prepare("SELECT * FROM tvShowsNotificationSettings");
   client.getTvShowsNotificationSettingsBySortTitle = sql.prepare("SELECT * FROM tvShowsNotificationSettings WHERE sortTitle = ?");
@@ -104,6 +106,7 @@ client.on('ready', ()=> {
   }
 
   // And then we have prepared statements to get and set tvShowsNotificationSettings data.
+	client.deleteNotificationSettings = sql.prepare("DELETE FROM notificationSettings WHERE id = ?");
   client.getNotificationSettings = sql.prepare("SELECT * FROM notificationSettings WHERE id = ?");
   client.searchNotificationSettings = sql.prepare("SELECT * FROM notificationSettings");
   client.setNotificationSettings = sql.prepare("INSERT OR REPLACE INTO notificationSettings (id, guild, name, category, description, roleID) VALUES (@id, @guild, @name, @category, @description, @roleID);");
@@ -118,7 +121,7 @@ client.on('message', async message => {
     // Sets default server settings
     guildSettings = client.getGuildSettings.get(message.guild.id);
     if (!guildSettings) {
-      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, logChannelBoolean: defaultGuildSettings.logChannelBoolean, notificationChannel: defaultGuildSettings.notificationChannel, notificationChannelBoolean: defaultGuildSettings.notificationChannelBoolean, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole };
+      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, logChannelBoolean: defaultGuildSettings.logChannelBoolean, notificationChannel: defaultGuildSettings.notificationChannel, notificationChannelBoolean: defaultGuildSettings.notificationChannelBoolean, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole, customRoleCount: defaultGuildSettings.customRoleCount };
       client.setGuildSettings.run(guildSettings);
       guildSettings = client.getGuildSettings.get(message.guild.id);
     }
@@ -358,6 +361,8 @@ client.on('raw', async event => {
     if (client.user.id === data.user_id) return; //Ignore the bot setting up react roles so it doesnt add roles to itself.
 
     if(message.embeds[0].author.name === "Notification Role-Mention Options:") return; // notifications edit was called
+		if(message.embeds[0].author.name === "Custom React Role Removal:") return; // notifications edit was called
+
     var args = message.embeds[0].description.trim().split(/\r?\n/);
     for (var i = 0; i < args.length; i++){
       if(args[i].startsWith(emojiKey)) {
@@ -544,6 +549,11 @@ async function processHook(data) {
 							}
             }
           }
+
+					if(!roleExists) {
+						//rethink this
+						//return console.log("A show was recently added but does not have a role mention");
+					}
 					// form embed and send
 					embed = new Discord.RichEmbed()
 						.setTitle(`${data.title}`)
@@ -625,14 +635,7 @@ async function updateShowList(message) {
 
         if (tvShowsNotificationSettings && tvShowsNotificationSettings.include === null) {
           message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete().catch(console.error);
-          let id = `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`;
-          // delete a row based on id
-          sql.run(`DELETE FROM tvShowsNotificationSettings WHERE id=?`, id, function(err) {
-            if (err) {
-              return console.error(err.message);
-            }
-            //console.log(`Row(s) deleted ${this.changes}`);
-          });
+					client.deleteTvShowsNotificationSettings.run(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
         }
       }
     }
