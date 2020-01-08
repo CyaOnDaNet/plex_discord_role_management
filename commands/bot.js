@@ -4,7 +4,7 @@ module.exports = {
 	usage: '[subcommand]',
 	adminCommand: true,
 	subcommands: {
-		'settings':'',
+		'info':'',
 		'prefix':'newprefix',
 		'logchannel':'@channel',
 	},
@@ -16,13 +16,12 @@ module.exports = {
       command = "help";
     }
 
-    if (command === "settings") {
+    if (command === "info" || command === "information") {
       embed = new Discord.RichEmbed()
         .setAuthor(client.user.username, client.user.avatarURL)
-        .setDescription("Below is a list of bot settings\n")
+        .setDescription("Below is a list of important bot info:\n")
         .addField("Prefix: ", '`' + prefix + '`',  true)
         .addField("Watching Role: ", '<@&' + guildSettings.watchingRole + '>')
-        .addField("Log Channel: ", '<#' + guildSettings.logChannel + '>')
         .setFooter("Fetched")
         .setTimestamp(new Date())
         .setColor(0x00AE86);
@@ -32,6 +31,15 @@ module.exports = {
       }
       else if (guildSettings.logChannelBoolean === "on") {
         embed.addField("Logging Status: ", '**Enabled**');
+				embed.addField("Log Channel: ", '<#' + guildSettings.logChannel + '>')
+      }
+
+			if (guildSettings.notificationChannelBoolean === "off") {
+        embed.addField("Content Notifying Status: ", '**Disabled**');
+      }
+      else if (guildSettings.notificationChannelBoolean === "on") {
+        embed.addField("Content Notifying Status: ", '**Enabled**');
+				embed.addField("Content Notifications Channel: ", '<#' + guildSettings.notificationChannel + '>')
       }
       message.channel.send({embed});
     }
