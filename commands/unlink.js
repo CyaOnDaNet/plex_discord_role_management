@@ -3,7 +3,7 @@ module.exports = {
 	description: 'Unlink Plex Users and Discord Users',
 	usage: '@DiscordUser PlexUsername',
 	adminCommand: true,
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli) {
+	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles) {
     if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
       // link a discord user and plex user
       let mentionedUser = message.mentions.users.first();

@@ -16,7 +16,7 @@ module.exports = {
 		'list':'',
 		'channel':'',
 	},
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli) {
+	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles) {
     // This is where we change notification information
 
     let notificationSettings;
@@ -33,9 +33,11 @@ module.exports = {
       //enables certain notification options
 			var emojiOptions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 			const filter = (reaction, user) => emojiOptions.indexOf(reaction.emoji.name) != -1;
+
+			var setDescription = "The following options are currently disabled but can be enabled now:\n\n";
+			exemptEmbedReactRoles.push(`Notification Role-Mention Options:`);
 			embed = new Discord.RichEmbed()
-				.setAuthor('Notification Role-Mention Options:') //don't foget to edit index.js role react to ignore this if name changes
-				.addField('\u200b', `The following options are currently disabled but can be enabled now:`)
+				.setAuthor('Notification Role-Mention Options:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
 
@@ -88,7 +90,7 @@ module.exports = {
 			        return message.channel.send("You did not specify a valid role for that command, please try again.");
 			      } else {
 							// add custom role
-							if (guildSettings.customRoleCount + 1 >= 6) {
+							if (guildSettings.customRoleCount + 1 > 6) {
 								return message.channel.send("You have hit the custom react role limit of 6, please remove a custom react role to add a new one");
 							}
 							else {
@@ -117,8 +119,9 @@ module.exports = {
 						const filter = (reaction, user) => emojiOptions.indexOf(reaction.emoji.name) != -1;
 
 						var setDescription = "The following custom react roles can be removed:\n\n";
+						exemptEmbedReactRoles.push(`Custom React Role Removal:`);
 						embed = new Discord.RichEmbed()
-							.setAuthor('Custom React Role Removal:') //don't foget to edit index.js role react to ignore this if name changes
+							.setAuthor('Custom React Role Removal:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
 							.setTimestamp(new Date())
 							.setColor(0x00AE86);
 

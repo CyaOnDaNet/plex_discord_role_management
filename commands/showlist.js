@@ -4,7 +4,7 @@ module.exports = {
 	description: 'Displays a list of shows currently airing on the Plex server',
 	usage: '',
 	adminCommand: false,
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli) {
+	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles) {
     var url = config.sonarr_web_address;
     if (!url) {
       console.log("No sonarr settings detected in `./config/config.json`!");

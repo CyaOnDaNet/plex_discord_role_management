@@ -3,7 +3,7 @@ module.exports = {
 	description: 'Testing Stuff',
 	usage: '',
 	adminCommand: true,
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch) {
+	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles) {
 
 		var emojiOptions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 		const filter = (reaction, user) => emojiOptions.indexOf(reaction.emoji.name) != -1;

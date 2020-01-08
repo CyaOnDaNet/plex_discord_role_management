@@ -18,6 +18,7 @@ for (const file of commandFiles) {
 
 var undefinedStreamers = [];
 var online = false;
+var exemptEmbedReactRoles = [];
 
 const DEBUG = 0;
 
@@ -143,7 +144,7 @@ client.on('message', async message => {
 	if (!command) return;
 
   try {
-	  command.execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch);
+	  command.execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles);
   } catch (error) {
 	  console.error(error);
 	  message.reply('there was an error trying to execute that command!');
@@ -360,8 +361,11 @@ client.on('raw', async event => {
     if (message.embeds[0] === undefined || message.embeds[0] === null) return; //Only continue if react was to a message embed.
     if (client.user.id === data.user_id) return; //Ignore the bot setting up react roles so it doesnt add roles to itself.
 
-    if(message.embeds[0].author.name === "Notification Role-Mention Options:") return; // notifications edit was called
-		if(message.embeds[0].author.name === "Custom React Role Removal:") return; // notifications edit was called
+
+		for (let exemptNames of exemptEmbedReactRoles) {
+			//return if an embed was called that needed emoji response to prevent accidentally trying to react role
+			if(message.embeds[0].author.name === exemptEmbedReactRoles[exemptNames]) return;
+		}
 
     var args = message.embeds[0].description.trim().split(/\r?\n/);
     for (var i = 0; i < args.length; i++){
