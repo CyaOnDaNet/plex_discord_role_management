@@ -340,6 +340,7 @@ client.on('raw', async event => {
     if (message.embeds[0] === undefined || message.embeds[0] === null) return; //Only continue if react was to a message embed.
     if (client.user.id === data.user_id) return; //Ignore the bot setting up react roles so it doesnt add roles to itself.
 
+    if(message.embeds[0].author.name === "Notification Role-Mention Options:") return; // notifications edit was called
     var args = message.embeds[0].description.trim().split(/\r?\n/);
     for (var i = 0; i < args.length; i++){
       if(args[i].startsWith(emojiKey)) {
