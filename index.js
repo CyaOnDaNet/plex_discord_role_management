@@ -74,23 +74,39 @@ client.on('ready', ()=> {
   client.searchGuildUserList = sql.prepare("SELECT * FROM userList");
   client.setUserList = sql.prepare("INSERT OR REPLACE INTO userList (id, guild, discordUserID, plexUserName, watching) VALUES (@id, @guild, @discordUserID, @plexUserName, @watching);");
 
-  // Check if the table "notificationSettings" exists.
+  // Check if the table "tvShowsNotificationSettings" exists.
+  const tableTvShowsNotificationSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'tvShowsNotificationSettings';").get();
+  if (!tableTvShowsNotificationSettings['count(*)']) {
+    // If the table isn't there, create it and setup the database correctly.
+    sql.prepare("CREATE TABLE tvShowsNotificationSettings (id TEXT PRIMARY KEY, guild TEXT, title TEXT, cleanTitle TEXT, sortTitle TEXT, imdbID_or_themoviedbID TEXT, thetvdb_id TEXT, status TEXT, is_group TEXT, groupName TEXT, groupRole TEXT, exclude TEXT, include TEXT, network TEXT, completeSonarr TEXT, roleID TEXT);").run();
+    // Ensure that the "id" row is always unique and indexed.
+    sql.prepare("CREATE UNIQUE INDEX idx_tvShowsNotificationSettings_id ON tvShowsNotificationSettings (id);").run();
+    sql.pragma("synchronous = 1");
+    sql.pragma("journal_mode = wal");
+  }
+
+  // And then we have prepared statements to get and set tvShowsNotificationSettings data.
+  client.getTvShowsNotificationSettings = sql.prepare("SELECT * FROM tvShowsNotificationSettings WHERE id = ?");
+  client.searchTvShowsNotificationSettings = sql.prepare("SELECT * FROM tvShowsNotificationSettings");
+  client.getTvShowsNotificationSettingsBySortTitle = sql.prepare("SELECT * FROM tvShowsNotificationSettings WHERE sortTitle = ?");
+  client.getTvShowsNotificationSettingsByGroupName = sql.prepare("SELECT * FROM tvShowsNotificationSettings WHERE groupName = ?");
+  client.setTvShowsNotificationSettings = sql.prepare("INSERT OR REPLACE INTO tvShowsNotificationSettings (id, guild, title, cleanTitle, sortTitle, imdbID_or_themoviedbID, thetvdb_id, status, is_group, groupName, groupRole, exclude, include, network, completeSonarr, roleID) VALUES (@id, @guild, @title, @cleanTitle, @sortTitle, @imdbID_or_themoviedbID, @thetvdb_id, @status, @is_group, @groupName, @groupRole, @exclude, @include, @network, @completeSonarr, @roleID);");
+
+	// Check if the table "notificationSettings" exists.
   const tableNotificationSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'notificationSettings';").get();
   if (!tableNotificationSettings['count(*)']) {
     // If the table isn't there, create it and setup the database correctly.
-    sql.prepare("CREATE TABLE notificationSettings (id TEXT PRIMARY KEY, guild TEXT, title TEXT, cleanTitle TEXT, sortTitle TEXT, imdbID_or_themoviedbID TEXT, thetvdb_id TEXT, status TEXT, is_group TEXT, groupName TEXT, groupRole TEXT, exclude TEXT, include TEXT, network TEXT, completeSonarr TEXT, roleID TEXT);").run();
+    sql.prepare("CREATE TABLE notificationSettings (id TEXT PRIMARY KEY, guild TEXT, name TEXT, category TEXT, description TEXT, roleID TEXT);").run();
     // Ensure that the "id" row is always unique and indexed.
     sql.prepare("CREATE UNIQUE INDEX idx_notificationSettings_id ON notificationSettings (id);").run();
     sql.pragma("synchronous = 1");
     sql.pragma("journal_mode = wal");
   }
 
-  // And then we have prepared statements to get and set notificationSettings data.
+  // And then we have prepared statements to get and set tvShowsNotificationSettings data.
   client.getNotificationSettings = sql.prepare("SELECT * FROM notificationSettings WHERE id = ?");
   client.searchNotificationSettings = sql.prepare("SELECT * FROM notificationSettings");
-  client.getNotificationSettingsBySortTitle = sql.prepare("SELECT * FROM notificationSettings WHERE sortTitle = ?");
-  client.getNotificationSettingsByGroupName = sql.prepare("SELECT * FROM notificationSettings WHERE groupName = ?");
-  client.setNotificationSettings = sql.prepare("INSERT OR REPLACE INTO notificationSettings (id, guild, title, cleanTitle, sortTitle, imdbID_or_themoviedbID, thetvdb_id, status, is_group, groupName, groupRole, exclude, include, network, completeSonarr, roleID) VALUES (@id, @guild, @title, @cleanTitle, @sortTitle, @imdbID_or_themoviedbID, @thetvdb_id, @status, @is_group, @groupName, @groupRole, @exclude, @include, @network, @completeSonarr, @roleID);");
+  client.setNotificationSettings = sql.prepare("INSERT OR REPLACE INTO notificationSettings (id, guild, name, category, description, roleID) VALUES (@id, @guild, @name, @category, @description, @roleID);");
 
 });
 
@@ -106,6 +122,7 @@ client.on('message', async message => {
       client.setGuildSettings.run(guildSettings);
       guildSettings = client.getGuildSettings.get(message.guild.id);
     }
+		generateNotificationSettings(message);
   }
   else {
     // DM Message
@@ -346,7 +363,7 @@ client.on('raw', async event => {
       if(args[i].startsWith(emojiKey)) {
         if (args[i].indexOf("<@&") === -1) return console.log("Invalid React Role Mention Clicked: " + args[i]);
 
-        var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].length - 1);
+        var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].indexOf(">"));
         var removeRole = true;
 
         reaction.users.tap(async user => {
@@ -513,7 +530,7 @@ async function processHook(data) {
         if (data.contentType === "show") {
           var roleExists = "";
 					var guildID = "";
-          for (const showNotification of client.searchNotificationSettings.iterate()) {
+          for (const showNotification of client.searchTvShowsNotificationSettings.iterate()) {
             if (showNotification.title === data.show_name || showNotification.thetvdb_id === data.thetvdb_id || showNotification.imdbID_or_themoviedbID === data.imdb_id) {
 							guildID = showNotification.guild;
 							if (showNotification.groupRole != null && showNotification.groupRole != undefined && showNotification.groupRole != "") {
@@ -547,7 +564,7 @@ async function processHook(data) {
 
 async function updateShowList(message) {
   // grabs list of currently airing shows and adds them to notifications channel
-  let notificationSettings;
+  let tvShowsNotificationSettings;
   var url = config.sonarr_web_address;
   if (!url) {
     console.log("No sonarr settings detected in `./config/config.json`!");
@@ -574,16 +591,16 @@ async function updateShowList(message) {
       if (json[i].status === "continuing") {
         // Create an Entry for the show in the database
         showsList[count] = json[i].title;
-        notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+        tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 
-        if (!notificationSettings) {
+        if (!tvShowsNotificationSettings) {
           // Create a new role with data
           var role = await message.guild.roles.find(role => role.name === json[i].title);
 
           if (role) {
-            notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
-            client.setNotificationSettings.run(notificationSettings);
-            notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+            tvShowsNotificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
+            client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+            tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
           }
           else {
             let newRole = await message.guild.createRole({
@@ -593,9 +610,9 @@ async function updateShowList(message) {
             })
               .then(role => {
                 //console.log(`Created new role with name ${role.name} and color ${role.color}`)
-                notificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
-                client.setNotificationSettings.run(notificationSettings);
-                notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+                tvShowsNotificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
+                client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+                tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
               })
               .catch(console.error)
           }
@@ -604,13 +621,13 @@ async function updateShowList(message) {
       }
       else {
         // Delete an Entry for the show in the database
-        notificationSettings = client.getNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+        tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 
-        if (notificationSettings && notificationSettings.include === null) {
-          message.guild.roles.find(role => role.id === notificationSettings.roleID).delete().catch(console.error);
+        if (tvShowsNotificationSettings && tvShowsNotificationSettings.include === null) {
+          message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete().catch(console.error);
           let id = `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`;
           // delete a row based on id
-          sql.run(`DELETE FROM notificationSettings WHERE id=?`, id, function(err) {
+          sql.run(`DELETE FROM tvShowsNotificationSettings WHERE id=?`, id, function(err) {
             if (err) {
               return console.error(err.message);
             }
@@ -626,6 +643,94 @@ async function updateShowList(message) {
     message.channel.send("Couldn't connect to Sonarr, check your settings.");
     console.log(error);
   });
+}
+
+async function generateNotificationSettings(message) {
+  let notificationSettings;
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-All Movies`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-All Movies`, guild: message.guild.id, name: `All Movies`, category: `movies`, description: `Every movie added to Plex`, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-New Movies`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-New Movies`, guild: message.guild.id, name: `New Movies`, category: `movies`, description: `Movies added this year`, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-All TV Episodes`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-All TV Episodes`, guild: message.guild.id, name: `All TV Episodes`, category: `tv`, description: `Every TV episode!`, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-New TV Shows`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-New TV Shows`, guild: message.guild.id, name: `New TV Shows`, category: `tv`, description: `New shows added to Plex`, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-ABC (US)`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-ABC (US)`, guild: message.guild.id, name: `ABC (US)`, category: `networks`, description: ``, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-Amazon`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-Amazon`, guild: message.guild.id, name: `Amazon`, category: `networks`, description: ``, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-Disney+`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-Disney+`, guild: message.guild.id, name: `Disney+`, category: `networks`, description: ``, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-CBS`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-CBS`, guild: message.guild.id, name: `CBS`, category: `networks`, description: ``, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-FOX`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-FOX`, guild: message.guild.id, name: `FOX`, category: `networks`, description: ``, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-HBO`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-HBO`, guild: message.guild.id, name: `HBO`, category: `networks`, description: ``, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-NBC`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-NBC`, guild: message.guild.id, name: `NBC`, category: `networks`, description: ``, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-Netflix`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-Netflix`, guild: message.guild.id, name: `Netflix`, category: `networks`, description: ``, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-Showtime`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-Showtime`, guild: message.guild.id, name: `Showtime`, category: `networks`, description: ``, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
+
+	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-The CW`);
+	if (!notificationSettings) {
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-The CW`, guild: message.guild.id, name: `The CW`, category: `networks`, description: ``, roleID: null };
+		client.setNotificationSettings.run(notificationSettings);
+	}
 }
 
 module.exports.updateShowList = updateShowList;

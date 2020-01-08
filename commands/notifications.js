@@ -105,7 +105,7 @@ module.exports = {
       var showsList = [];
       var sortList = [];
       var count = 0;
-      for (const notificationQuery of client.searchNotificationSettings.iterate()) {
+      for (const notificationQuery of client.searchTvShowsNotificationSettings.iterate()) {
         if (notificationQuery.guild === message.guild.id && notificationQuery.exclude === null) {
           if (notificationQuery.groupName != null) {
             var bypass = true;
@@ -128,10 +128,10 @@ module.exports = {
       sortList = sortList.sort();
 
       for (var i = 0; i < sortList.length; i++) {
-        notificationSettings = client.getNotificationSettingsBySortTitle.get(sortList[i]);
+        notificationSettings = client.getTvShowsNotificationSettingsBySortTitle.get(sortList[i]);
         if (!notificationSettings) {
           // GroupName
-          notificationSettings = client.getNotificationSettingsByGroupName.get(sortList[i]);
+          notificationSettings = client.getTvShowsNotificationSettingsByGroupName.get(sortList[i]);
           var role = message.guild.roles.find(role => role.id === notificationSettings.groupRole);
           if (role != null) {
             showsList[i] = role;
