@@ -22,6 +22,22 @@ module.exports = async(port) => {
       }
     }
 
+    updateTautulliHook() {
+      console.log("boom");
+    }
+
+    async getLibraries() {
+      try {
+        const response = await fetch(this.baseURL + `get_libraries`,  {
+            method: 'GET'
+        });
+        const json = await response.json();
+        return json.response;
+      } catch (error) {
+        console.log(console.log(error));
+      }
+    }
+
     async getNotifiers() {
       try {
         const response = await fetch(this.baseURL + `get_notifiers`,  {
@@ -102,6 +118,7 @@ module.exports = async(port) => {
     baseURL = "http://" + baseURL;
   }
   service = new tautulliService();
+  module.exports.tautulliService = service;
 
   try {
     const response = await fetch(baseURL + `get_notifiers`,  {

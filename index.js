@@ -114,6 +114,23 @@ client.on('ready', ()=> {
   client.searchNotificationSettings = sql.prepare("SELECT * FROM notificationSettings");
   client.setNotificationSettings = sql.prepare("INSERT OR REPLACE INTO notificationSettings (id, guild, name, category, description, roleID) VALUES (@id, @guild, @name, @category, @description, @roleID);");
 
+	// Check if the table "libraryExclusion" exists.
+  const tableLibraryExclusion = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'libraryExclusion';").get();
+  if (!tableLibraryExclusion['count(*)']) {
+    // If the table isn't there, create it and setup the database correctly.
+    sql.prepare("CREATE TABLE libraryExclusion (id TEXT PRIMARY KEY, guild TEXT, name TEXT, excluded TEXT);").run();
+    // Ensure that the "id" row is always unique and indexed.
+    sql.prepare("CREATE UNIQUE INDEX idx_libraryExclusion_id ON libraryExclusion (id);").run();
+    sql.pragma("synchronous = 1");
+    sql.pragma("journal_mode = wal");
+  }
+
+  // And then we have prepared statements to get and set libraryExclusion data.
+	client.deleteLibraryExclusionEntry = sql.prepare("DELETE FROM libraryExclusion WHERE id = ?");
+  client.getLibraryExclusionSettings = sql.prepare("SELECT * FROM libraryExclusion WHERE id = ?");
+  client.searchLibraryExclusionSettings = sql.prepare("SELECT * FROM libraryExclusion");
+  client.setLibraryExclusionSettings = sql.prepare("INSERT OR REPLACE INTO libraryExclusion (id, guild, name, excluded) VALUES (@id, @guild, @name, @excluded);");
+
 });
 
 client.on('message', async message => {
@@ -146,7 +163,7 @@ client.on('message', async message => {
 	if (!command) return;
 
   try {
-	  command.execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles);
+	  command.execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook);
   } catch (error) {
 	  console.error(error);
 	  message.reply('there was an error trying to execute that command!');
