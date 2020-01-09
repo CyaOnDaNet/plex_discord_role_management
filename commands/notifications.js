@@ -503,6 +503,93 @@ module.exports = {
       await mainProgram.updateShowList(message);
 
       var tenNumbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+
+			var page1Description = "";
+			var page1Count = 0;
+			var addLine = false;
+
+			for (const notificationSettings of client.searchNotificationSettings.iterate()) {
+				if (notificationSettings.category === "custom" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
+					addLine = true;
+					page1Description = page1Description + `\n${tenNumbers[page1Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
+					page1Count++;
+				}
+			}
+			if (addLine) {
+				addLine = false;
+				page1Description = page1Description + `\n`;
+			}
+			for (const notificationSettings of client.searchNotificationSettings.iterate()) {
+				if (notificationSettings.category === "movies" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
+					addLine = true;
+					page1Description = page1Description + `\n${tenNumbers[page1Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
+					page1Count++;
+				}
+			}
+			if (addLine) {
+				addLine = false;
+				page1Description = page1Description + `\n`;
+			}
+			for (const notificationSettings of client.searchNotificationSettings.iterate()) {
+				if (notificationSettings.category === "tv" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
+					page1Description = page1Description + `\n${tenNumbers[page1Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
+					page1Count++;
+				}
+			}
+
+			embed = new Discord.RichEmbed()
+				.setAuthor('Choose what Groups you would like to be notified for:')
+				.setDescription(page1Description)
+				.setTimestamp(new Date())
+				.setColor(0x00AE86);
+
+      if (page1Count >= 1) {
+				let page1SentMessage = await message.channel.send({embed});
+				page1SentMessage.react(tenNumbers[0])
+					.then(async () => { if (page1Count > 1) await page1SentMessage.react(tenNumbers[1]) })
+					.then(async () => { if (page1Count > 2) await page1SentMessage.react(tenNumbers[2]) })
+					.then(async () => { if (page1Count > 3) await page1SentMessage.react(tenNumbers[3]) })
+					.then(async () => { if (page1Count > 4) await page1SentMessage.react(tenNumbers[4]) })
+					.then(async () => { if (page1Count > 5) await page1SentMessage.react(tenNumbers[5]) })
+					.then(async () => { if (page1Count > 6) await page1SentMessage.react(tenNumbers[6]) })
+					.then(async () => { if (page1Count > 7) await page1SentMessage.react(tenNumbers[7]) })
+					.then(async () => { if (page1Count > 8) await page1SentMessage.react(tenNumbers[8]) })
+					.then(async () => { if (page1Count > 9) await page1SentMessage.react(tenNumbers[9]) })
+					.catch(() => console.error('One of the emojis failed to react.'));
+			}
+
+			var page2Description = "";
+			var page2Count = 0;
+
+			for (const notificationSettings of client.searchNotificationSettings.iterate()) {
+				if (notificationSettings.category === "networks" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
+					page2Description = page2Description + `\n${tenNumbers[page2Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
+					page2Count++;
+				}
+			}
+
+			embed = new Discord.RichEmbed()
+				.setAuthor('Choose what TV Networks you would like to be notified for:')
+				.setDescription(page2Description)
+				.setTimestamp(new Date())
+				.setColor(0x00AE86);
+
+      if (page2Count >= 1) {
+				let page2SentMessage = await message.channel.send({embed});
+				page2SentMessage.react(tenNumbers[0])
+					.then(async () => { if (page2Count > 1) await page2SentMessage.react(tenNumbers[1]) })
+					.then(async () => { if (page2Count > 2) await page2SentMessage.react(tenNumbers[2]) })
+					.then(async () => { if (page2Count > 3) await page2SentMessage.react(tenNumbers[3]) })
+					.then(async () => { if (page2Count > 4) await page2SentMessage.react(tenNumbers[4]) })
+					.then(async () => { if (page2Count > 5) await page2SentMessage.react(tenNumbers[5]) })
+					.then(async () => { if (page2Count > 6) await page2SentMessage.react(tenNumbers[6]) })
+					.then(async () => { if (page2Count > 7) await page2SentMessage.react(tenNumbers[7]) })
+					.then(async () => { if (page2Count > 8) await page2SentMessage.react(tenNumbers[8]) })
+					.then(async () => { if (page2Count > 9) await page2SentMessage.react(tenNumbers[9]) })
+					.catch(() => console.error('One of the emojis failed to react.'));
+			}
+
+
       var showsList = [];
       var sortList = [];
       var count = 0;
