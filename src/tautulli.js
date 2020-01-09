@@ -22,8 +22,38 @@ module.exports = async(port) => {
       }
     }
 
-    updateTautulliHook() {
-      console.log("boom");
+    async updateTautulliHook() {
+      try {
+        const response = await fetch(baseURL + `get_notifiers`,  {
+            method: 'GET'
+        });
+        const json = await response.json();
+        if (json.response.result === "success") {
+          //console.log("Connected to Tautulli...");
+        }
+        else {
+          console.log("Couldn't fetch notifiers from Tautulli, check your config.json settings")
+          return;
+        }
+        beforeChangeNotifiers = json.response;
+        const notifiersMap = new Array();
+    		var notificationUrl = `${config.node_hook_ip}:${config.node_hook_port}/hooks/tautulli/`;
+        if (!notificationUrl.startsWith("http://") && !notificationUrl.startsWith("https://")) {
+          // we need an http or https specified so we will asumme http
+          notificationUrl = "http://" + notificationUrl;
+        }
+
+    		if (beforeChangeNotifiers && beforeChangeNotifiers.data) {
+    			beforeChangeNotifiers.data.map((i) => { notifiersMap[i.friendly_name] = i; });
+          const id = notifiersMap[apiName].id;
+          this.getNotifierConfig(id).then((data) => {
+            console.log('Updating WebHook...');
+            this.setNotifierConfig(id, notificationUrl, false);
+          });
+        }
+      } catch (error) {
+        console.log(console.log(error));
+      }
     }
 
     async getLibraries() {
@@ -86,23 +116,33 @@ module.exports = async(port) => {
 	  }
 
     async setNotifierConfig(id, notificationUrl, isNew) {
+      var custom_conditions = [];
+      var custom_condition = {};
+      var excludedLibraries = [];
+      custom_condition.operator = 'does not contain';
+      custom_condition.parameter = 'library_name';
+      custom_condition.type = 'str';
+
+      for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
+				if (libraryExclusionSettings.excluded === "true") {
+          excludedLibraries.push(libraryExclusionSettings.name);
+				}
+			}
+
+      custom_condition.value = excludedLibraries;
+      custom_conditions.push(custom_condition);
+
 			const data = {
 				notifier_id: id, agent_id: 25, webhook_hook: notificationUrl, webhook_method: 'POST',
 				friendly_name: apiName, on_play: 1, on_stop: 1, on_pause: 0, on_resume: 0, on_watched: 0, on_buffer: 0, on_concurrent: 0, on_newdevice: 0, on_created: 1, on_intdown: 0,
-				on_intup: 0, on_extdown: 0, on_extup: 0, on_pmsupdate: 0, on_plexpyupdate: 0, parameter: '', custom_conditions: '%5B%7B%22operator%22%3A%22%22%2C%22parameter%22%3A%22%22%2C%22value%22%3A%22%22%7D%5D',
+				on_intup: 0, on_extdown: 0, on_extup: 0, on_pmsupdate: 0, on_plexpyupdate: 0, parameter: '', custom_conditions: JSON.stringify(custom_conditions),
 				on_play_body: onPlayBody, on_stop_body: onStopBody, on_created_body: onCreatedBody
 			};
 
+      //custom_conditions: '%5B%7B%22operator%22%3A%22%22%2C%22parameter%22%3A%22%22%2C%22value%22%3A%22%22%7D%5D'
+
       try {
         const r = await axios({ method: 'POST', url: this.baseURL + `set_notifier_config`, data: jtfd(data) });
-        /*
-        const response = await fetch(this.baseURL + `set_notifier_config&notifier_id=${id}&agent_id=25`,  {
-            method: 'POST',
-            body: {"data": jtfd(data) }
-        });
-        const json = await response.json();
-        console.log(json);
-        */
         if (isNew) console.log('Tautulli Webhook Created!');
         else console.log('Tautulli Webhook Updated!')
       } catch (error) {
@@ -150,7 +190,27 @@ module.exports = async(port) => {
       else {
 				const id = notifiersMap[apiName].id;
 				service.getNotifierConfig(id).then((data) => {
-					if (data.config_options[0].value != notificationUrl) {
+          var custom_conditions = [];
+          var custom_condition = {};
+          var excludedLibraries = [];
+          custom_condition.operator = 'does not contain';
+          custom_condition.parameter = 'library_name';
+          custom_condition.type = 'str';
+
+          for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
+    				if (libraryExclusionSettings.excluded === "true") {
+              excludedLibraries.push(libraryExclusionSettings.name);
+    				}
+    			}
+
+          custom_condition.value = excludedLibraries;
+          custom_conditions.push(custom_condition);
+
+          if (JSON.stringify(data.custom_conditions) != JSON.stringify(custom_conditions)) {
+            console.log('Updating WebHook...');
+						service.setNotifierConfig(id, notificationUrl, false);
+          }
+					else if (data.config_options[0].value != notificationUrl) {
 						console.log('Updating WebHook...');
 						service.setNotifierConfig(id, notificationUrl, false);
 					}

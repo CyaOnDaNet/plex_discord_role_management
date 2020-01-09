@@ -893,3 +893,4 @@ async function generateNotificationSettings(message) {
 
 module.exports.updateShowList = updateShowList;
 module.exports.processHook = processHook;
+module.exports.client = client;
