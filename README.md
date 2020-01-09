@@ -10,7 +10,6 @@ To Do:
      • notifications exclude
      • notifications group
      • notifications ungroup
- • finish content webhook with added filters
 
 Known Issues:
  • possible issue when mismatch between discord bot database and plex- UPDATE 1/7/2020: What does this mean?
