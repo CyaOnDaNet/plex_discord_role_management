@@ -189,12 +189,6 @@ module.exports = {
 				.then(async () => { if (count > 9) await sentMessage.react(emojiOptions[9]) })
 				.catch(() => console.error('One of the emojis failed to react.'));
 
-
-
-
-
-
-
       var networksSetDescription = "";
 			exemptEmbedReactRoles.push(`TV Network Options:`);
 			embed2 = new Discord.RichEmbed()
@@ -592,7 +586,7 @@ module.exports = {
       var sortList = [];
       var count = 0;
       for (const notificationQuery of client.searchTvShowsNotificationSettings.iterate()) {
-        if (notificationQuery.guild === message.guild.id && notificationQuery.exclude === null) {
+        if (notificationQuery.guild === message.guild.id && notificationQuery.exclude === null && notificationQuery.roleID != null) {
           if (notificationQuery.groupName != null) {
             var bypass = true;
             for (var i = 0; i < sortList.length; i++) {
