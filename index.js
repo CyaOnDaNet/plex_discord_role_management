@@ -364,7 +364,7 @@ client.on('raw', async event => {
 
 		for (let exemptNames of exemptEmbedReactRoles) {
 			//return if an embed was called that needed emoji response to prevent accidentally trying to react role
-			if(message.embeds[0].author.name === exemptEmbedReactRoles[exemptNames]) return;
+			if(message.embeds[0].author.name === exemptNames) return;
 		}
 
     var args = message.embeds[0].description.trim().split(/\r?\n/);
