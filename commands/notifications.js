@@ -540,7 +540,6 @@ module.exports = {
 			embed = new Discord.RichEmbed()
 				.setAuthor('Choose what Groups you would like to be notified for:')
 				.setDescription(page1Description)
-				.setTimestamp(new Date())
 				.setColor(0x00AE86);
 
       if (page1Count >= 1) {
@@ -571,7 +570,6 @@ module.exports = {
 			embed = new Discord.RichEmbed()
 				.setAuthor('Choose what TV Networks you would like to be notified for:')
 				.setDescription(page2Description)
-				.setTimestamp(new Date())
 				.setColor(0x00AE86);
 
       if (page2Count >= 1) {
