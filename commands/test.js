@@ -7,9 +7,9 @@ module.exports = {
 
 		const mainProgram = require("../index.js");
 		await mainProgram.updateShowList(message);
-		
-		message.channel.send("To Do:\n • implement Admin role usage\n • write proper readme\n • finish notifications command:\n     • notifications refresh\n     • notifications reset\n     • notifications include\n     • notifications exclude\n     • notifications group\n     • notifications ungroup\n • finish content webhook with added filters");
 
+		message.channel.send("To Do:\n • implement Admin role usage\n • write proper readme\n • finish notifications command:\n     • notifications refresh\n     • notifications reset\n     • notifications include\n     • notifications exclude\n     • notifications group\n     • notifications ungroup\n • finish content webhook with added filters");
+    
 		/*
 
 		var emojiOptions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
