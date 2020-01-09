@@ -3,7 +3,7 @@ module.exports = {
 	description: 'Displays a list of users with access to the Plex Server',
 	usage: '',
 	adminCommand: true,
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles) {
+	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook) {
     if (!message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
       return message.channel.send('You do not have permissions to use `' + prefix + command + '`! It contains sensitive information.');
     }
