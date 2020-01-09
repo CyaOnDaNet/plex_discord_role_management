@@ -10,7 +10,7 @@ const apiName = 'Plex-Discord Role Management API';
 
 const onPlayBody = '{ "trigger": "playbackStarted", "user": "{user}", "username": "{username}" }';
 const onStopBody = '{ "trigger": "playbackStopped", "user": "{user}", "username": "{username}" }';
-const onCreatedBody = '{ "trigger": "recentlyAdded", "title": "{title}", "imdb_id": "{imdb_id}", "imdb_url": "{imdb_url}", "thetvdb_id": "{thetvdb_id}", "thetvdb_url": "{thetvdb_url}", "summary": "{summary}", "poster_url": "{poster_url}", "plex_url": "{plex_url}", <episode> "contentType": "show", "show_name": "{show_name}", "messageContent":"A new episode of {show_name} has been added to plex.\\n{show_name} (S{season_num00}E{episode_num00}) - {episode_name}", "embedTitle": "{show_name} - {episode_name} (S{season_num} · E{episode_num})"</episode> <movie> "contentType": "movie", "messageContent": "A new movie has been added to plex.\\n{title} ({year})", "embedTitle": "{title} ({year})"</movie> <show> "contentType": "show", "show_name": "{show_name}", "messageContent": "A new show has been added to plex.\\n{show_name}", "embedTitle": "{show_name}"</show> <season> "contentType": "show", "show_name": "{show_name}", "messageContent": "Season {season_num00} of {show_name} has been added to plex.\\n{show_name} Season {season_num00}", "embedTitle": "{show_name} · Season {season_num}"</season><artist>"contentType": "music"</artist><album>"contentType": "music"</album><track>"contentType": "music"</track> }';
+const onCreatedBody = '{ "trigger": "recentlyAdded", "title": "{title}", "imdb_id": "{imdb_id}", "imdb_url": "{imdb_url}", "thetvdb_id": "{thetvdb_id}", "thetvdb_url": "{thetvdb_url}", "summary": "{summary}", "poster_url": "{poster_url}", "plex_url": "{plex_url}", <episode> "contentType": "show", "show_name": "{show_name}", "messageContent":"A new episode of {show_name} has been added to plex.\\n{show_name} (S{season_num00}E{episode_num00}) - {episode_name}", "embedTitle": "{show_name} - {episode_name} (S{season_num} · E{episode_num})"</episode> <movie> "contentType": "movie", "messageContent": "A new movie has been added to plex.\\n{title} ({year})", "year":"{year}", "embedTitle": "{title} ({year})"</movie> <show> "contentType": "show", "show_name": "{show_name}", "messageContent": "A new show has been added to plex.\\n{show_name}", "embedTitle": "{show_name}"</show> <season> "contentType": "show", "show_name": "{show_name}", "messageContent": "Season {season_num00} of {show_name} has been added to plex.\\n{show_name} Season {season_num00}", "embedTitle": "{show_name} · Season {season_num}"</season><artist>"contentType": "music"</artist><album>"contentType": "music"</album><track>"contentType": "music"</track> }';
 
 module.exports = async(port) => {
   class tautulliService {
@@ -134,6 +134,18 @@ module.exports = async(port) => {
 				const id = notifiersMap[apiName].id;
 				service.getNotifierConfig(id).then((data) => {
 					if (data.config_options[0].value != notificationUrl) {
+						console.log('Updating WebHook...');
+						service.setNotifierConfig(id, notificationUrl, false);
+					}
+          else if (data.notify_text.on_created.body != onCreatedBody) {
+						console.log('Updating WebHook...');
+						service.setNotifierConfig(id, notificationUrl, false);
+					}
+          else if (data.notify_text.on_play.body != onPlayBody) {
+						console.log('Updating WebHook...');
+						service.setNotifierConfig(id, notificationUrl, false);
+					}
+          else if (data.notify_text.on_stop.body != onStopBody) {
 						console.log('Updating WebHook...');
 						service.setNotifierConfig(id, notificationUrl, false);
 					}
