@@ -39,7 +39,7 @@ var tautulli = new Tautulli(config.tautulli_ip, config.tautulli_port, config.tau
 client.on('ready', ()=> {
   console.log('The bot is now online!');
 	online = true;
-  client.user.setActivity('Plex | ' + defaultGuildSettings.prefix, { type: 'WATCHING' })
+  client.user.setActivity('Plex | ' + defaultGuildSettings.prefix + 'help', { type: 'WATCHING' })
 
   const app = tautulliHook(config.node_hook_port);
 
@@ -91,6 +91,8 @@ client.on('ready', ()=> {
 	client.deleteTvShowsNotificationSettings = sql.prepare("DELETE FROM tvShowsNotificationSettings WHERE id = ?");
   client.getTvShowsNotificationSettings = sql.prepare("SELECT * FROM tvShowsNotificationSettings WHERE id = ?");
   client.searchTvShowsNotificationSettings = sql.prepare("SELECT * FROM tvShowsNotificationSettings");
+	client.getTvShowsByIMDB = sql.prepare("SELECT * FROM tvShowsNotificationSettings WHERE imdbID_or_themoviedbID = ?");
+	client.getTvShowsByTHETVDB = sql.prepare("SELECT * FROM tvShowsNotificationSettings WHERE thetvdb_id = ?");
   client.getTvShowsNotificationSettingsBySortTitle = sql.prepare("SELECT * FROM tvShowsNotificationSettings WHERE sortTitle = ?");
   client.getTvShowsNotificationSettingsByGroupName = sql.prepare("SELECT * FROM tvShowsNotificationSettings WHERE groupName = ?");
   client.setTvShowsNotificationSettings = sql.prepare("INSERT OR REPLACE INTO tvShowsNotificationSettings (id, guild, title, cleanTitle, sortTitle, imdbID_or_themoviedbID, thetvdb_id, status, is_group, groupName, groupRole, exclude, include, network, completeSonarr, roleID) VALUES (@id, @guild, @title, @cleanTitle, @sortTitle, @imdbID_or_themoviedbID, @thetvdb_id, @status, @is_group, @groupName, @groupRole, @exclude, @include, @network, @completeSonarr, @roleID);");
@@ -554,10 +556,59 @@ async function processHook(data) {
             }
           }
 
-					if(!roleExists) {
-						//rethink this
-						//return console.log("A show was recently added but does not have a role mention");
+					var showsByIMDB = data.imdb_id;
+					var showsByTHETVDB = data.thetvdb_id;
+					var showNetwork = "";
+					if (showsByIMDB != "" && showsByIMDB != null && showsByIMDB != undefined) {
+						showNetwork = client.getTvShowsByIMDB.get(showsByIMDB).network;
 					}
+					if (showNetwork === "" || showNetwork === null || showNetwork === undefined) {
+						if (showsByTHETVDB != "" && showsByTHETVDB != null && showsByTHETVDB != undefined) {
+							showNetwork = client.getTvShowsByTHETVDB.get(showsByTHETVDB).network;
+						}
+					}
+
+					for (const notificationSettings of client.searchNotificationSettings.iterate()) {
+						if (notificationSettings.category === "tv") {
+							if (notificationSettings.name === "All TV Episodes" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
+								if (roleExists && roleExists != "") {
+									roleExists = roleExists + ", <@&" + notificationSettings.roleID + ">";
+								} else {
+									roleExists = "<@&" + notificationSettings.roleID + ">";
+								}
+							}
+							if (notificationSettings.name === "New TV Shows" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
+								//check if season 1 episode 1
+								var newShow = false;
+								if (data.season_episode === "S01E01") newShow = true;
+								if (newShow === true) {
+									if (roleExists && roleExists != "") {
+										roleExists = roleExists + ", <@&" + notificationSettings.roleID + ">";
+									} else {
+										roleExists = "<@&" + notificationSettings.roleID + ">";
+									}
+								}
+							}
+						}
+
+						if (notificationSettings.category === "networks") {
+							if (showNetwork != "") {
+								if (showNetwork.toLowerCase().indexOf(notificationSettings.name.toLowerCase()) != -1) {
+									if (roleExists && roleExists != "") {
+										roleExists = roleExists + ", <@&" + notificationSettings.roleID + ">";
+									} else {
+										roleExists = "<@&" + notificationSettings.roleID + ">";
+									}
+								}
+							}
+						}
+					}
+
+					if (!guildID || guildID === "") {
+						// show is not in database
+						guildID = guildSettings.guild;
+					}
+
 					// form embed and send
 					embed = new Discord.RichEmbed()
 						.setTitle(`${data.title}`)
@@ -570,11 +621,60 @@ async function processHook(data) {
 					var messageBody = data.messageContent + "\n" + roleExists;
 					client.guilds.get(guildID).channels.get(guildSettings.notificationChannel).send(messageBody, {embed}).catch(console.error);
         }
+				else if (data.contentType === "movie") {
+					var roleExists = "";
+					var guildID = guildSettings.guild;
+
+					for (const notificationSettings of client.searchNotificationSettings.iterate()) {
+						if (notificationSettings.category === "movies") {
+							if (notificationSettings.name === "All Movies" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
+								if (roleExists && roleExists != "") {
+									roleExists = roleExists + ", <@&" + notificationSettings.roleID + ">";
+								} else {
+									roleExists = "<@&" + notificationSettings.roleID + ">";
+								}
+							}
+							if (notificationSettings.name === "New Movies" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
+                var releaseDate = new Date(data.release_date).getTime();
+								var today = new Date();
+								var from = today.setMonth(today.getMonth() - 9);
+								from = new Date(from).getTime();
+
+								if(releaseDate >= from) {
+   								// Movie is within 9 months old
+									if (roleExists && roleExists != "") {
+										roleExists = roleExists + ", <@&" + notificationSettings.roleID + ">";
+									} else {
+										roleExists = "<@&" + notificationSettings.roleID + ">";
+									}
+								}
+								else {
+									//console.log("Older than 9 months");
+								}
+							}
+						}
+					}
+
+					// form embed and send
+					embed = new Discord.RichEmbed()
+						.setTitle(`${data.title}`)
+						.setURL(`${data.plex_url}`)
+						.setDescription(`${data.summary}`)
+						.setThumbnail(`${data.poster_url}`)
+						.addField('View Details', `[Plex Web](${data.plex_url})`)
+						.setTimestamp(new Date())
+						.setColor(0x00AE86);
+					var messageBody = data.messageContent + "\n" + roleExists;
+					client.guilds.get(guildID).channels.get(guildSettings.notificationChannel).send(messageBody, {embed}).catch(console.error);
+
+				}
+				else if (data.contentType === "music") {
+
+				}
       }
     }
   }
 }
-
 
 async function updateShowList(message) {
   // grabs list of currently airing shows and adds them to notifications channel
@@ -697,7 +797,7 @@ async function generateNotificationSettings(message) {
 
 	notificationSettings = client.getNotificationSettings.get(`${message.guild.id}-${client.user.id}-New Movies`);
 	if (!notificationSettings) {
-		notificationSettings = { id: `${message.guild.id}-${client.user.id}-New Movies`, guild: message.guild.id, name: `New Movies`, category: `movies`, description: `Movies added this year`, roleID: null };
+		notificationSettings = { id: `${message.guild.id}-${client.user.id}-New Movies`, guild: message.guild.id, name: `New Movies`, category: `movies`, description: `Movies released within the last 9 months`, roleID: null };
 		client.setNotificationSettings.run(notificationSettings);
 	}
 
