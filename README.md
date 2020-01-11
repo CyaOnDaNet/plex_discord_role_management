@@ -35,30 +35,43 @@ If I am missing any steps, feel free to reach out or open  an issue/bug in the I
 2. The second usage for this bot is getting relevant recently added noptifications. All recently added movies and TV shows are filtered through the bot to add their respective @mentions and then sent in the specified channel. A user chooses their respective notification settings by clicking on emojis and receiving a react-role form the bot. A library can be excluded with the `!notifications library` command, like with a 4k library that most or all of the other users don't have access to.
 
 ***
+## Getting Started
+
+1. After all `config/config.json` settings have been applied, the bot has been invited to the server, and the bot is online with no errors in the console; you are ready to configfure its settings. First off, if you want to change the prefix, do it with `!bot prefix newprefix` where newprefix is the actual new prefix.
+
+2. In some sort of Admin only channel, do all the following stuff until the last step. We want to run `!link @DiscordUser PlexUsername` for every user in the server, you can verify the settings with `!linklist` and use `!link @DiscordUser` to unlink someone. If you don't know the exact spelling of someones plex username, the command `!users` will pull a list for you. Now create a Watching Role in Discord and make sure the Mentionable box is ticked. Run this command with the Role you just created `!role @WatchingRole`. Run `!bot logchannel @channel` to get a log of the auto-assigning of the role.
+
+3. Run the `!notifications edit` command to setup some notification preferneces now. If you have any custom Roles you would like to be React-Roles (so users can opt in and out of them) use the `!notifications custom add @mentionedRole Optional Description` command.
+
+4. Test the Sonarr conection and generate the database with `!notifications list`. A database with all shows on Sonarr was just created but only continuing (airing) shows automatically received a discord Role. Now you can edit this list with `!notifications exclude show` or `!notifications include show`. You can even group or ungroup common shows with `!notifications group New Group Name for Shows [show1] [show2] [etc.]` and `!notifications ungroup [show1] [show2] [etc.]`. You can recall `!notifications list` to see your changes and once you are satisfied with this list you can continue onto the final step.
+
+5. We should setup a `#notifications` channel and a `#notifications_settings` channel. In the channel permisions, non-Admin users should be able to read these messages but not be able to send anything. Also, default server notification settings should be set to @mentions only so people are not spammed by `#notifications` but rather only get notifications on things they want. Use `!notifications #notifications` to set the bots recently added notifications to go to the newly created channel and head over to `#notification_settings` and type `!notifications list` to generate all the React-Role embeds. You are now done, and people can receive show specific notifications in your Discord Server!
+
+***
 
 ## Commands
 * `!help` : Lists information about commands.
 * `!help [command name]` : Lists information about a specific command.
 * `!showlist` :  Lists all the shows on Sonarr that are still marked as continuing.
 * `!bot [subcommand]` : Various bot commands
-      * `!bot info` : Lists current info like logging channel, recently added channel, etc.
-      * `!bot prefix newprefix` : Allows you to change the bot prefix
-      * `!bot logchannel @channel` : Allows you top set the logchannel or turn off logging with `!bot logchannel off`
+      - `!bot info` : Lists current info like logging channel, recently added channel, etc.
+      - `!bot prefix newprefix` : Allows you to change the bot prefix
+      - `!bot logchannel @channel` : Allows you top set the logchannel or turn off logging with `!bot logchannel off`
 * `!link @DiscordUser PlexUsername` : Links a Discord User Tag with their respective Plex username
 * `!unlink @DiscordUser PlexUsername` : Unlinks a Discord User Tag with a Plex username
 * `!linklist` : Shows a list of all linked Plex-Discord Users
 * `!users` : Lists all Plex usernames that have shared access to the  Server, to be used to easily call the `!link @DiscordUser PlexUsername` command.
 * `!notifications [subcommand]` : 
-      * `!notifications edit` : Allows you to edit the page 1 react role options.
-      * `!notifications custom add @mentionedRole Optional Description` : Allows you to add up to 6 custom React-Roles that can be used on page 1 of the `!notifications list` 
-      * `!notifications custom remove` : Allows you to remove a custom React-Role
-      * `!notifications library` : Allows you to include or exclude a library from sending recently added notifications. Ex. To exclude a 4k Movie Library from pinging in the `!notifications channel`
-      * `!notifications exclude show` : Excludes a show from getting it's own Role
-      * `!notifications include show` : Includes a show in getting it's own Role
-      * `!notifications group New Group Name for Shows [show1] [show2] [etc.]` : Groups shows as one React-Role
-      * `!notifications ungroup [show1] [show2] [etc.]` : Ungroups previosuly grouped shows.
-      * `!notifications list` : Lists the react-role embeds to be used for role specified notifications. Should be called in its own channel that others can view but not send in. For now, it needs to be recalled to reflect new changes.
-      * `!notifications channel` : Sets the channel that recently added shows are notified in.
+      - `!notifications edit` : Allows you to edit the page 1 react role options.
+      - `!notifications custom add @mentionedRole Optional Description` : Allows you to add up to 6 custom React-Roles that can be used on page 1 of the `!notifications list` 
+      - `!notifications custom remove` : Allows you to remove a custom React-Role
+      - `!notifications library` : Allows you to include or exclude a library from sending recently added notifications. Ex. To exclude a 4k Movie Library from pinging in the `!notifications channel`
+      - `!notifications exclude show` : Excludes a show from getting it's own Role
+      - `!notifications include show` : Includes a show in getting it's own Role
+      - `!notifications group New Group Name for Shows [show1] [show2] [etc.]` : Groups shows as one React-Role
+      - `!notifications ungroup [show1] [show2] [etc.]` : Ungroups previosuly grouped shows.
+      - `!notifications list` : Lists the react-role embeds to be used for role specified notifications. Should be called in its own channel that others can view but not send in. For now, it needs to be recalled to reflect new changes.
+      - `!notifications channel` : Sets the channel that recently added shows are notified in.
 * `!role @WatchingRole` : Assigns the Watching Role that the bot assigns to Users when they are watching Plex. *NOTE: The Bot's Role needs to be higher than the Watching Role*
 
 ***
