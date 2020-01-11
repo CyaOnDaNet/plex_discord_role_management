@@ -4,7 +4,7 @@ module.exports = {
 	aliases: ['commands'],
 	usage: '[command name]',
 	adminCommand: false,
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook) {
+	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook, sonarr) {
     const data = [];
 		const adminData = [];
     const { commands } = message.client;

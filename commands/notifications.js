@@ -9,8 +9,6 @@ module.exports = {
 		'custom add':'@mentionedRole Optional Description',
 		'custom remove':'',
 		'library':'',
-		'refresh':'',
-		'reset':'',
 		'exclude':'show',
 		'include':'show',
 		'group':'New Group Name for Shows [show1] [show2] [etc.]',
