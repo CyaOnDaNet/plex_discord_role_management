@@ -7,6 +7,7 @@ const schedule = require('node-schedule');
 const Tautulli = require('tautulli-api');
 const fetch = require('node-fetch');
 const tautulliHook = require('./src/tautulli.js');
+const sonarr = require('./src/sonarr.js');
 
 const fs = require('fs');
 client.commands = new Discord.Collection();
@@ -42,6 +43,7 @@ client.on('ready', ()=> {
   client.user.setActivity('Plex | ' + defaultGuildSettings.prefix + 'help', { type: 'WATCHING' })
 
   const app = tautulliHook(config.node_hook_port);
+	const sonarrService = sonarr();
 
   // Check if the table "guildSettings" exists.
   const tableGuildSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'guildSettings';").get();
@@ -163,7 +165,7 @@ client.on('message', async message => {
 	if (!command) return;
 
   try {
-	  command.execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook);
+	  command.execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook, sonarr);
   } catch (error) {
 	  console.error(error);
 	  message.reply('there was an error trying to execute that command!');
@@ -695,112 +697,87 @@ async function processHook(data) {
 
 async function updateShowList(message) {
   // grabs list of currently airing shows and adds them to notifications channel
-  let tvShowsNotificationSettings;
-  var url = config.sonarr_web_address;
-  if (!url) {
-    console.log("No sonarr settings detected in `./config/config.json`!");
-    return message.channel.send("No sonarr settings detected in `./config/config.json`!");
-  }
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    // we need an http or https specified so we will asumme http
-    console.log("Please adjust your config.sonarr_web_address to include http:// or https://. Since it was not included, I am assuming it is http://");
-    url = "http://" + url;
-  }
-  if (!url.endsWith('/')) {
-    url = url + '/';
-  }
-  url = url + "api/series?apikey=" + config.sonarr_api_key;
+	let tvShowsNotificationSettings;
+	var json = await sonarr.sonarrService.getSeries();
+	let showsList = [];
+	var count = 0;
+	for (var i = 0; i < json.length; i++) {
+		if (json[i].status === "continuing") {
+			// Create an Entry for the show in the database
+			showsList[count] = json[i].title;
+			tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 
-  fetch(url,  {
-      method: 'GET'
-  })
-  .then(res => res.json())
-  .then(async json => {
-    let showsList = [];
-    var count = 0;
-    for (var i = 0; i < json.length; i++) {
-      if (json[i].status === "continuing") {
-        // Create an Entry for the show in the database
-        showsList[count] = json[i].title;
-        tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+			if (!tvShowsNotificationSettings) {
+				// Create a new role with data
+				var role = await message.guild.roles.find(role => role.name === json[i].title);
 
-        if (!tvShowsNotificationSettings) {
-          // Create a new role with data
-          var role = await message.guild.roles.find(role => role.name === json[i].title);
-
-          if (role) {
-            tvShowsNotificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
-            client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-            tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
-          }
-          else {
-            let newRole = await message.guild.createRole({
-              name: json[i].title,
-              color: 'BLUE',
-              mentionable: true
-            })
-              .then(role => {
-                //console.log(`Created new role with name ${role.name} and color ${role.color}`)
-                tvShowsNotificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
-                client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-                tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
-              })
-              .catch(console.error)
-          }
-        }
-        count++;
-      }
-      else {
-        // Delete an Entry for the show in the database
-        tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
-
-        if (tvShowsNotificationSettings && tvShowsNotificationSettings.include === null && tvShowsNotificationSettings.roleID != null) {
-          await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
-					  .then(async () => {
-					  	tvShowsNotificationSettings.roleID = null;
-							tvShowsNotificationSettings.status = json[i].status;
-					  	client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-					  	tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
-					  })
-					  .catch(console.error);
-        }
-				else if (tvShowsNotificationSettings && tvShowsNotificationSettings.include != null && tvShowsNotificationSettings.roleID === null) {
-					// Create a new role with data
-          var role = await message.guild.roles.find(role => role.name === json[i].title);
-
-          if (role) {
-            tvShowsNotificationSettings.roleID = role.id;
-						client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-            tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
-          }
-          else {
-            let newRole = await message.guild.createRole({
-              name: json[i].title,
-              color: 'BLUE',
-              mentionable: true
-            })
-              .then(role => {
-                tvShowsNotificationSettings.roleID = role.id;
-								client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-                tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
-              })
-              .catch(console.error)
-          }
-				}
-				else if (!tvShowsNotificationSettings) {
-					tvShowsNotificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: null};
+				if (role) {
+					tvShowsNotificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
 					client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
 					tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 				}
-      }
-    }
-    return showsList;
-  })
-  .catch((error) => {
-    console.log("Couldn't connect to Sonarr, check your settings.");
-    message.channel.send("Couldn't connect to Sonarr, check your settings.");
-    console.log(error);
-  });
+				else {
+					let newRole = await message.guild.createRole({
+						name: json[i].title,
+						color: 'BLUE',
+						mentionable: true
+					})
+						.then(role => {
+							//console.log(`Created new role with name ${role.name} and color ${role.color}`)
+							tvShowsNotificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
+							client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+							tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+						})
+						.catch(console.error)
+				}
+			}
+			count++;
+		}
+		else {
+			// Delete an Entry for the show in the database
+			tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+
+			if (tvShowsNotificationSettings && tvShowsNotificationSettings.include === null && tvShowsNotificationSettings.roleID != null) {
+				await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+					.then(async () => {
+						tvShowsNotificationSettings.roleID = null;
+						tvShowsNotificationSettings.status = json[i].status;
+						client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+						tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+					})
+					.catch(console.error);
+			}
+			else if (tvShowsNotificationSettings && tvShowsNotificationSettings.include != null && tvShowsNotificationSettings.roleID === null) {
+				// Create a new role with data
+				var role = await message.guild.roles.find(role => role.name === json[i].title);
+
+				if (role) {
+					tvShowsNotificationSettings.roleID = role.id;
+					client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+					tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+				}
+				else {
+					let newRole = await message.guild.createRole({
+						name: json[i].title,
+						color: 'BLUE',
+						mentionable: true
+					})
+						.then(role => {
+							tvShowsNotificationSettings.roleID = role.id;
+							client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+							tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+						})
+						.catch(console.error)
+				}
+			}
+			else if (!tvShowsNotificationSettings) {
+				tvShowsNotificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: null};
+				client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+				tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+			}
+		}
+	}
+	return showsList;
 }
 
 async function generateNotificationSettings(message) {
