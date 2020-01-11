@@ -208,20 +208,20 @@ var j = schedule.scheduleJob('* */2 * * * *', function() {
 						for (const guildSettings of client.searchGuildSettings.iterate()) {
 							if (guildSettings.logChannelBoolean === "on") {
 		            var sendOption = 0;
-		            if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+		            if (client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel) === undefined) {
 		              // Channel is invalid
 		              break;
 		            } else {
 		              sendOption = 1;
 		            }
-		            if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+		            if (client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
 		              // Channel is invalid
 		              break;
 		            }
 		            if (!Boolean(bypass) && sendOption === 1) {
-		              client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Unlinked active streamer detected: " + `${activeStreams[i].user}`);
+		              client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
 		            } else if (!Boolean(bypass)) {
-		              client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Unlinked active streamer detected: " + `${activeStreams[i].user}`);
+		              client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
 		            }
 		          }
 						}
