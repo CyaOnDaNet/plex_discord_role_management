@@ -737,7 +737,7 @@ async function updateShowList(message) {
 			// Delete an Entry for the show in the database
 			tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 
-			if (tvShowsNotificationSettings && tvShowsNotificationSettings.include === null && tvShowsNotificationSettings.roleID != null) {
+			if (tvShowsNotificationSettings && tvShowsNotificationSettings.is_group === null && tvShowsNotificationSettings.include === null && tvShowsNotificationSettings.roleID != null) {
 				await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
 					.then(async () => {
 						tvShowsNotificationSettings.roleID = null;
@@ -747,7 +747,7 @@ async function updateShowList(message) {
 					})
 					.catch(console.error);
 			}
-			else if (tvShowsNotificationSettings && tvShowsNotificationSettings.include != null && tvShowsNotificationSettings.roleID === null) {
+			else if (tvShowsNotificationSettings && tvShowsNotificationSettings.is_group === null && tvShowsNotificationSettings.include != null && tvShowsNotificationSettings.roleID === null) {
 				// Create a new role with data
 				var role = await message.guild.roles.find(role => role.name === json[i].title);
 

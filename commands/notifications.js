@@ -13,12 +13,12 @@ module.exports = {
 		'reset':'',
 		'exclude':'show',
 		'include':'show',
-		'group':'[show1] [show2] [etc.]',
+		'group':'New Group Name for Shows [show1] [show2] [etc.]',
 		'ungroup':'[show1] [show2] [etc.]',
 		'list':'',
 		'channel':'',
 	},
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook) {
+	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook, sonarr) {
     // This is where we change notification information
 
     let notificationSettings;
@@ -685,7 +685,7 @@ module.exports = {
 											tvShowsNotificationSettings.roleID = null;
 											setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
 											client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-											tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[selectedEmojis[emojis]]);
+											tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 										})
 										.catch(console.error);
 								}
@@ -797,7 +797,7 @@ module.exports = {
 											tvShowsNotificationSettings.roleID = role.id;
 											setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
 											client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-											tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[selectedEmojis[emojis]]);
+											tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 										})
 										.catch(console.error)
 									count2++;
@@ -838,10 +838,346 @@ module.exports = {
 				.catch(() => console.error('One of the emojis failed to react.'));
     }
     else if (command === "group") {
-      // Group up Multiple Items
+			// Group up Multiple Items
+			var messageAfterCommand = message.content.slice(message.content.indexOf(command) + command.length + 1);
+	    if (message.content.length < message.content.indexOf(command) + command.length + 1) {
+	 		  return message.channel.send("You didn't state a name or shows to group up!");
+	 	  }
+
+			var groupName = "";
+			var showNamesToSearch = [];
+			if (messageAfterCommand.indexOf("[") === -1) return message.channel.send("You didn't state any shows to group up!");
+			groupName = messageAfterCommand.slice(0, messageAfterCommand.indexOf("[")).trim();
+			messageAfterCommand = messageAfterCommand.slice(messageAfterCommand.indexOf("["), messageAfterCommand.length).trim();
+			var showCount = 0;
+			var keepGoing =  true;
+
+			while(keepGoing) {
+				if (messageAfterCommand.indexOf("[") === -1) {
+					keepGoing = false;
+					break;
+				}
+        var show = messageAfterCommand.slice(messageAfterCommand.indexOf("[") + 1, messageAfterCommand.indexOf("]")).trim();
+				messageAfterCommand = messageAfterCommand.slice(messageAfterCommand.indexOf("]") + 1, messageAfterCommand.length).trim();
+				showNamesToSearch.push(show);
+			}
+
+			if (groupName == "" || showNamesToSearch.length <= 1) {
+				return message.channel.send("Invalid command format, nothing grouped!\nYou need to state at least 2 shows to group up in the format of " + prefix + ogCommand + " " + command + " Group Name [show1] [show2]");
+			}
+
+			var emojiOptions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+			const filter = (reaction, user) => emojiOptions.indexOf(reaction.emoji.name) != -1;
+			var setDescription = "";
+
+			var findExemptEmbedReactRoles = false;
+			for (let exemptNames of exemptEmbedReactRoles) {
+				if(`Sonarr Show Lookup:` === exemptNames) findExemptEmbedReactRoles = true;
+			}
+			if (!findExemptEmbedReactRoles) exemptEmbedReactRoles.push(`Sonarr Show Lookup:`);
+			embed = new Discord.RichEmbed()
+				.setAuthor('Sonarr Show Lookup:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
+				.setTimestamp(new Date())
+				.setColor(0x00AE86);
+
+			//var json = await sonarr.sonarrService.lookUpSeries(showNamesToSearch[i]);
+			var description = "Select the emojis that correspond to the shows you want to group up:\n";
+			var count = 0;
+			var showEmojiList = {};
+			for (var j = 0; j < showNamesToSearch.length; j++) {
+	      var json = await sonarr.sonarrService.lookUpSeries(showNamesToSearch[j]);
+				for (var i = 0; i < json.length; i++) {
+					if (count >= 9) break;
+					for (const tvNotificationSettings of client.searchTvShowsNotificationSettings.iterate()) {
+						if (tvNotificationSettings.thetvdb_id == json[i].tvdbId) {
+              var isDuplicate = false;
+							for (let x in showEmojiList) {
+								if (showEmojiList[x] == `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`) isDuplicate = true;
+							}
+							if (!isDuplicate) {
+								showEmojiList[emojiOptions[count]] = `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`;
+								description = description + "\n" + emojiOptions[count] + " " + json[i].title + " (" + json[i].year + ") " + "[[TheTVDb](http://thetvdb.com/?tab=series&id=" + json[i].tvdbId + ")]";
+								count++;
+							}
+						}
+					}
+				}
+			}
+
+			if (count == 0) {
+				return message.channel.send("No shows found on server matching that criteria.");
+			}
+
+			embed.setDescription(description);
+
+			let sentMessage = await message.channel.send({embed});
+			sentMessage.react(emojiOptions[0])
+				.then(async () => {
+					sentMessage.awaitReactions(filter, { time: 15000 })
+						.then(async collected => {
+							var selectedEmojis = [];
+							collected.tap(selectedOptions => {
+								if (selectedOptions.users.get(message.author.id) != undefined) {
+									selectedEmojis.push(selectedOptions._emoji.name);
+								}
+							});
+
+							if (selectedEmojis.length == 0) {
+								embed = new Discord.RichEmbed()
+									.setDescription("Nothing selected in time, nothing grouped.")
+									.setTimestamp(new Date())
+									.setColor(0x00AE86);
+								return sentMessage.edit({embed});
+							}
+							else if (selectedEmojis.length == 1) {
+								embed = new Discord.RichEmbed()
+									.setDescription("Nothing grouped up! A minimum of 2 shows need to be selected!")
+									.setTimestamp(new Date())
+									.setColor(0x00AE86);
+								return sentMessage.edit({embed});
+							}
+
+              let newRole = await message.guild.roles.find(role => role.name === groupName);
+							if (!newRole) {
+								newRole = await message.guild.createRole({
+									name: groupName,
+									color: 'BLUE',
+									mentionable: true
+								})
+									.then(async role => {
+									})
+									.catch(console.error)
+							}
+
+							let tvShowsNotificationSettings;
+							var setDescription = "";
+
+							for (let emojis of selectedEmojis) {
+								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+
+								if (tvShowsNotificationSettings.roleID != null || tvShowsNotificationSettings.roleID != undefined) {
+									var oldRole = await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID);
+									if (oldRole === null) {
+										tvShowsNotificationSettings.is_group = "true";
+										tvShowsNotificationSettings.groupName = groupName;
+										tvShowsNotificationSettings.groupRole = newRole.id;
+										tvShowsNotificationSettings.exclude = null;
+										tvShowsNotificationSettings.include = null;
+										tvShowsNotificationSettings.roleID = null;
+										setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+										client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+										tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+									}
+									else {
+										await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+										  .then(async () => {
+											  tvShowsNotificationSettings.is_group = "true";
+											  tvShowsNotificationSettings.groupName = groupName;
+											  tvShowsNotificationSettings.groupRole = newRole.id;
+											  tvShowsNotificationSettings.exclude = null;
+											  tvShowsNotificationSettings.include = null;
+											  tvShowsNotificationSettings.roleID = null;
+											  setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+											  client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+											  tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+										  })
+										  .catch(console.error);
+									}
+								}
+								else {
+									tvShowsNotificationSettings.is_group = "true";
+									tvShowsNotificationSettings.groupName = groupName;
+									tvShowsNotificationSettings.groupRole = newRole.id;
+									tvShowsNotificationSettings.exclude = null;
+									tvShowsNotificationSettings.include = null;
+									tvShowsNotificationSettings.roleID = null;
+									setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+									client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+									ttvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+								}
+						}
+						setDescription = "Successfully grouped up the following shows:" + setDescription;
+						embed = new Discord.RichEmbed()
+							.setDescription(setDescription)
+							.setTimestamp(new Date())
+							.setColor(0x00AE86);
+
+						sentMessage.edit({embed});
+					})
+					.catch(console.error);
+				})
+				.then(async () => { if (count > 1) await sentMessage.react(emojiOptions[1]) })
+				.then(async () => { if (count > 2) await sentMessage.react(emojiOptions[2]) })
+				.then(async () => { if (count > 3) await sentMessage.react(emojiOptions[3]) })
+				.then(async () => { if (count > 4) await sentMessage.react(emojiOptions[4]) })
+				.then(async () => { if (count > 5) await sentMessage.react(emojiOptions[5]) })
+				.then(async () => { if (count > 6) await sentMessage.react(emojiOptions[6]) })
+				.then(async () => { if (count > 7) await sentMessage.react(emojiOptions[7]) })
+				.then(async () => { if (count > 8) await sentMessage.react(emojiOptions[8]) })
+				.then(async () => { if (count > 9) await sentMessage.react(emojiOptions[9]) })
+				.catch(() => console.error('One of the emojis failed to react.'));
     }
     else if (command === "ungroup") {
       // Ungroup up Multiple Items
+			var messageAfterCommand = message.content.slice(message.content.indexOf(command) + command.length + 1);
+			if (message.content.length < message.content.indexOf(command) + command.length + 1) {
+				return message.channel.send("You didn't state a name or shows to ungroup!");
+			}
+
+			var showNamesToSearch = [];
+			if (messageAfterCommand.indexOf("[") === -1) return message.channel.send("You didn't state any shows to ungroup!");
+			messageAfterCommand = messageAfterCommand.slice(messageAfterCommand.indexOf("["), messageAfterCommand.length).trim();
+			var showCount = 0;
+			var keepGoing =  true;
+
+			while(keepGoing) {
+				if (messageAfterCommand.indexOf("[") === -1) {
+					keepGoing = false;
+					break;
+				}
+				var show = messageAfterCommand.slice(messageAfterCommand.indexOf("[") + 1, messageAfterCommand.indexOf("]")).trim();
+				messageAfterCommand = messageAfterCommand.slice(messageAfterCommand.indexOf("]") + 1, messageAfterCommand.length).trim();
+				showNamesToSearch.push(show);
+			}
+
+			if (showNamesToSearch.length <= 1) {
+				return message.channel.send("Invalid command format, nothing ungrouped!\nYou need to state at least 2 shows to ungroup in the format of " + prefix + ogCommand + " " + command + "[show1] [show2]");
+			}
+
+			var emojiOptions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+			const filter = (reaction, user) => emojiOptions.indexOf(reaction.emoji.name) != -1;
+			var setDescription = "";
+
+			var findExemptEmbedReactRoles = false;
+			for (let exemptNames of exemptEmbedReactRoles) {
+				if(`Sonarr Show Lookup:` === exemptNames) findExemptEmbedReactRoles = true;
+			}
+			if (!findExemptEmbedReactRoles) exemptEmbedReactRoles.push(`Sonarr Show Lookup:`);
+			embed = new Discord.RichEmbed()
+				.setAuthor('Sonarr Show Lookup:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
+				.setTimestamp(new Date())
+				.setColor(0x00AE86);
+
+			//var json = await sonarr.sonarrService.lookUpSeries(showNamesToSearch[i]);
+			var description = "Select the emojis that correspond to the shows you want to ungroup:\n";
+			var count = 0;
+			var showEmojiList = {};
+			for (var j = 0; j < showNamesToSearch.length; j++) {
+				var json = await sonarr.sonarrService.lookUpSeries(showNamesToSearch[j]);
+				for (var i = 0; i < json.length; i++) {
+					if (count >= 9) break;
+					for (const tvNotificationSettings of client.searchTvShowsNotificationSettings.iterate()) {
+						if (tvNotificationSettings.thetvdb_id == json[i].tvdbId) {
+							var isDuplicate = false;
+							for (let x in showEmojiList) {
+								if (showEmojiList[x] == `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`) isDuplicate = true;
+							}
+							if (!isDuplicate) {
+								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+								if (tvShowsNotificationSettings.is_group == "true") {
+									showEmojiList[emojiOptions[count]] = `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`;
+									description = description + "\n" + emojiOptions[count] + " " + json[i].title + " (" + json[i].year + ") " + "[[TheTVDb](http://thetvdb.com/?tab=series&id=" + json[i].tvdbId + ")]";
+									count++;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			if (count == 0) {
+				return message.channel.send("No shows found on server matching that criteria that are also already in a group.");
+			}
+
+			embed.setDescription(description);
+
+			let sentMessage = await message.channel.send({embed});
+			sentMessage.react(emojiOptions[0])
+				.then(async () => {
+					sentMessage.awaitReactions(filter, { time: 15000 })
+						.then(async collected => {
+							var selectedEmojis = [];
+							collected.tap(selectedOptions => {
+								if (selectedOptions.users.get(message.author.id) != undefined) {
+									selectedEmojis.push(selectedOptions._emoji.name);
+								}
+							});
+
+							if (selectedEmojis.length == 0) {
+								embed = new Discord.RichEmbed()
+									.setDescription("Nothing selected in time, nothing ungrouped.")
+									.setTimestamp(new Date())
+									.setColor(0x00AE86);
+								return sentMessage.edit({embed});
+							}
+							else if (selectedEmojis.length == 1) {
+								embed = new Discord.RichEmbed()
+									.setDescription("Nothing ungrouped! A minimum of 2 shows need to be selected!")
+									.setTimestamp(new Date())
+									.setColor(0x00AE86);
+								return sentMessage.edit({embed});
+							}
+
+							let tvShowsNotificationSettings;
+							var setDescription = "";
+
+							for (let emojis of selectedEmojis) {
+								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+								tvShowsNotificationSettings.is_group = null;
+								tvShowsNotificationSettings.groupName = null;
+								tvShowsNotificationSettings.groupRole = null;
+								tvShowsNotificationSettings.exclude = null;
+								tvShowsNotificationSettings.include = null;
+								tvShowsNotificationSettings.roleID = null;
+								setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+								client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+
+								if (tvShowsNotificationSettings.status == "continuing") {
+									// Create a new role with data
+									var role = await message.guild.roles.find(role => role.name === tvShowsNotificationSettings.title);
+
+									if (role) {
+										tvShowsNotificationSettings.roleID = role.id;
+										client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+										tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+									}
+									else {
+										tvShowsNotificationSettings = await client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+										let newRole = await message.guild.createRole({
+											name: tvShowsNotificationSettings.title,
+											color: 'BLUE',
+											mentionable: true
+										})
+											.then(role => {
+												tvShowsNotificationSettings.roleID = role.id;
+												client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+												tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+											})
+											.catch(console.error);
+									}
+								}
+							}
+						setDescription = "Successfully ungrouped the following shows:" + setDescription;
+						embed = new Discord.RichEmbed()
+							.setDescription(setDescription)
+							.setTimestamp(new Date())
+							.setColor(0x00AE86);
+
+						sentMessage.edit({embed});
+					})
+					.catch(console.error);
+				})
+				.then(async () => { if (count > 1) await sentMessage.react(emojiOptions[1]) })
+				.then(async () => { if (count > 2) await sentMessage.react(emojiOptions[2]) })
+				.then(async () => { if (count > 3) await sentMessage.react(emojiOptions[3]) })
+				.then(async () => { if (count > 4) await sentMessage.react(emojiOptions[4]) })
+				.then(async () => { if (count > 5) await sentMessage.react(emojiOptions[5]) })
+				.then(async () => { if (count > 6) await sentMessage.react(emojiOptions[6]) })
+				.then(async () => { if (count > 7) await sentMessage.react(emojiOptions[7]) })
+				.then(async () => { if (count > 8) await sentMessage.react(emojiOptions[8]) })
+				.then(async () => { if (count > 9) await sentMessage.react(emojiOptions[9]) })
+				.catch(() => console.error('One of the emojis failed to react.'));
     }
     else if (command === "list") {
       // List the items that have been manually added as well as currently airing
@@ -941,7 +1277,7 @@ module.exports = {
       var sortList = [];
       var count = 0;
       for (const notificationQuery of client.searchTvShowsNotificationSettings.iterate()) {
-        if (notificationQuery.guild === message.guild.id && notificationQuery.exclude === null && notificationQuery.roleID != null) {
+        if (notificationQuery.guild === message.guild.id && notificationQuery.exclude === null && (notificationQuery.roleID != null || notificationQuery.groupRole != null)) {
           if (notificationQuery.groupName != null) {
             var bypass = true;
             for (var i = 0; i < sortList.length; i++) {
@@ -960,7 +1296,7 @@ module.exports = {
           }
         }
       }
-      sortList = sortList.sort();
+      sortList = await sortList.sort();
 
       for (var i = 0; i < sortList.length; i++) {
         notificationSettings = client.getTvShowsNotificationSettingsBySortTitle.get(sortList[i]);
@@ -970,9 +1306,11 @@ module.exports = {
           var role = message.guild.roles.find(role => role.id === notificationSettings.groupRole);
           if (role != null) {
             showsList[i] = role;
+						showsList[i] = showsList[i] + " <- Grouped Show";
           }
           else {
             showsList[i] = notificationSettings.groupName;
+						showsList[i] = showsList[i] + " <- Grouped Show";
           }
         }
         else {
