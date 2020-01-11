@@ -36,6 +36,20 @@ module.exports = async() => {
         message.channel.send("Couldn't connect to Sonarr, check your settings.");
       }
     }
+
+    async lookUpSeries(searchTerm) {
+      try {
+        const response = await fetch(this.baseURL + `api/series/lookup?term=` + searchTerm + `&apikey=` + this.sonarr_api_key,  {
+            method: 'GET'
+        });
+        const json = await response.json();
+        return json;
+      } catch (error) {
+        console.log(console.log(error));
+        console.log("Couldn't connect to Sonarr, check your settings.");
+        message.channel.send("Couldn't connect to Sonarr, check your settings.");
+      }
+    }
   }
 
   sonarrService = new sonarrService();
