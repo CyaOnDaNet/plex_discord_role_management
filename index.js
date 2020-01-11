@@ -553,7 +553,7 @@ async function processHook(data) {
   }
 
   else if (data.trigger === 'recentlyAdded') {
-    console.log(data);
+    //console.log(data);
 
     for (const guildSettings of client.searchGuildSettings.iterate()) {
       if (guildSettings.notificationChannelBoolean === "on") {
