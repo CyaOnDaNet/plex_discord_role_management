@@ -50,18 +50,18 @@ If I am missing any steps, feel free to reach out or open  an issue/bug in the I
 ***
 
 ## Commands
-* `!help` : Lists information about commands.
-* `!help [command name]` : Lists information about a specific command.
-* `!showlist` :  Lists all the shows on Sonarr that are still marked as continuing.
-* `!bot [subcommand]` : Various bot commands
+-  `!help` : Lists information about commands.
+-  `!help [command name]` : Lists information about a specific command.
+-  `!showlist` :  Lists all the shows on Sonarr that are still marked as continuing.
+-  `!bot [subcommand]` : Various bot commands
       - `!bot info` : Lists current info like logging channel, recently added channel, etc.
       - `!bot prefix newprefix` : Allows you to change the bot prefix
       - `!bot logchannel @channel` : Allows you top set the logchannel or turn off logging with `!bot logchannel off`
-* `!link @DiscordUser PlexUsername` : Links a Discord User Tag with their respective Plex username
-* `!unlink @DiscordUser PlexUsername` : Unlinks a Discord User Tag with a Plex username
-* `!linklist` : Shows a list of all linked Plex-Discord Users
-* `!users` : Lists all Plex usernames that have shared access to the  Server, to be used to easily call the `!link @DiscordUser PlexUsername` command.
-* `!notifications [subcommand]` : 
+-  `!link @DiscordUser PlexUsername` : Links a Discord User Tag with their respective Plex username
+-  `!unlink @DiscordUser PlexUsername` : Unlinks a Discord User Tag with a Plex username
+-  `!linklist` : Shows a list of all linked Plex-Discord Users
+-  `!users` : Lists all Plex usernames that have shared access to the  Server, to be used to easily call the `!link @DiscordUser PlexUsername` command.
+-  `!notifications [subcommand]` : 
       - `!notifications edit` : Allows you to edit the page 1 react role options.
       - `!notifications custom add @mentionedRole Optional Description` : Allows you to add up to 6 custom React-Roles that can be used on page 1 of the `!notifications list` 
       - `!notifications custom remove` : Allows you to remove a custom React-Role
@@ -72,7 +72,7 @@ If I am missing any steps, feel free to reach out or open  an issue/bug in the I
       - `!notifications ungroup [show1] [show2] [etc.]` : Ungroups previosuly grouped shows.
       - `!notifications list` : Lists the react-role embeds to be used for role specified notifications. Should be called in its own channel that others can view but not send in. For now, it needs to be recalled to reflect new changes.
       - `!notifications channel` : Sets the channel that recently added shows are notified in.
-* `!role @WatchingRole` : Assigns the Watching Role that the bot assigns to Users when they are watching Plex. *NOTE: The Bot's Role needs to be higher than the Watching Role*
+-  `!role @WatchingRole` : Assigns the Watching Role that the bot assigns to Users when they are watching Plex. *NOTE: The Bot's Role needs to be higher than the Watching Role*
 
 ***
 
