@@ -194,8 +194,8 @@ module.exports = async(port) => {
           var custom_condition = {};
           var excludedLibraries = [];
           custom_condition.operator = 'does not contain';
-          custom_condition.parameter = 'library_name';
           custom_condition.type = 'str';
+          custom_condition.parameter = 'library_name';
 
           for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
     				if (libraryExclusionSettings.excluded === "true") {
@@ -208,6 +208,8 @@ module.exports = async(port) => {
 
           if (JSON.stringify(data.custom_conditions) != JSON.stringify(custom_conditions)) {
             console.log('Updating WebHook...');
+            //console.log(JSON.stringify(data.custom_conditions));
+            //console.log(JSON.stringify(custom_conditions));
 						service.setNotifierConfig(id, notificationUrl, false);
           }
 					else if (data.config_options[0].value != notificationUrl) {
