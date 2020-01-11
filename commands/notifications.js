@@ -936,26 +936,43 @@ module.exports = {
 							}
 
               let newRole = await message.guild.roles.find(role => role.name === groupName);
-							if (!newRole) {
-								newRole = await message.guild.createRole({
-									name: groupName,
-									color: 'BLUE',
-									mentionable: true
-								})
-									.then(async role => {
-									})
-									.catch(console.error)
-							}
+							if (newRole) {
+								let tvShowsNotificationSettings;
+								var setDescription = "";
 
-							let tvShowsNotificationSettings;
-							var setDescription = "";
+								for (let emojis of selectedEmojis) {
+									tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 
-							for (let emojis of selectedEmojis) {
-								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
-
-								if (tvShowsNotificationSettings.roleID != null || tvShowsNotificationSettings.roleID != undefined) {
-									var oldRole = await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID);
-									if (oldRole === null) {
+									if (tvShowsNotificationSettings.roleID != null || tvShowsNotificationSettings.roleID != undefined) {
+										var oldRole = await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID);
+										if (oldRole === null) {
+											tvShowsNotificationSettings.is_group = "true";
+											tvShowsNotificationSettings.groupName = groupName;
+											tvShowsNotificationSettings.groupRole = newRole.id;
+											tvShowsNotificationSettings.exclude = null;
+											tvShowsNotificationSettings.include = null;
+											tvShowsNotificationSettings.roleID = null;
+											setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+											client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+											tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+										}
+										else {
+											await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+											  .then(async () => {
+												  tvShowsNotificationSettings.is_group = "true";
+												  tvShowsNotificationSettings.groupName = groupName;
+												  tvShowsNotificationSettings.groupRole = newRole.id;
+												  tvShowsNotificationSettings.exclude = null;
+												  tvShowsNotificationSettings.include = null;
+												  tvShowsNotificationSettings.roleID = null;
+												  setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+												  client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+												  tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+											  })
+											  .catch(console.error);
+										}
+									}
+									else {
 										tvShowsNotificationSettings.is_group = "true";
 										tvShowsNotificationSettings.groupName = groupName;
 										tvShowsNotificationSettings.groupRole = newRole.id;
@@ -964,43 +981,82 @@ module.exports = {
 										tvShowsNotificationSettings.roleID = null;
 										setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
 										client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-										tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+										ttvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 									}
-									else {
-										await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
-										  .then(async () => {
-											  tvShowsNotificationSettings.is_group = "true";
-											  tvShowsNotificationSettings.groupName = groupName;
-											  tvShowsNotificationSettings.groupRole = newRole.id;
-											  tvShowsNotificationSettings.exclude = null;
-											  tvShowsNotificationSettings.include = null;
-											  tvShowsNotificationSettings.roleID = null;
-											  setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
-											  client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-											  tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
-										  })
-										  .catch(console.error);
-									}
-								}
-								else {
-									tvShowsNotificationSettings.is_group = "true";
-									tvShowsNotificationSettings.groupName = groupName;
-									tvShowsNotificationSettings.groupRole = newRole.id;
-									tvShowsNotificationSettings.exclude = null;
-									tvShowsNotificationSettings.include = null;
-									tvShowsNotificationSettings.roleID = null;
-									setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
-									client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-									ttvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
-								}
-						}
-						setDescription = "Successfully grouped up the following shows:" + setDescription;
-						embed = new Discord.RichEmbed()
-							.setDescription(setDescription)
-							.setTimestamp(new Date())
-							.setColor(0x00AE86);
+							}
+							setDescription = "Successfully grouped up the following shows:" + setDescription;
+							embed = new Discord.RichEmbed()
+								.setDescription(setDescription)
+								.setTimestamp(new Date())
+								.setColor(0x00AE86);
 
-						sentMessage.edit({embed});
+							sentMessage.edit({embed});
+							}
+							if (!newRole) {
+								newRole = await message.guild.createRole({
+									name: groupName,
+									color: 'BLUE',
+									mentionable: true
+								})
+									.then(async role => {
+										let tvShowsNotificationSettings;
+										var setDescription = "";
+
+										for (let emojis of selectedEmojis) {
+											tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+
+											if (tvShowsNotificationSettings.roleID != null || tvShowsNotificationSettings.roleID != undefined) {
+												var oldRole = await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID);
+												if (oldRole === null) {
+													tvShowsNotificationSettings.is_group = "true";
+													tvShowsNotificationSettings.groupName = groupName;
+													tvShowsNotificationSettings.groupRole = role.id;
+													tvShowsNotificationSettings.exclude = null;
+													tvShowsNotificationSettings.include = null;
+													tvShowsNotificationSettings.roleID = null;
+													setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+													client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+													tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+												}
+												else {
+													await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+													  .then(async () => {
+														  tvShowsNotificationSettings.is_group = "true";
+														  tvShowsNotificationSettings.groupName = groupName;
+														  tvShowsNotificationSettings.groupRole = role.id;
+														  tvShowsNotificationSettings.exclude = null;
+														  tvShowsNotificationSettings.include = null;
+														  tvShowsNotificationSettings.roleID = null;
+														  setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+														  client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+														  tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+													  })
+													  .catch(console.error);
+												}
+											}
+											else {
+												tvShowsNotificationSettings.is_group = "true";
+												tvShowsNotificationSettings.groupName = groupName;
+												tvShowsNotificationSettings.groupRole = role.id;
+												tvShowsNotificationSettings.exclude = null;
+												tvShowsNotificationSettings.include = null;
+												tvShowsNotificationSettings.roleID = null;
+												setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+												client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+												ttvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+											}
+									}
+									setDescription = "Successfully grouped up the following shows:" + setDescription;
+									embed = new Discord.RichEmbed()
+										.setDescription(setDescription)
+										.setTimestamp(new Date())
+										.setColor(0x00AE86);
+
+									sentMessage.edit({embed});
+
+									})
+									.catch(console.error)
+							}
 					})
 					.catch(console.error);
 				})
@@ -1121,6 +1177,10 @@ module.exports = {
 
 							for (let emojis of selectedEmojis) {
 								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+
+								var oldRole = tvShowsNotificationSettings.groupRole;
+								var deleteRole = true;
+
 								tvShowsNotificationSettings.is_group = null;
 								tvShowsNotificationSettings.groupName = null;
 								tvShowsNotificationSettings.groupRole = null;
@@ -1130,6 +1190,18 @@ module.exports = {
 								setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
 								client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
 								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+
+								for (const tvNotificationSettings of client.searchTvShowsNotificationSettings.iterate()) {
+									if (tvNotificationSettings.groupRole == oldRole) {
+										deleteRole = false;
+									}
+								}
+								if (deleteRole) {
+									await message.guild.roles.find(role => role.id === oldRole).delete()
+										.then(async () => {
+										})
+										.catch(console.error);
+								}
 
 								if (tvShowsNotificationSettings.status == "continuing") {
 									// Create a new role with data
