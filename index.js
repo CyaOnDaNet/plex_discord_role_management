@@ -351,6 +351,57 @@ var j = schedule.scheduleJob('* */2 * * * *', function() {
   });
 });
 
+client.on('raw', async packet => {
+	//For some reason, the raw event below only works the first time the event is fired, the below client.on('raw', async event => { takes care of the other use cases.
+    // We don't want this to run on unrelated packets
+    if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) return;
+    // Grab the channel to check the message from
+    const channel = client.channels.get(packet.d.channel_id);
+    // There's no need to emit if the message is cached, because the event will fire anyway for that
+    if (channel.messages.has(packet.d.message_id)) return;
+    // Since we have confirmed the message is not cached, let's fetch it
+    channel.fetchMessage(packet.d.message_id).then(async message => {
+        // Emojis can have identifiers of name:id format, so we have to account for that case as well
+        const emoji = packet.d.emoji.id ? `${packet.d.emoji.name}:${packet.d.emoji.id}` : packet.d.emoji.name;
+        // This gives us the reaction we need to emit the event properly, in top of the message object
+        const reaction = await message.reactions.get(emoji);
+        // Adds the currently reacting user to the reaction's users collection.
+        if (reaction) reaction.users.set(packet.d.user_id, client.users.get(packet.d.user_id));
+        // Check which type of event it is before emitting
+
+				if (client.user.id != message.author.id) return; //Only continue if react was to a message by this bot.
+		    if (message.embeds[0] === undefined || message.embeds[0] === null) return; //Only continue if react was to a message embed.
+		    if (client.user.id === packet.d.user_id) return; //Ignore the bot setting up react roles so it doesnt add roles to itself.
+
+				for (let exemptNames of exemptEmbedReactRoles) {
+					//return if an embed was called that needed emoji response to prevent accidentally trying to react role
+					if(message.embeds[0].author.name === exemptNames) return;
+				}
+
+		    var args = message.embeds[0].description.trim().split(/\r?\n/);
+		    for (var i = 0; i < args.length; i++){
+		      if(args[i].startsWith(emoji)) {
+		        if (args[i].indexOf("<@&") === -1) return console.log("Invalid React Role Mention Clicked: " + args[i]);
+
+		        var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].indexOf(">"));
+		        var removeRole = true;
+
+						if (packet.t === 'MESSAGE_REACTION_ADD') {
+		            //client.emit('messageReactionAdd', reaction, client.users.get(packet.d.user_id));
+								let userToModify = message.guild.members.get(packet.d.user_id);
+		            userToModify.addRole(roleID)
+		              .catch(console.error);
+		        }
+		        else if (packet.t === 'MESSAGE_REACTION_REMOVE') {
+		            //client.emit('messageReactionRemove', reaction, client.users.get(packet.d.user_id));
+								let userToModify = message.guild.members.get(packet.d.user_id);
+			          userToModify.removeRole(roleID)
+			            .catch(console.error);
+		        }
+					}
+				}
+    });
+});
 
 // This makes the events used a bit more readable
 const events = {
@@ -358,7 +409,7 @@ const events = {
 	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
 };
 
-// This event handles adding/removing users from the role(s) they chose based on message reactions
+// This event handles adding/removing users from the role(s) they chose based on message reactions. For some reason, it does not see any users the first time the event is fired, the above client.on('raw', async packet => { takes care of that use case.
 client.on('raw', async event => {
     if (!events.hasOwnProperty(event.t)) return;
 
@@ -395,8 +446,9 @@ client.on('raw', async event => {
 
         var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].indexOf(">"));
         var removeRole = true;
+				reaction = await message.reactions.get(emojiKey);
 
-        reaction.users.tap(async user => {
+        await reaction.users.tap(async user => {
           if (data.user_id === user.id) {
             removeRole = false;
             let userToModify = message.guild.members.get(user.id);
