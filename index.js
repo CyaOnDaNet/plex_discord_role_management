@@ -351,8 +351,12 @@ var j = schedule.scheduleJob('* */2 * * * *', function() {
   });
 });
 
+/*
+ * For some reason, the raw event handlers below both work most of the time on their own but not 100% of the time. By having them both listening and proccessing events, I found that the react-roles work 100% of the time.
+ * This is not ideal because I feel like it could lead to performance issues but for now it works. I will look for a better solution later.
+ *
+ */
 client.on('raw', async packet => {
-	//For some reason, the raw event below only works the first time the event is fired, the below client.on('raw', async event => { takes care of the other use cases.
     // We don't want this to run on unrelated packets
     if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) return;
     // Grab the channel to check the message from
@@ -386,6 +390,8 @@ client.on('raw', async packet => {
 		        var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].indexOf(">"));
 		        var removeRole = true;
 
+						//console.log(`Made it to primary event handler ${packet.t}`);
+
 						if (packet.t === 'MESSAGE_REACTION_ADD') {
 		            //client.emit('messageReactionAdd', reaction, client.users.get(packet.d.user_id));
 								let userToModify = message.guild.members.get(packet.d.user_id);
@@ -409,7 +415,6 @@ const events = {
 	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
 };
 
-// This event handles adding/removing users from the role(s) they chose based on message reactions. For some reason, it does not see any users the first time the event is fired, the above client.on('raw', async packet => { takes care of that use case.
 client.on('raw', async event => {
     if (!events.hasOwnProperty(event.t)) return;
 
@@ -448,19 +453,18 @@ client.on('raw', async event => {
         var removeRole = true;
 				reaction = await message.reactions.get(emojiKey);
 
-        await reaction.users.tap(async user => {
-          if (data.user_id === user.id) {
-            removeRole = false;
-            let userToModify = message.guild.members.get(user.id);
-            userToModify.addRole(roleID)
-              .catch(console.error);
-          }
-        });
-        if (removeRole) {
-          let userToModify = message.guild.members.get(user.id);
-          userToModify.removeRole(roleID)
-            .catch(console.error);
-        }
+				//console.log(`Made it to secondary event handler ${event.t}`);
+
+				if (event.t === 'MESSAGE_REACTION_ADD') {
+						let userToModify = message.guild.members.get(event.d.user_id);
+						userToModify.addRole(roleID)
+							.catch(console.error);
+				}
+				else if (event.t === 'MESSAGE_REACTION_REMOVE') {
+						let userToModify = message.guild.members.get(event.d.user_id);
+						userToModify.removeRole(roleID)
+							.catch(console.error);
+				}
       }
     }
 
