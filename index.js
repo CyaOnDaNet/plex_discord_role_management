@@ -612,8 +612,10 @@ async function processHook(data) {
         if (data.contentType === "show") {
           var roleExists = "";
 					var guildID = "";
+					var existsInDatabase = false;
           for (const showNotification of client.searchTvShowsNotificationSettings.iterate()) {
             if (showNotification.title === data.show_name || showNotification.thetvdb_id === data.thetvdb_id || showNotification.imdbID_or_themoviedbID === data.imdb_id) {
+							existsInDatabase = true;
 							guildID = showNotification.guild;
 							if (showNotification.groupRole != null && showNotification.groupRole != undefined && showNotification.groupRole != "") {
 								roleExists = showNotification.groupRole;
@@ -630,12 +632,21 @@ async function processHook(data) {
 					var showsByIMDB = data.imdb_id;
 					var showsByTHETVDB = data.thetvdb_id;
 					var showNetwork = "";
-					if (showsByIMDB != "" && showsByIMDB != null && showsByIMDB != undefined) {
+					if (existsInDatabase && showsByIMDB != "" && showsByIMDB != null && showsByIMDB != undefined) {
 						showNetwork = client.getTvShowsByIMDB.get(showsByIMDB).network;
 					}
 					if (showNetwork === "" || showNetwork === null || showNetwork === undefined) {
 						if (showsByTHETVDB != "" && showsByTHETVDB != null && showsByTHETVDB != undefined) {
-							showNetwork = client.getTvShowsByTHETVDB.get(showsByTHETVDB).network;
+							if (!existsInDatabase) {
+								var json = await sonarr.sonarrService.lookUpSeries(`tvdb:${showsByTHETVDB}`);
+								for (var i = 0; i < json.length; i++) {
+									if (showsByTHETVDB == json[i].tvdbId) {
+										showNetwork = json[i].network;
+									}
+								}
+							} else {
+								showNetwork = client.getTvShowsByTHETVDB.get(showsByTHETVDB).network;
+							}
 						}
 					}
 
@@ -652,6 +663,7 @@ async function processHook(data) {
 								//check if season 1 episode 1
 								var newShow = false;
 								if (data.season_episode === "S01E01") newShow = true;
+								if (data.newOverride == "01-yes") newShow = true;
 								if (newShow === true) {
 									if (roleExists && roleExists != "") {
 										roleExists = roleExists + ", <@&" + notificationSettings.roleID + ">";
