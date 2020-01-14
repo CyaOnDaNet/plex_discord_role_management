@@ -204,7 +204,7 @@ client.on('message', async message => {
 	if (!command) return;
 
   try {
-	  command.execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr) {
+	  command.execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr);
   } catch (error) {
 	  console.error(error);
 	  message.reply('there was an error trying to execute that command!');
