@@ -86,8 +86,6 @@ const defaultGuildSettings = {
 }
 
 client.login(config.botToken);
-const tautulliService = tautulli(config, config.node_hook_port);
-const sonarrService = sonarr(config);
 
 client.on('ready', ()=> {
   console.log('The bot is now online!');
@@ -180,9 +178,12 @@ client.on('ready', ()=> {
   client.getLibraryExclusionSettings = sql.prepare("SELECT * FROM libraryExclusion WHERE id = ?");
   client.searchLibraryExclusionSettings = sql.prepare("SELECT * FROM libraryExclusion");
   client.setLibraryExclusionSettings = sql.prepare("INSERT OR REPLACE INTO libraryExclusion (id, guild, name, excluded) VALUES (@id, @guild, @name, @excluded);");
-  
+
   online = true;
+  const tautulliService = tautulli(config, config.node_hook_port);
+  const sonarrService = sonarr(config);
 });
+
 
 client.on('message', async message => {
   if (message.author.bot) return;
