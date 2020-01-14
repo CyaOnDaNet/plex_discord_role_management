@@ -1,4 +1,6 @@
+![alt text](https://user-images.githubusercontent.com/22354631/72322510-82653b00-3674-11ea-9101-1b4f9d57cc8c.png "Plex-Discord Role Management Bot") 
 # Plex-Discord Role Management and Notifier Bot
+
 
 ## Installation
 
