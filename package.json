@@ -1,14 +1,14 @@
 {
-  "name": "plex-discord-watching-role-assignment",
-  "version": "1.0.1",
-  "description": "A simple discord bot that assigns and removes a watching role to users based on their Plex activity. Also generates Role-reaction based notification alerts. Requires Tautulli and Sonarr.",
+  "name": "plex_discord_role_management",
+  "version": "1.1.1",
+  "description": "A discord bot that synchronizes with Tautulli and Sonarr to deliver tailored notifications.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CyaOnDaNet/plex-discord-watching-role-assignment.git"
+    "url": "git+https://github.com/CyaOnDaNet/plex_discord_role_management.git"
   },
   "keywords": [],
   "author": "",
@@ -29,10 +29,9 @@
     "body-parser": "^1.19.0",
     "json-to-form-data": "^1.0.0",
     "axios": "^0.19.0"
-
   },
   "bugs": {
-    "url": "https://github.com/CyaOnDaNet/plex-discord-watching-role-assignment/issues"
+    "url": "https://github.com/CyaOnDaNet/plex_discord_role_management/issues"
   },
-  "homepage": "https://github.com/CyaOnDaNet/plex-discord-watching-role-assignment#readme"
+  "homepage": "https://github.com/CyaOnDaNet/plex_discord_role_management#readme"
 }
