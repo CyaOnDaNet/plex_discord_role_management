@@ -8,7 +8,7 @@ module.exports = {
 		'prefix':'newprefix',
 		'logchannel':'@channel',
 	},
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook, sonarr) {
+	async execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr) {
     // This is where we change bot information
     if (args.length > 0) {
       command = args.shift().toLowerCase();

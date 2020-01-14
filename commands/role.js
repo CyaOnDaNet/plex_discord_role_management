@@ -4,7 +4,7 @@ module.exports = {
 	description: 'Sets the watching role for the server',
 	usage: '@WatchingRole',
 	adminCommand: true,
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook, sonarr) {
+	async execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr) {
     if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
       // link a discord user and plex user
       let mentionedRole = message.mentions.roles.first();

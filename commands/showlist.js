@@ -4,7 +4,7 @@ module.exports = {
 	description: 'Displays a list of shows currently airing on the Plex server',
 	usage: '',
 	adminCommand: false,
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook, sonarr) {
+	async execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr) {
 		var json = await sonarr.sonarrService.getSeries();
 		var showsList = "\n";
 		for (var i = 0; i < json.length; i++) {

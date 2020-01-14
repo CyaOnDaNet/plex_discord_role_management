@@ -16,7 +16,7 @@ module.exports = {
 		'list':'',
 		'channel':'',
 	},
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook, sonarr) {
+	async execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr) {
     // This is where we change notification information
 
     let notificationSettings;
