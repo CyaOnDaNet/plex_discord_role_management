@@ -1,5 +1,4 @@
-![alt text](https://user-images.githubusercontent.com/22354631/72322510-82653b00-3674-11ea-9101-1b4f9d57cc8c.png "Plex-Discord Role Management Bot") 
-# Plex-Discord Role Management and Notifier Bot
+# ![alt text](https://user-images.githubusercontent.com/22354631/72322510-82653b00-3674-11ea-9101-1b4f9d57cc8c.png "Plex-Discord Role Management Bot") Plex-Discord Role Management and Notifier Bot
 
 
 ## Pre-Installation Steps
@@ -34,9 +33,10 @@ If I am missing any steps, feel free to reach out or open an issue/bug in the Is
 
 ## Docker Installation
 
+```
 docker create \
   --name='plex_discord_role_management' \
-  -e TZ=<timezone> \
+  -e TZ=YOUR_TIMEZONE \
   -e 'botToken'='YOUR_DISCORD_BOT_TOKEN' \
   -e 'defaultPrefix'='!' \
   -e 'tautulli_ip'='YOUR_TAUTULLI_IP_ADDRESS' \
@@ -50,6 +50,7 @@ docker create \
   -p 'YOUR_HOST_PORT:3000/tcp' \
   -v '/PATH/TO/YOUR/HOST/APPDATA':'/config':'rw' \
   cyaondanet/plex_discord_role_management:latest
+```
 
 ***
 
