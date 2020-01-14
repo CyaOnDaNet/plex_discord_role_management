@@ -31,7 +31,7 @@ module.exports = async(config, port) => {
           //console.log("Connected to Tautulli...");
         }
         else {
-          console.log("Couldn't fetch notifiers from Tautulli, check your config.json settings")
+          console.log("Couldn't fetch notifiers from Tautulli, check your settings")
           return;
         }
         beforeChangeNotifiers = json.response;
@@ -51,7 +51,8 @@ module.exports = async(config, port) => {
           });
         }
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
       }
     }
 
@@ -63,7 +64,8 @@ module.exports = async(config, port) => {
         const json = await response.json();
         return json.response;
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
       }
     }
 
@@ -75,7 +77,34 @@ module.exports = async(config, port) => {
         const json = await response.json();
         return json.response;
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
+      }
+    }
+
+    async getUsers() {
+      try {
+        const response = await fetch(this.baseURL + `get_users`,  {
+            method: 'GET'
+        });
+        const json = await response.json();
+        return json.response;
+      } catch (error) {
+        console.log(error);
+        return "error";
+      }
+    }
+
+    async getActivity() {
+      try {
+        const response = await fetch(this.baseURL + `get_activity`,  {
+            method: 'GET'
+        });
+        const json = await response.json();
+        return json.response;
+      } catch (error) {
+        console.log(error);
+        return "error";
       }
     }
 
@@ -98,7 +127,8 @@ module.exports = async(config, port) => {
           if (!beforeMap[item.id]) this.setNotifierConfig(item.id, notificationUrl, true);
         });
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
       }
     }
 
@@ -110,7 +140,8 @@ module.exports = async(config, port) => {
         const json = await response.json();
         return json.response.data;
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
       }
 	  }
 
@@ -145,7 +176,8 @@ module.exports = async(config, port) => {
         if (isNew) console.log('Tautulli Webhook Created!');
         else console.log('Tautulli Webhook Updated!')
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
       }
 	  }
   }
@@ -168,7 +200,7 @@ module.exports = async(config, port) => {
       console.log("Connected to Tautulli...");
     }
     else {
-      console.log("Couldn't fetch notifiers from Tautulli, check your config.json settings")
+      console.log("Couldn't fetch notifiers from Tautulli, check your settings")
       return;
     }
     beforeChangeNotifiers = json.response;
@@ -238,7 +270,8 @@ module.exports = async(config, port) => {
 			service.addScriptNotifier(notificationUrl);
 		}
   } catch (error) {
-    console.log(console.log(error));
+    console.log(error);
+    return "error";
   }
 
   const app = express();
