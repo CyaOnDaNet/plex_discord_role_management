@@ -472,7 +472,7 @@ module.exports = {
     }
 		else if (command === "library" ) {
 			// allows a library name to be excluded from recently added notifications
-			let library = await tautulliHook.tautulliService.getLibraries();
+			let library = await tautulli.tautulliService.getLibraries();
 			library = library.data;
 			let libraryExclusionList;
 			var customList = [];
@@ -593,7 +593,7 @@ module.exports = {
 							}
 
 							sentMessage.edit({embed});
-							tautulliHook.tautulliService.updateTautulliHook();
+							tautulli.tautulliService.updateTautulliHook();
 						})
 						.catch(console.error);
 				})
