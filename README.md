@@ -34,7 +34,7 @@ If I am missing any steps, feel free to reach out or open an issue/bug in the Is
 ## Docker Installation
 
 ```
-docker create \
+docker run -d \
   --name='plex_discord_role_management' \
   -e TZ=YOUR_TIMEZONE \
   -e 'botToken'='YOUR_DISCORD_BOT_TOKEN' \
@@ -48,7 +48,7 @@ docker create \
   -e 'node_hook_ip'='THE_IP_ADDRESS_OF_THE_HOST_MACHINE' \
   -e 'node_hook_port'='YOUR_HOST_PORT' \
   -p 'YOUR_HOST_PORT:3000/tcp' \
-  -v '/PATH/TO/YOUR/HOST/APPDATA':'/config':'rw' \
+  -v '/PATH/TO/YOUR/HOST/APPDATA':'/app/config':'rw' \
   cyaondanet/plex_discord_role_management:latest
 ```
 
