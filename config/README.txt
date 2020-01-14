@@ -1,8 +1,8 @@
 If you are using docker then do NOT edit the config.json. Use environmental variables instead.
-An example of docker create is below:
+An example of docker run is below:
 
 
-docker create \
+docker run -d \
   --name='plex_discord_role_management' \
   -e TZ=<timezone> \
   -e 'botToken'='YOUR_DISCORD_BOT_TOKEN' \
@@ -16,5 +16,5 @@ docker create \
   -e 'node_hook_ip'='THE_IP_ADDRESS_OF_THE_HOST_MACHINE' \
   -e 'node_hook_port'='YOUR_HOST_PORT' \
   -p 'YOUR_HOST_PORT:3000/tcp' \
-  -v '/PATH/TO/YOUR/HOST/APPDATA':'/config':'rw'   \
+  -v '/PATH/TO/YOUR/HOST/APPDATA':'/app/config':'rw'   \
   cyaondanet/plex_discord_role_management:latest
