@@ -21,10 +21,16 @@ module.exports = {
         .setAuthor(client.user.username, client.user.avatarURL)
         .setDescription("Below is a list of important bot info:\n")
         .addField("Prefix: ", '`' + prefix + '`',  true)
-        .addField("Watching Role: ", '<@&' + guildSettings.watchingRole + '>')
         .setFooter("Fetched")
         .setTimestamp(new Date())
         .setColor(0x00AE86);
+
+			if (guildSettings.watchingRole === "" || guildSettings.watchingRole === undefined || guildSettings.watchingRole === null) {
+				embed.addField("Watching Role: ", "**Not Set**");
+			}
+			else {
+				embed.addField("Watching Role: ", '<@&' + guildSettings.watchingRole + '>');
+			}
 
       if (guildSettings.logChannelBoolean === "off") {
         embed.addField("Logging Status: ", '**Disabled**');

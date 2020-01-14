@@ -76,12 +76,12 @@ const DEBUG = 0;
 
 const defaultGuildSettings = {
   prefix: config.defaultPrefix,
-  logChannel: "plex_watching_logs",
+  logChannel: "",
   logChannelBoolean: "off",
-  notificationChannel: "plex_notifications",
+  notificationChannel: "",
   notificationChannelBoolean: "off",
-  adminRole: "Admin",
-  watchingRole: "Watching Plex",
+  adminRole: "",
+  watchingRole: "",
 	customRoleCount: 0
 }
 
