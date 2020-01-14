@@ -5,7 +5,7 @@ const axios = require('axios');
 const jtfd = require("json-to-form-data");
 
 const mainProgram = require("../index.js");
-const apiName = 'Plex-Discord Role Management API';
+const apiName = 'Plex-Discord Role Management API - Beta';
 
 const onPlayBody = '{ "trigger": "playbackStarted", "user": "{user}", "username": "{username}" }';
 const onStopBody = '{ "trigger": "playbackStopped", "user": "{user}", "username": "{username}" }';

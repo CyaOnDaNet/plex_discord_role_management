@@ -2,7 +2,7 @@ FROM node:latest
 LABEL maintainer="CyaOnDaNet"
 
 # Create app directory
-WORKDIR /usr/src/app
+WORKDIR /
 
 # Get app dependencies
 COPY package*.json ./
