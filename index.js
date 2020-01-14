@@ -7,11 +7,21 @@ const fetch = require('node-fetch');
 const process = require('process');
 const isDocker = require('is-docker');
 
-const configFile = require("./config/config.json");
+var configFile;
 var config = {};
 const tautulli = require('./src/tautulli.js');
 const sonarr = require('./src/sonarr.js');
 const sql = new SQLite('./config/database.sqlite');
+
+var configFile = './config/config.json';
+
+fs.access(configFile, fs.F_OK, (err) => {
+  if (err) {
+    // File does not exist, should be using docker environmental variables if thats the case.
+  } else {
+		configFile = require("./config/config.json");
+	}
+});
 
 
 if (isDocker()) {

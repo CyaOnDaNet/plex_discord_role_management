@@ -154,11 +154,16 @@ module.exports = async(config, port) => {
       custom_condition.parameter = 'library_name';
       custom_condition.type = 'str';
 
-      for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
-				if (libraryExclusionSettings.excluded === "true") {
-          excludedLibraries.push(libraryExclusionSettings.name);
-				}
-			}
+      try {
+        for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
+  				if (libraryExclusionSettings.excluded === "true") {
+            excludedLibraries.push(libraryExclusionSettings.name);
+  				}
+  			}
+      } catch (err) {
+    		//...
+    		console.log("Database not ready yet, does it exist?");
+    	}
 
       custom_condition.value = excludedLibraries;
       custom_conditions.push(custom_condition);
@@ -229,11 +234,16 @@ module.exports = async(config, port) => {
           custom_condition.type = 'str';
           custom_condition.parameter = 'library_name';
 
-          for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
-    				if (libraryExclusionSettings.excluded === "true") {
-              excludedLibraries.push(libraryExclusionSettings.name);
-    				}
-    			}
+          try {
+            for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
+      				if (libraryExclusionSettings.excluded === "true") {
+                excludedLibraries.push(libraryExclusionSettings.name);
+      				}
+      			}
+          } catch (err) {
+        		//...
+        		console.log("Database not ready yet, does it exist?");
+        	}
 
           custom_condition.value = excludedLibraries;
           custom_conditions.push(custom_condition);
