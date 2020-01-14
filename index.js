@@ -679,6 +679,9 @@ async function processHook(data) {
 						if (showsByTHETVDB != "" && showsByTHETVDB != null && showsByTHETVDB != undefined) {
 							if (!existsInDatabase) {
 								var json = await sonarr.sonarrService.lookUpSeries(`tvdb:${showsByTHETVDB}`);
+								if (json == "error") {
+									console.log("Couldn't connect to Sonarr, check your settings.");
+								}
 								for (var i = 0; i < json.length; i++) {
 									if (showsByTHETVDB == json[i].tvdbId) {
 										showNetwork = json[i].network;
@@ -803,6 +806,9 @@ async function updateShowList(message) {
   // grabs list of currently airing shows and adds them to notifications channel
 	let tvShowsNotificationSettings;
 	var json = await sonarr.sonarrService.getSeries();
+	if (json == "error") {
+		return console.log("Couldn't connect to Sonarr, check your settings.");
+	}
 	let showsList = [];
 	var count = 0;
 	for (var i = 0; i < json.length; i++) {

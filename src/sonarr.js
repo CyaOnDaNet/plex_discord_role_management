@@ -7,7 +7,6 @@ module.exports = async(config) => {
       var url = `${config.sonarr_ip}:${config.sonarr_port}/`;
       this.baseURL = url;
       this.sonarr_api_key = config.sonarr_api_key;
-      //url = url + "api/series?apikey=" + config.sonarr_api_key;
     }
 
     async getSeries() {
@@ -18,9 +17,8 @@ module.exports = async(config) => {
         const json = await response.json();
         return json;
       } catch (error) {
-        console.log(console.log(error));
-        console.log("Couldn't connect to Sonarr, check your settings.");
-        message.channel.send("Couldn't connect to Sonarr, check your settings.");
+        console.log(error);
+        return "error";
       }
     }
 
@@ -32,9 +30,8 @@ module.exports = async(config) => {
         const json = await response.json();
         return json;
       } catch (error) {
-        console.log(console.log(error));
-        console.log("Couldn't connect to Sonarr, check your settings.");
-        message.channel.send("Couldn't connect to Sonarr, check your settings.");
+        console.log(error);
+        return "error";
       }
     }
   }

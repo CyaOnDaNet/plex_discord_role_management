@@ -636,6 +636,10 @@ module.exports = {
 				.setColor(0x00AE86);
 
 			var json = await sonarr.sonarrService.lookUpSeries(messageAfterCommand);
+			if (json == "error") {
+				console.log("Couldn't connect to Sonarr, check your settings.");
+				return message.channel.send("Couldn't connect to Sonarr, check your settings.");
+			}
 			var description = "Select the emoji that corresponds to the show you want to exclude:\n";
 			var count = 0;
 			var showEmojiList = {};
@@ -744,6 +748,10 @@ module.exports = {
 				.setColor(0x00AE86);
 
 			var json = await sonarr.sonarrService.lookUpSeries(messageAfterCommand);
+			if (json == "error") {
+				console.log("Couldn't connect to Sonarr, check your settings.");
+				return message.channel.send("Couldn't connect to Sonarr, check your settings.");
+			}
 			var description = "Select the emoji that corresponds to the show you want to include:\n";
 			var count = 0;
 			var showEmojiList = {};
@@ -884,6 +892,10 @@ module.exports = {
 			var showEmojiList = {};
 			for (var j = 0; j < showNamesToSearch.length; j++) {
 	      var json = await sonarr.sonarrService.lookUpSeries(showNamesToSearch[j]);
+				if (json == "error") {
+					console.log("Couldn't connect to Sonarr, check your settings.");
+					return message.channel.send("Couldn't connect to Sonarr, check your settings.");
+				}
 				for (var i = 0; i < json.length; i++) {
 					if (count >= 9) break;
 					for (const tvNotificationSettings of client.searchTvShowsNotificationSettings.iterate()) {
@@ -1118,6 +1130,10 @@ module.exports = {
 			var showEmojiList = {};
 			for (var j = 0; j < showNamesToSearch.length; j++) {
 				var json = await sonarr.sonarrService.lookUpSeries(showNamesToSearch[j]);
+				if (json == "error") {
+					console.log("Couldn't connect to Sonarr, check your settings.");
+					return message.channel.send("Couldn't connect to Sonarr, check your settings.");
+				}
 				for (var i = 0; i < json.length; i++) {
 					if (count >= 9) break;
 					for (const tvNotificationSettings of client.searchTvShowsNotificationSettings.iterate()) {

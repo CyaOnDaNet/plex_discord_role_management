@@ -11,7 +11,7 @@ module.exports = {
 		var users = await tautulli.tautulliService.getUsers();
 		if (users == "error") {
 			console.log("Couldn't connect to Tautulli, check your settings.");
-			message.channel.send("Couldn't connect to Tautulli, check your settings.");
+			return message.channel.send("Couldn't connect to Tautulli, check your settings.");
 		}
 		users = users.data;
 
