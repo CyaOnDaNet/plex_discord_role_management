@@ -6,7 +6,7 @@ const jtfd = require("json-to-form-data");
 const isDocker = require('is-docker');
 
 const mainProgram = require("../index.js");
-const apiName = 'Plex-Discord Role Management API - Beta';
+const apiName = 'Plex-Discord Role Management API';
 
 const onPlayBody = '{ "trigger": "playbackStarted", "user": "{user}", "username": "{username}" }';
 const onStopBody = '{ "trigger": "playbackStopped", "user": "{user}", "username": "{username}" }';
