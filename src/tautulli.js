@@ -6,7 +6,7 @@ const jtfd = require("json-to-form-data");
 const isDocker = require('is-docker');
 
 const mainProgram = require("../index.js");
-const apiName = 'Plex-Discord Role Management API - Beta';
+const apiName = 'Plex-Discord Role Management API';
 
 const DEBUG = 0;  // 1 for database debugging
 
