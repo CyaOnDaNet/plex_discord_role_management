@@ -2,7 +2,7 @@ FROM node:latest
 LABEL maintainer="CyaOnDaNet"
 
 # Create app directory
-WORKDIR /
+WORKDIR /app
 
 # Get app dependencies
 COPY package*.json ./
@@ -11,8 +11,8 @@ COPY package*.json ./
 RUN npm install
 
 # Bundle app source
-COPY ./ /
+COPY . .
 
-VOLUME /config
+VOLUME /app/config
 EXPOSE 3000
 CMD [ "node", "index.js" ]

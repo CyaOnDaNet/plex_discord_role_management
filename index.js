@@ -91,7 +91,6 @@ const sonarrService = sonarr(config);
 
 client.on('ready', ()=> {
   console.log('The bot is now online!');
-	online = true;
   client.user.setActivity('Plex | ' + defaultGuildSettings.prefix + 'help', { type: 'WATCHING' })
 
   // Check if the table "guildSettings" exists.
@@ -181,7 +180,8 @@ client.on('ready', ()=> {
   client.getLibraryExclusionSettings = sql.prepare("SELECT * FROM libraryExclusion WHERE id = ?");
   client.searchLibraryExclusionSettings = sql.prepare("SELECT * FROM libraryExclusion");
   client.setLibraryExclusionSettings = sql.prepare("INSERT OR REPLACE INTO libraryExclusion (id, guild, name, excluded) VALUES (@id, @guild, @name, @excluded);");
-
+  
+  online = true;
 });
 
 client.on('message', async message => {
