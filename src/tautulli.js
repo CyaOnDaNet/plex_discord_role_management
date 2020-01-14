@@ -8,7 +8,7 @@ const isDocker = require('is-docker');
 const mainProgram = require("../index.js");
 const apiName = 'Plex-Discord Role Management API - Beta';
 
-const DEBUG = 1;  // 1 for database debugging
+const DEBUG = 0;  // 1 for database debugging
 
 const onPlayBody = '{ "trigger": "playbackStarted", "user": "{user}", "username": "{username}" }';
 const onStopBody = '{ "trigger": "playbackStopped", "user": "{user}", "username": "{username}" }';
@@ -169,6 +169,9 @@ module.exports = async(config, port) => {
           console.log("Database not ready yet, errored on setNotifierConfig");
           console.log(err);
         }
+        else {
+          console.log("Database not ready yet! Library exclusion settings not processed.");
+        }
     	}
 
       custom_condition.value = excludedLibraries;
@@ -252,6 +255,9 @@ module.exports = async(config, port) => {
             if (DEBUG === 1) {
               console.log("Database not ready yet, errored on getNotifierConfig");
               console.log(err);
+            }
+            else {
+              console.log("Database not ready yet! Library exclusion settings not processed.");
             }
         	}
 

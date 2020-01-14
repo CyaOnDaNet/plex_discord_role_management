@@ -8,7 +8,7 @@ const process = require('process');
 const isDocker = require('is-docker');
 const fs = require('fs');
 
-const DEBUG = 1;  // 1 for database debugging
+const DEBUG = 0;  // 1 for database debugging
 
 var configFile;
 var config = {};
@@ -227,8 +227,7 @@ var j = schedule.scheduleJob('* */2 * * * *', async function() {
   let userList;
 
 	if (online === false) {
-    if (DEBUG === 1) console.log("Database not ready yet, not online.");
-    else console.log("Database not ready yet");
+    console.log("Database not ready for scheduled job, client not fully online yet. Waiting to try again...");
 		return;
 	}
 	var result = await tautulli.tautulliService.getActivity();
@@ -252,9 +251,6 @@ var j = schedule.scheduleJob('* */2 * * * *', async function() {
         if (DEBUG === 1) {
           console.log(`Database not ready yet, failed on initial client.getLinkByPlexUserName.get(\`${activeStreams[i].user}\`).`);
           console.log(err)
-        }
-        else {
-				  console.log("Database not ready yet");
         }
 			}
 			//userList = await client.getLinkByPlexUserName.get(`${activeStreams[i].user}`).catch();
@@ -406,7 +402,7 @@ var j = schedule.scheduleJob('* */2 * * * *', async function() {
       console.log(err)
     }
     else {
-      console.log("Database not ready yet");
+      console.log("Database not ready yet, waiting to try again...");
     }
 	}
 });
