@@ -2,6 +2,8 @@ FROM node:12-slim as base
 LABEL maintainer="CyaOnDaNet"
 ENV NODE_ENV=production
 
+RUN apt-get update || : && apt-get install python -y
+
 RUN mkdir /app && chown -R node:node /app
 WORKDIR /app
 USER node
