@@ -3,9 +3,9 @@ LABEL maintainer="CyaOnDaNet"
 ENV NODE_ENV=production
 
 RUN apt-get update
-RUN apt-get install make
-RUN apt-get install gcc
-RUN apt-get install python
+RUN apt-get install make -y
+RUN apt-get install gcc -y
+RUN apt-get install python -y
 
 RUN mkdir /app && chown -R node:node /app
 WORKDIR /app
