@@ -1,13 +1,55 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const config = require("./config/config.json");
+
 const SQLite = require("better-sqlite3");
-const sql = new SQLite('./config/database.sqlite');
 const schedule = require('node-schedule');
 const Tautulli = require('tautulli-api');
 const fetch = require('node-fetch');
+const process = require('process');
+const isDocker = require('is-docker');
+
+const configFile = require("./config/config.json");
+var config = {};
 const tautulliHook = require('./src/tautulli.js');
 const sonarr = require('./src/sonarr.js');
+const sql = new SQLite('./config/database.sqlite');
+
+
+if (isDocker()) {
+	if (process.env.botToken !== undefined) config.botToken = process.env.botToken;
+	else config.botToken = configFile.botToken;
+
+	if (process.env.defaultPrefix !== undefined) config.defaultPrefix = process.env.defaultPrefix;
+	else config.defaultPrefix = configFile.defaultPrefix;
+
+	if (process.env.tautulli_ip !== undefined) config.tautulli_ip = process.env.tautulli_ip;
+	else config.tautulli_ip = configFile.tautulli_ip;
+
+	if (process.env.tautulli_port !== undefined) config.tautulli_port = process.env.tautulli_port;
+	else config.tautulli_port = configFile.tautulli_port;
+
+	if (process.env.tautulli_api_key !== undefined) config.tautulli_api_key = process.env.tautulli_api_key;
+	else config.tautulli_api_key = configFile.tautulli_api_key;
+
+	if (process.env.sonarr_ip !== undefined) config.sonarr_ip = process.env.sonarr_ip;
+	else config.sonarr_ip = configFile.sonarr_ip;
+
+	if (process.env.sonarr_port !== undefined) config.sonarr_port = process.env.sonarr_port;
+	else config.sonarr_port = configFile.sonarr_port;
+
+	if (process.env.sonarr_api_key !== undefined) config.sonarr_api_key = process.env.sonarr_api_key;
+	else config.sonarr_api_key = configFile.sonarr_api_key;
+
+	if (process.env.node_hook_ip !== undefined) config.node_hook_ip = process.env.node_hook_ip;
+	else config.node_hook_ip = configFile.node_hook_ip;
+
+	if (process.env.node_hook_port !== undefined) config.node_hook_port = process.env.node_hook_port;
+	else config.node_hook_port = configFile.node_hook_port;
+}
+else {
+	config = configFile;
+}
+
 
 const fs = require('fs');
 client.commands = new Discord.Collection();
@@ -42,8 +84,8 @@ client.on('ready', ()=> {
 	online = true;
   client.user.setActivity('Plex | ' + defaultGuildSettings.prefix + 'help', { type: 'WATCHING' })
 
-  const app = tautulliHook(config.node_hook_port);
-	const sonarrService = sonarr();
+  const tautulliService = tautulliHook(config, config.node_hook_port);
+	const sonarrService = sonarr(config);
 
   // Check if the table "guildSettings" exists.
   const tableGuildSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'guildSettings';").get();
