@@ -1,4 +1,4 @@
-If you are using docker than do NOT edit the config.json. Use environmental variables instead.
+If you are using docker then do NOT edit the config.json. Use environmental variables instead.
 An example of docker create is below:
 
 
