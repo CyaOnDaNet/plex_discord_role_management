@@ -6,6 +6,7 @@ const schedule = require('node-schedule');
 const fetch = require('node-fetch');
 const process = require('process');
 const isDocker = require('is-docker');
+const fs = require('fs');
 
 var configFile;
 var config = {};
@@ -60,7 +61,6 @@ else {
 }
 
 
-const fs = require('fs');
 client.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 for (const file of commandFiles) {
