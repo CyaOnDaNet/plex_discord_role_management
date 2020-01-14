@@ -151,8 +151,8 @@ module.exports = async(config, port) => {
       var custom_condition = {};
       var excludedLibraries = [];
       custom_condition.operator = 'does not contain';
-      custom_condition.parameter = 'library_name';
       custom_condition.type = 'str';
+      custom_condition.parameter = 'library_name';
 
       try {
         for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
@@ -163,6 +163,7 @@ module.exports = async(config, port) => {
       } catch (err) {
     		//...
         //database is empty
+        console.log("Errored on setNotifierConfig");
     	}
 
       custom_condition.value = excludedLibraries;
@@ -243,6 +244,7 @@ module.exports = async(config, port) => {
           } catch (err) {
         		//...
             //database is empty
+            console.log("Errored on getNotifierConfig");
         	}
 
           custom_condition.value = excludedLibraries;
