@@ -1,17 +1,11 @@
-FROM node:latest
+FROM node:lts
 LABEL maintainer="CyaOnDaNet"
 
-# Create app directory
+COPY ./ /app/
 WORKDIR /app
-
-# Get app dependencies
-COPY package*.json ./
 
 # Install app dependencies
 RUN npm install
-
-# Bundle app source
-COPY . .
 
 VOLUME /app/config
 EXPOSE 3000
