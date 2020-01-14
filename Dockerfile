@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm install
 
 # Bundle app source
-COPY ./ /usr/src/app
+COPY ./ /
 
 VOLUME /config
 EXPOSE 3000

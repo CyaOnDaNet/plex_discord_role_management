@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
 const axios = require('axios');
 const jtfd = require("json-to-form-data");
+const isDocker = require('is-docker');
 
 const mainProgram = require("../index.js");
 const apiName = 'Plex-Discord Role Management API - Beta';
@@ -287,7 +288,14 @@ module.exports = async(config, port) => {
     mainProgram.processHook(req.body); // Process incoming webhooks
   });
 
-  var server = app.listen(port, function() {
-    console.log('Listening on port %d', server.address().port);
-  });
+  if (isDocker()) {
+    var server = app.listen(3000, function() {
+      console.log(`Listening on internal docker port: ${server.address().port}\tHost port: ${config.node_hook_port}`);
+    });
+  }
+  else {
+    var server = app.listen(port, function() {
+      console.log('Listening on port %d', server.address().port);
+    });
+  }
 }
