@@ -8,6 +8,8 @@ const isDocker = require('is-docker');
 const mainProgram = require("../index.js");
 const apiName = 'Plex-Discord Role Management API - Beta';
 
+const DEBUG = 1;  // 1 for database debugging
+
 const onPlayBody = '{ "trigger": "playbackStarted", "user": "{user}", "username": "{username}" }';
 const onStopBody = '{ "trigger": "playbackStopped", "user": "{user}", "username": "{username}" }';
 const onCreatedBody = '{ "trigger": "recentlyAdded", "title": "{title}", "imdb_id": "{imdb_id}", "imdb_url": "{imdb_url}", "thetvdb_id": "{thetvdb_id}", "thetvdb_url": "{thetvdb_url}", "summary": "{summary}", "poster_url": "{poster_url}", "plex_url": "{plex_url}", <episode> "newOverride": "N/A", "contentType": "show", "show_name": "{show_name}", "messageContent":"A new episode of {show_name} has been added to plex.\\n{show_name} (S{season_num00}E{episode_num00}) - {episode_name}", "embedTitle": "{show_name} - {episode_name} (S{season_num} · E{episode_num})", "season_episode": "S{season_num00}E{episode_num00}" </episode> <movie> "contentType": "movie", "messageContent": "A new movie has been added to plex.\\n{title} ({year})", "year":"{year}", "release_date":"{release_date}", "embedTitle": "{title} ({year})"</movie> <show> "newOverride": "01-yes", "contentType": "show", "show_name": "{show_name}", "messageContent": "A new show has been added to plex.\\n{show_name}", "embedTitle": "{show_name}", "season_episode": "N/A" </show> <season> "newOverride": "{season_num00}-yes", "contentType": "show", "show_name": "{show_name}", "messageContent": "Season {season_num00} of {show_name} has been added to plex.\\n{show_name} Season {season_num00}", "embedTitle": "{show_name} · Season {season_num}", "season_episode": "N/A" </season><artist>"contentType": "music"</artist><album>"contentType": "music"</album><track>"contentType": "music"</track> }';
@@ -163,7 +165,10 @@ module.exports = async(config, port) => {
       } catch (err) {
     		//...
         //database is empty
-        console.log("Errored on setNotifierConfig");
+        if (DEBUG === 1) {
+          console.log("Database not ready yet, errored on setNotifierConfig");
+          console.log(err);
+        }
     	}
 
       custom_condition.value = excludedLibraries;
@@ -244,7 +249,10 @@ module.exports = async(config, port) => {
           } catch (err) {
         		//...
             //database is empty
-            console.log("Errored on getNotifierConfig");
+            if (DEBUG === 1) {
+              console.log("Database not ready yet, errored on getNotifierConfig");
+              console.log(err);
+            }
         	}
 
           custom_condition.value = excludedLibraries;

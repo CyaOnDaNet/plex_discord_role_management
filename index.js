@@ -8,6 +8,8 @@ const process = require('process');
 const isDocker = require('is-docker');
 const fs = require('fs');
 
+const DEBUG = 1;  // 1 for database debugging
+
 var configFile;
 var config = {};
 const tautulli = require('./src/tautulli.js');
@@ -71,8 +73,6 @@ for (const file of commandFiles) {
 var undefinedStreamers = [];
 var online = false;
 var exemptEmbedReactRoles = [];
-
-const DEBUG = 0;
 
 const defaultGuildSettings = {
   prefix: config.defaultPrefix,
@@ -226,7 +226,8 @@ var j = schedule.scheduleJob('* */2 * * * *', async function() {
   let userList;
 
 	if (online === false) {
-		console.log("Database not ready yet");
+    if (DEBUG === 1) console.log("Database not ready yet, not online.");
+    else console.log("Database not ready yet");
 		return;
 	}
 	var result = await tautulli.tautulliService.getActivity();
@@ -247,7 +248,13 @@ var j = schedule.scheduleJob('* */2 * * * *', async function() {
 				userList = await client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
 			} catch (err) {
 				//...
-				console.log("Database not ready yet");
+        if (DEBUG === 1) {
+          console.log(`Database not ready yet, failed on initial client.getLinkByPlexUserName.get(\`${activeStreams[i].user}\`).`);
+          console.log(err)
+        }
+        else {
+				  console.log("Database not ready yet");
+        }
 			}
 			//userList = await client.getLinkByPlexUserName.get(`${activeStreams[i].user}`).catch();
 			if (userList === undefined) {
@@ -393,7 +400,13 @@ var j = schedule.scheduleJob('* */2 * * * *', async function() {
 		}
 	} catch (err) {
 		//...
-		console.log("Database not ready yet");
+    if (DEBUG === 1) {
+      console.log("Database not ready yet, failed on recheck of activeStreams.");
+      console.log(err)
+    }
+    else {
+      console.log("Database not ready yet");
+    }
 	}
 });
 
