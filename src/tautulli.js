@@ -162,7 +162,7 @@ module.exports = async(config, port) => {
   			}
       } catch (err) {
     		//...
-    		console.log("Database not ready yet, does it exist?");
+        //database is empty
     	}
 
       custom_condition.value = excludedLibraries;
@@ -242,7 +242,7 @@ module.exports = async(config, port) => {
       			}
           } catch (err) {
         		//...
-        		console.log("Database not ready yet, does it exist?");
+            //database is empty
         	}
 
           custom_condition.value = excludedLibraries;
@@ -300,7 +300,7 @@ module.exports = async(config, port) => {
 
   if (isDocker()) {
     var server = app.listen(3000, function() {
-      console.log(`Listening on internal docker port: ${server.address().port}\tHost port: ${config.node_hook_port}`);
+      console.log(`Listening on docker port:${server.address().port} and Host port:${config.node_hook_port}`);
     });
   }
   else {

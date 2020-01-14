@@ -1,0 +1,12 @@
+{
+    "botToken": "YOUR_DISCORD_BOT_TOKEN",
+    "defaultPrefix": "!",
+    "tautulli_ip": "YOUR_TAUTULLI_IP_ADDRESS",
+    "tautulli_port": "YOUR_TAUTULLI_PORT",
+    "tautulli_api_key": "YOUR_TAUTULLI_API_KEY",
+    "sonarr_ip": "YOUR_SONARR_IP_ADDRESS",
+    "sonarr_port": "YOUR_SONARR_PORT",
+    "sonarr_api_key": "YOUR_SONARR_API_KEY",
+    "node_hook_ip": "THE_IP_ADDRESS_OF_THIS_NODEJS_BOT",
+    "node_hook_port": "3000"
+}
