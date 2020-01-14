@@ -14,9 +14,9 @@ const tautulli = require('./src/tautulli.js');
 const sonarr = require('./src/sonarr.js');
 const sql = new SQLite('./config/database.sqlite');
 
-var configFile = './config/config.json';
+var configFilePath = './config/config.json';
 
-fs.access(configFile, fs.F_OK, (err) => {
+fs.access(configFilePath, fs.F_OK, (err) => {
   if (err) {
     // File does not exist, should be using docker environmental variables if thats the case.
   } else {
@@ -57,7 +57,7 @@ if (isDocker()) {
 	else config.node_hook_port = configFile.node_hook_port;
 }
 else {
-	config = configFile;
+	config = require("./config/config.json");
 }
 
 
