@@ -1001,3 +1001,33 @@ async function generateNotificationSettings(message) {
 module.exports.updateShowList = updateShowList;
 module.exports.processHook = processHook;
 module.exports.client = client;
+
+process.on('SIGINT', function onSigint () {
+  console.info('Got SIGTERM. Graceful shutdown start', new Date().toISOString())
+  // start graceul shutdown here
+  shutdown();
+});
+
+process.on('SIGTERM', function onSigterm () {
+  console.info('Got SIGTERM. Graceful shutdown start', new Date().toISOString())
+  // start graceul shutdown here
+  shutdown();
+});
+
+function shutdown() {
+  console.log('Received kill signal, shutting down gracefully');
+  try {
+    j.cancel();
+	  sql.close();
+  } catch (error) {
+	  console.error(error);
+	  process.exit(1);
+  }
+
+  setTimeout(() => {
+    console.error('Could not close connections in time, forcefully shutting down');
+    process.exit(1);
+  }, 10000);
+
+  process.exit();
+}
