@@ -4,8 +4,13 @@ module.exports = {
 	description: 'Displays a list of shows currently airing on the Plex server',
 	usage: '',
 	adminCommand: false,
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook, sonarr) {
+	async execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr) {
 		var json = await sonarr.sonarrService.getSeries();
+		if (json == "error") {
+			console.log("Couldn't connect to Sonarr, check your settings.");
+			return message.channel.send("Couldn't connect to Sonarr, check your settings.");
+		}
+
 		var showsList = "\n";
 		for (var i = 0; i < json.length; i++) {
 			if (json[i].status === "continuing") {

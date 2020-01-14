@@ -1,15 +1,66 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const config = require("./config/config.json");
-const SQLite = require("better-sqlite3");
-const sql = new SQLite('./config/database.sqlite');
-const schedule = require('node-schedule');
-const Tautulli = require('tautulli-api');
-const fetch = require('node-fetch');
-const tautulliHook = require('./src/tautulli.js');
-const sonarr = require('./src/sonarr.js');
 
+const SQLite = require("better-sqlite3");
+const schedule = require('node-schedule');
+const fetch = require('node-fetch');
+const process = require('process');
+const isDocker = require('is-docker');
 const fs = require('fs');
+
+var configFile;
+var config = {};
+const tautulli = require('./src/tautulli.js');
+const sonarr = require('./src/sonarr.js');
+const sql = new SQLite('./config/database.sqlite');
+
+var configFilePath = './config/config.json';
+
+fs.access(configFilePath, fs.F_OK, (err) => {
+  if (err) {
+    // File does not exist, should be using docker environmental variables if thats the case.
+  } else {
+		configFile = require("./config/config.json");
+	}
+});
+
+
+if (isDocker()) {
+	if (process.env.botToken !== undefined) config.botToken = process.env.botToken;
+	else config.botToken = configFile.botToken;
+
+	if (process.env.defaultPrefix !== undefined) config.defaultPrefix = process.env.defaultPrefix;
+	else config.defaultPrefix = configFile.defaultPrefix;
+
+	if (process.env.tautulli_ip !== undefined) config.tautulli_ip = process.env.tautulli_ip;
+	else config.tautulli_ip = configFile.tautulli_ip;
+
+	if (process.env.tautulli_port !== undefined) config.tautulli_port = process.env.tautulli_port;
+	else config.tautulli_port = configFile.tautulli_port;
+
+	if (process.env.tautulli_api_key !== undefined) config.tautulli_api_key = process.env.tautulli_api_key;
+	else config.tautulli_api_key = configFile.tautulli_api_key;
+
+	if (process.env.sonarr_ip !== undefined) config.sonarr_ip = process.env.sonarr_ip;
+	else config.sonarr_ip = configFile.sonarr_ip;
+
+	if (process.env.sonarr_port !== undefined) config.sonarr_port = process.env.sonarr_port;
+	else config.sonarr_port = configFile.sonarr_port;
+
+	if (process.env.sonarr_api_key !== undefined) config.sonarr_api_key = process.env.sonarr_api_key;
+	else config.sonarr_api_key = configFile.sonarr_api_key;
+
+	if (process.env.node_hook_ip !== undefined) config.node_hook_ip = process.env.node_hook_ip;
+	else config.node_hook_ip = configFile.node_hook_ip;
+
+	if (process.env.node_hook_port !== undefined) config.node_hook_port = process.env.node_hook_port;
+	else config.node_hook_port = configFile.node_hook_port;
+}
+else {
+	config = require("./config/config.json");
+}
+
+
 client.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 for (const file of commandFiles) {
@@ -25,25 +76,23 @@ const DEBUG = 0;
 
 const defaultGuildSettings = {
   prefix: config.defaultPrefix,
-  logChannel: "plex_watching_logs",
+  logChannel: "",
   logChannelBoolean: "off",
-  notificationChannel: "plex_notifications",
+  notificationChannel: "",
   notificationChannelBoolean: "off",
-  adminRole: "Admin",
-  watchingRole: "Watching Plex",
+  adminRole: "",
+  watchingRole: "",
 	customRoleCount: 0
 }
 
 client.login(config.botToken);
-var tautulli = new Tautulli(config.tautulli_ip, config.tautulli_port, config.tautulli_api_key); // ip and port of Tautulli and YOUR Tautulli API token
+const tautulliService = tautulli(config, config.node_hook_port);
+const sonarrService = sonarr(config);
 
 client.on('ready', ()=> {
   console.log('The bot is now online!');
 	online = true;
   client.user.setActivity('Plex | ' + defaultGuildSettings.prefix + 'help', { type: 'WATCHING' })
-
-  const app = tautulliHook(config.node_hook_port);
-	const sonarrService = sonarr();
 
   // Check if the table "guildSettings" exists.
   const tableGuildSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'guildSettings';").get();
@@ -165,14 +214,14 @@ client.on('message', async message => {
 	if (!command) return;
 
   try {
-	  command.execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook, sonarr);
+	  command.execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr);
   } catch (error) {
 	  console.error(error);
 	  message.reply('there was an error trying to execute that command!');
   }
 });
 
-var j = schedule.scheduleJob('* */2 * * * *', function() {
+var j = schedule.scheduleJob('* */2 * * * *', async function() {
   // Checks the plex server for activity using Tautulli and repeats every 2 minutes, serves as a fallback in the event webhook trigger has failed.
   let userList;
 
@@ -180,175 +229,172 @@ var j = schedule.scheduleJob('* */2 * * * *', function() {
 		console.log("Database not ready yet");
 		return;
 	}
+	var result = await tautulli.tautulliService.getActivity();
+	if (result == "error") {
+		console.log("Couldn't connect to Tautulli, check your settings.");
+		return;
+	}
 
-  tautulli.get('get_activity').then(async (result) => {
+	var activeStreams = result.data.sessions;
+	if (activeStreams.length === 0) {
+		// Make sure nobody has the watching role
+	}
+	else {
+		for (var i = 0; i < activeStreams.length; i++) {
+			if (!activeStreams[i].user || activeStreams[i].user === undefined) break;
 
-    var activeStreams = result.response.data.sessions;
-    if (activeStreams.length === 0) {
-      // Make sure nobody has the watching role
-    }
-    else {
-      for (var i = 0; i < activeStreams.length; i++) {
-        if (!activeStreams[i].user || activeStreams[i].user === undefined) break;
+			try {
+				userList = await client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
+			} catch (err) {
+				//...
+				console.log("Database not ready yet");
+			}
+			//userList = await client.getLinkByPlexUserName.get(`${activeStreams[i].user}`).catch();
+			if (userList === undefined) {
+				// No record of plex username exists in database; therefore it has not been setup and we do nothing.
+				if (undefinedStreamers.indexOf(activeStreams[i].user) === -1) {
+					// prevents logs from filling up with duplicate entries
+					console.log("Unlinked active streamer detected: " + `${activeStreams[i].user}`);
+					undefinedStreamers.push(activeStreams[i].user);
 
-        try {
-          userList = await client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
-        } catch (err) {
-          //...
-          console.log("Database not ready yet");
-        }
-        //userList = await client.getLinkByPlexUserName.get(`${activeStreams[i].user}`).catch();
-        if (userList === undefined) {
-          // No record of plex username exists in database; therefore it has not been setup and we do nothing.
-          if (undefinedStreamers.indexOf(activeStreams[i].user) === -1) {
-            // prevents logs from filling up with duplicate entries
-            console.log("Unlinked active streamer detected: " + `${activeStreams[i].user}`);
-            undefinedStreamers.push(activeStreams[i].user);
-
-						for (const guildSettings of client.searchGuildSettings.iterate()) {
-							if (guildSettings.logChannelBoolean === "on") {
-		            var sendOption = 0;
-		            if (client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel) === undefined) {
-		              // Channel is invalid
-		              break;
-		            } else {
-		              sendOption = 1;
-		            }
-		            if (client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
-		              // Channel is invalid
-		              break;
-		            }
-		            if (!Boolean(bypass) && sendOption === 1) {
-		              client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
-		            } else if (!Boolean(bypass)) {
-		              client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
-		            }
-		          }
+					for (const guildSettings of client.searchGuildSettings.iterate()) {
+						if (guildSettings.logChannelBoolean === "on") {
+							var sendOption = 0;
+							if (client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel) === undefined) {
+								// Channel is invalid
+								break;
+							} else {
+								sendOption = 1;
+							}
+							if (client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+								// Channel is invalid
+								break;
+							}
+							if (!Boolean(bypass) && sendOption === 1) {
+								client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
+							} else if (!Boolean(bypass)) {
+								client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
+							}
 						}
-          }
-        } else {
-          // This is where we assign the watching role
-          let guildSettings = client.getGuildSettings.get(userList.guild);
-          userList.watching = "true";
-          client.setUserList.run(userList);
-          userList = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
+					}
+				}
+			} else {
+				// This is where we assign the watching role
+				let guildSettings = client.getGuildSettings.get(userList.guild);
+				userList.watching = "true";
+				client.setUserList.run(userList);
+				userList = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
 
-          let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
+				let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
 
-          var bypass = false;
-          var roles = userToModify._roles;
+				var bypass = false;
+				var roles = userToModify._roles;
 
-          for (var y = 0; y < roles.length; y++) {
-            if (roles[y] === guildSettings.watchingRole) {
-              bypass = true;
-            }
-          }
+				for (var y = 0; y < roles.length; y++) {
+					if (roles[y] === guildSettings.watchingRole) {
+						bypass = true;
+					}
+				}
 
-          var roleOption = 0;
-          if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
-            // Role is invalid
-            console.log("Invalid watching role detected, please re-apply role command.");
-            break;
-          } else {
-            roleOption = 1;
-          }
+				var roleOption = 0;
+				if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
+					// Role is invalid
+					console.log("Invalid watching role detected, please re-apply role command.");
+					break;
+				} else {
+					roleOption = 1;
+				}
 
-          if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
-            // Role is invalid
-            console.log("Invalid watching role detected, please re-apply role command.");
-            break;
-          }
+				if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
+					// Role is invalid
+					console.log("Invalid watching role detected, please re-apply role command.");
+					break;
+				}
 
-          if (!Boolean(bypass)) {
-            userToModify.addRole(guildSettings.watchingRole)
-              .catch(console.error);
-          }
+				if (!Boolean(bypass)) {
+					userToModify.addRole(guildSettings.watchingRole)
+						.catch(console.error);
+				}
 
-          if (guildSettings.logChannelBoolean === "on") {
-            var sendOption = 0;
-            if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
-              // Channel is invalid
-              console.log("Invalid logging channel detected, please re-apply logchannel command.");
-              break;
-            } else {
-              sendOption = 1;
-            }
-            if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
-              // Channel is invalid
-              console.log("Invalid logging channel detected, please re-apply logchannel command.");
-              break;
-            }
-            if (!Boolean(bypass) && sendOption === 1) {
-              client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
-            } else if (!Boolean(bypass)) {
-              client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
-            }
-          }
-        }
-      }
-    }
+				if (guildSettings.logChannelBoolean === "on") {
+					var sendOption = 0;
+					if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+						// Channel is invalid
+						console.log("Invalid logging channel detected, please re-apply logchannel command.");
+						break;
+					} else {
+						sendOption = 1;
+					}
+					if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+						// Channel is invalid
+						console.log("Invalid logging channel detected, please re-apply logchannel command.");
+						break;
+					}
+					if (!Boolean(bypass) && sendOption === 1) {
+						client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+					} else if (!Boolean(bypass)) {
+						client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+					}
+				}
+			}
+		}
+	}
 
-    try {
-      // Now we recheck activeStreams to set watching to false for everyone else
-      for (const watchingQuery of client.searchGuildUserList.iterate()) {
-        if (watchingQuery.watching === 'true') {
-          var bypass = false;
-          for (var i = 0; i < activeStreams.length; i++) {
-            if (watchingQuery.plexUserName === activeStreams[i].user) {
-              bypass = true;
-            }
-          }
-          if (!Boolean(bypass)) {
-            // This is where we remove the watching role
-            let userToModify = client.guilds.get(watchingQuery.guild).members.get(watchingQuery.discordUserID);
-            let guildSettings = client.getGuildSettings.get(watchingQuery.guild);
-            var bypassAgain = true;
-            var roles = userToModify._roles;
+	try {
+		// Now we recheck activeStreams to set watching to false for everyone else
+		for (const watchingQuery of client.searchGuildUserList.iterate()) {
+			if (watchingQuery.watching === 'true') {
+				var bypass = false;
+				for (var i = 0; i < activeStreams.length; i++) {
+					if (watchingQuery.plexUserName === activeStreams[i].user) {
+						bypass = true;
+					}
+				}
+				if (!Boolean(bypass)) {
+					// This is where we remove the watching role
+					let userToModify = client.guilds.get(watchingQuery.guild).members.get(watchingQuery.discordUserID);
+					let guildSettings = client.getGuildSettings.get(watchingQuery.guild);
+					var bypassAgain = true;
+					var roles = userToModify._roles;
 
-            for (var i = 0; i < roles.length; i++) {
-              if (roles[i] === guildSettings.watchingRole) {
-                bypassAgain = false;
-              }
-            }
+					for (var i = 0; i < roles.length; i++) {
+						if (roles[i] === guildSettings.watchingRole) {
+							bypassAgain = false;
+						}
+					}
 
-            if (!Boolean(bypassAgain)) {
-              userToModify.removeRole(guildSettings.watchingRole)
-                .catch(console.error);
-            }
+					if (!Boolean(bypassAgain)) {
+						userToModify.removeRole(guildSettings.watchingRole)
+							.catch(console.error);
+					}
 
-            if (guildSettings.logChannelBoolean === "on") {
-              var channelOption = 0;
-              if (client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel) === undefined) {
-                // Channel is invalid
-                console.log("Invalid logging channel detected, please re-apply logchannel command.");
-                break;
-              } else {
-                channelOption = 1;
-              }
-              if (client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
-                // Channel is invalid
-                console.log("Invalid logging channel detected, please re-apply logchannel command.");
-                break;
-              }
-              if (!Boolean(bypassAgain) && channelOption === 1) {
-                client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
-              } else if (!Boolean(bypassAgain)) {
-                client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
-              }
-            }
-          }
-        }
-      }
-    } catch (err) {
-      //...
-      console.log("Database not ready yet");
-    }
-
-  }).catch((error) => {
-    console.log("Couldn't connect to Tautulli, check your settings.");
-    //console.log(error);
-    // do we need to remove roles if this is the case? Maybe we don't...
-  });
+					if (guildSettings.logChannelBoolean === "on") {
+						var channelOption = 0;
+						if (client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel) === undefined) {
+							// Channel is invalid
+							console.log("Invalid logging channel detected, please re-apply logchannel command.");
+							break;
+						} else {
+							channelOption = 1;
+						}
+						if (client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
+							// Channel is invalid
+							console.log("Invalid logging channel detected, please re-apply logchannel command.");
+							break;
+						}
+						if (!Boolean(bypassAgain) && channelOption === 1) {
+							client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+						} else if (!Boolean(bypassAgain)) {
+							client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+						}
+					}
+				}
+			}
+		}
+	} catch (err) {
+		//...
+		console.log("Database not ready yet");
+	}
 });
 
 /*
@@ -643,6 +689,9 @@ async function processHook(data) {
 						if (showsByTHETVDB != "" && showsByTHETVDB != null && showsByTHETVDB != undefined) {
 							if (!existsInDatabase) {
 								var json = await sonarr.sonarrService.lookUpSeries(`tvdb:${showsByTHETVDB}`);
+								if (json == "error") {
+									console.log("Couldn't connect to Sonarr, check your settings.");
+								}
 								for (var i = 0; i < json.length; i++) {
 									if (showsByTHETVDB == json[i].tvdbId) {
 										showNetwork = json[i].network;
@@ -767,6 +816,9 @@ async function updateShowList(message) {
   // grabs list of currently airing shows and adds them to notifications channel
 	let tvShowsNotificationSettings;
 	var json = await sonarr.sonarrService.getSeries();
+	if (json == "error") {
+		return console.log("Couldn't connect to Sonarr, check your settings.");
+	}
 	let showsList = [];
 	var count = 0;
 	for (var i = 0; i < json.length; i++) {

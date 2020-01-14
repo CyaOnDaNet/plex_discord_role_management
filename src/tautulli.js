@@ -3,16 +3,16 @@ const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
 const axios = require('axios');
 const jtfd = require("json-to-form-data");
+const isDocker = require('is-docker');
 
 const mainProgram = require("../index.js");
-const config = require("../config/config.json");
-const apiName = 'Plex-Discord Role Management API';
+const apiName = 'Plex-Discord Role Management API - Beta';
 
 const onPlayBody = '{ "trigger": "playbackStarted", "user": "{user}", "username": "{username}" }';
 const onStopBody = '{ "trigger": "playbackStopped", "user": "{user}", "username": "{username}" }';
 const onCreatedBody = '{ "trigger": "recentlyAdded", "title": "{title}", "imdb_id": "{imdb_id}", "imdb_url": "{imdb_url}", "thetvdb_id": "{thetvdb_id}", "thetvdb_url": "{thetvdb_url}", "summary": "{summary}", "poster_url": "{poster_url}", "plex_url": "{plex_url}", <episode> "newOverride": "N/A", "contentType": "show", "show_name": "{show_name}", "messageContent":"A new episode of {show_name} has been added to plex.\\n{show_name} (S{season_num00}E{episode_num00}) - {episode_name}", "embedTitle": "{show_name} - {episode_name} (S{season_num} · E{episode_num})", "season_episode": "S{season_num00}E{episode_num00}" </episode> <movie> "contentType": "movie", "messageContent": "A new movie has been added to plex.\\n{title} ({year})", "year":"{year}", "release_date":"{release_date}", "embedTitle": "{title} ({year})"</movie> <show> "newOverride": "01-yes", "contentType": "show", "show_name": "{show_name}", "messageContent": "A new show has been added to plex.\\n{show_name}", "embedTitle": "{show_name}", "season_episode": "N/A" </show> <season> "newOverride": "{season_num00}-yes", "contentType": "show", "show_name": "{show_name}", "messageContent": "Season {season_num00} of {show_name} has been added to plex.\\n{show_name} Season {season_num00}", "embedTitle": "{show_name} · Season {season_num}", "season_episode": "N/A" </season><artist>"contentType": "music"</artist><album>"contentType": "music"</album><track>"contentType": "music"</track> }';
 
-module.exports = async(port) => {
+module.exports = async(config, port) => {
   class tautulliService {
     constructor() {
       this.baseURL = `${config.tautulli_ip}:${config.tautulli_port}/api/v2?apikey=${config.tautulli_api_key}&cmd=`;
@@ -32,7 +32,7 @@ module.exports = async(port) => {
           //console.log("Connected to Tautulli...");
         }
         else {
-          console.log("Couldn't fetch notifiers from Tautulli, check your config.json settings")
+          console.log("Couldn't fetch notifiers from Tautulli, check your settings")
           return;
         }
         beforeChangeNotifiers = json.response;
@@ -52,7 +52,8 @@ module.exports = async(port) => {
           });
         }
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
       }
     }
 
@@ -64,7 +65,8 @@ module.exports = async(port) => {
         const json = await response.json();
         return json.response;
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
       }
     }
 
@@ -76,7 +78,34 @@ module.exports = async(port) => {
         const json = await response.json();
         return json.response;
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
+      }
+    }
+
+    async getUsers() {
+      try {
+        const response = await fetch(this.baseURL + `get_users`,  {
+            method: 'GET'
+        });
+        const json = await response.json();
+        return json.response;
+      } catch (error) {
+        console.log(error);
+        return "error";
+      }
+    }
+
+    async getActivity() {
+      try {
+        const response = await fetch(this.baseURL + `get_activity`,  {
+            method: 'GET'
+        });
+        const json = await response.json();
+        return json.response;
+      } catch (error) {
+        console.log(error);
+        return "error";
       }
     }
 
@@ -99,7 +128,8 @@ module.exports = async(port) => {
           if (!beforeMap[item.id]) this.setNotifierConfig(item.id, notificationUrl, true);
         });
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
       }
     }
 
@@ -111,7 +141,8 @@ module.exports = async(port) => {
         const json = await response.json();
         return json.response.data;
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
       }
 	  }
 
@@ -123,11 +154,16 @@ module.exports = async(port) => {
       custom_condition.parameter = 'library_name';
       custom_condition.type = 'str';
 
-      for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
-				if (libraryExclusionSettings.excluded === "true") {
-          excludedLibraries.push(libraryExclusionSettings.name);
-				}
-			}
+      try {
+        for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
+  				if (libraryExclusionSettings.excluded === "true") {
+            excludedLibraries.push(libraryExclusionSettings.name);
+  				}
+  			}
+      } catch (err) {
+    		//...
+        //database is empty
+    	}
 
       custom_condition.value = excludedLibraries;
       custom_conditions.push(custom_condition);
@@ -146,7 +182,8 @@ module.exports = async(port) => {
         if (isNew) console.log('Tautulli Webhook Created!');
         else console.log('Tautulli Webhook Updated!')
       } catch (error) {
-        console.log(console.log(error));
+        console.log(error);
+        return "error";
       }
 	  }
   }
@@ -169,7 +206,7 @@ module.exports = async(port) => {
       console.log("Connected to Tautulli...");
     }
     else {
-      console.log("Couldn't fetch notifiers from Tautulli, check your config.json settings")
+      console.log("Couldn't fetch notifiers from Tautulli, check your settings")
       return;
     }
     beforeChangeNotifiers = json.response;
@@ -197,11 +234,16 @@ module.exports = async(port) => {
           custom_condition.type = 'str';
           custom_condition.parameter = 'library_name';
 
-          for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
-    				if (libraryExclusionSettings.excluded === "true") {
-              excludedLibraries.push(libraryExclusionSettings.name);
-    				}
-    			}
+          try {
+            for (const libraryExclusionSettings of mainProgram.client.searchLibraryExclusionSettings.iterate()) {
+      				if (libraryExclusionSettings.excluded === "true") {
+                excludedLibraries.push(libraryExclusionSettings.name);
+      				}
+      			}
+          } catch (err) {
+        		//...
+            //database is empty
+        	}
 
           custom_condition.value = excludedLibraries;
           custom_conditions.push(custom_condition);
@@ -239,7 +281,8 @@ module.exports = async(port) => {
 			service.addScriptNotifier(notificationUrl);
 		}
   } catch (error) {
-    console.log(console.log(error));
+    console.log(error);
+    return "error";
   }
 
   const app = express();
@@ -255,7 +298,14 @@ module.exports = async(port) => {
     mainProgram.processHook(req.body); // Process incoming webhooks
   });
 
-  var server = app.listen(port, function() {
-    console.log('Listening on port %d', server.address().port);
-  });
+  if (isDocker()) {
+    var server = app.listen(3000, function() {
+      console.log(`Listening on docker port:${server.address().port} and Host port:${config.node_hook_port}`);
+    });
+  }
+  else {
+    var server = app.listen(port, function() {
+      console.log('Listening on port %d', server.address().port);
+    });
+  }
 }

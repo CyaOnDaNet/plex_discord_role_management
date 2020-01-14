@@ -8,7 +8,7 @@ module.exports = {
 		'prefix':'newprefix',
 		'logchannel':'@channel',
 	},
-	async execute(message, args, prefix, guildSettings, client, Discord, tautulli, config, fetch, exemptEmbedReactRoles, tautulliHook, sonarr) {
+	async execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr) {
     // This is where we change bot information
     if (args.length > 0) {
       command = args.shift().toLowerCase();
@@ -21,10 +21,16 @@ module.exports = {
         .setAuthor(client.user.username, client.user.avatarURL)
         .setDescription("Below is a list of important bot info:\n")
         .addField("Prefix: ", '`' + prefix + '`',  true)
-        .addField("Watching Role: ", '<@&' + guildSettings.watchingRole + '>')
         .setFooter("Fetched")
         .setTimestamp(new Date())
         .setColor(0x00AE86);
+
+			if (guildSettings.watchingRole === "" || guildSettings.watchingRole === undefined || guildSettings.watchingRole === null) {
+				embed.addField("Watching Role: ", "**Not Set**");
+			}
+			else {
+				embed.addField("Watching Role: ", '<@&' + guildSettings.watchingRole + '>');
+			}
 
       if (guildSettings.logChannelBoolean === "off") {
         embed.addField("Logging Status: ", '**Disabled**');
