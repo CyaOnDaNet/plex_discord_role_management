@@ -4,6 +4,7 @@ const fetch = require('node-fetch');
 const axios = require('axios');
 const jtfd = require("json-to-form-data");
 const isDocker = require('is-docker');
+var _ = require('lodash');
 
 const mainProgram = require("../index.js");
 const apiName = 'Plex-Discord Role Management API';
@@ -264,10 +265,8 @@ module.exports = async(config, port) => {
           custom_condition.value = excludedLibraries;
           custom_conditions.push(custom_condition);
 
-          if (JSON.stringify(data.custom_conditions) != JSON.stringify(custom_conditions)) {
+          if (!_.isEqual(data.custom_conditions, custom_conditions)) {
             console.log('Updating WebHook...');
-            //console.log(JSON.stringify(data.custom_conditions));
-            //console.log(JSON.stringify(custom_conditions));
 						service.setNotifierConfig(id, notificationUrl, false);
           }
 					else if (data.config_options[0].value != notificationUrl) {
