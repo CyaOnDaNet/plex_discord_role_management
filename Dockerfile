@@ -2,9 +2,11 @@ FROM node:12-slim as base
 LABEL maintainer="CyaOnDaNet"
 ENV NODE_ENV=production
 
-RUN apt-get update -y
-RUN apt-get install dialog apt-utils -y
-RUN apt-get install make -y && \
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections && \
+  apt-get update -y && \
+  apt-get install -y -q && \
+  apt-get install dialog apt-utils -y &&  \
+  apt-get install make -y && \
   apt-get install gcc -y && \
   apt-get install python -y && \
   apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
