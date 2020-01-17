@@ -156,7 +156,7 @@ client.on('ready', ()=> {
     sql.pragma("journal_mode = wal");
   }
 
-  // And then we have prepared statements to get and set tvShowsNotificationSettings data.
+  // And then we have prepared statements to get and set notificationSettings data.
 	client.deleteNotificationSettings = sql.prepare("DELETE FROM notificationSettings WHERE id = ?");
   client.getNotificationSettings = sql.prepare("SELECT * FROM notificationSettings WHERE id = ?");
   client.searchNotificationSettings = sql.prepare("SELECT * FROM notificationSettings");

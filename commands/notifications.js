@@ -51,14 +51,18 @@ module.exports = {
 			for (const notificationSettings of client.searchNotificationSettings.iterate()) {
 				if (notificationSettings.category != "networks" && notificationSettings.category != "custom") {
 					if (notificationSettings.roleID === null || notificationSettings.roleID === undefined) {
-						//disabledItems = disabledItems + `\n${emojiOptions[count]} **${notificationSettings.name}** ${notificationSettings.description}`;
-						disabledItemsList.push(`**${notificationSettings.name}** ${notificationSettings.description}`);
-						sortedRefernceList[`**${notificationSettings.name}** ${notificationSettings.description}`] = notificationSettings.id;
+						if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.name}`) {
+							//Check to make sure client id is the same, in case using a different bot token
+							disabledItemsList.push(`**${notificationSettings.name}** ${notificationSettings.description}`);
+							sortedRefernceList[`**${notificationSettings.name}** ${notificationSettings.description}`] = notificationSettings.id;
+						}
 					}
 					else {
-						//enabledItems = enabledItems + `\n${emojiOptions[count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
-						enabledItemsList.push(`<@&${notificationSettings.roleID}> ${notificationSettings.description}`);
-						sortedRefernceList[`<@&${notificationSettings.roleID}> ${notificationSettings.description}`] = notificationSettings.id;
+						if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.name}`) {
+							//Check to make sure client id is the same, in case using a different bot token
+							enabledItemsList.push(`<@&${notificationSettings.roleID}> ${notificationSettings.description}`);
+							sortedRefernceList[`<@&${notificationSettings.roleID}> ${notificationSettings.description}`] = notificationSettings.id;
+						}
 					}
 					count++;
 				}
@@ -206,12 +210,18 @@ module.exports = {
 			for (const notificationSettings of client.searchNotificationSettings.iterate()) {
 				if (notificationSettings.category === "networks") {
 					if (notificationSettings.roleID === null || notificationSettings.roleID === undefined) {
-						networksDisabledItemsList.push(`**${notificationSettings.name}** ${notificationSettings.description}`);
-						networksSortedRefernceList[`**${notificationSettings.name}** ${notificationSettings.description}`] = notificationSettings.id;
+						if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.name}`) {
+							//Check to make sure client id is the same, in case using a different bot token
+							networksDisabledItemsList.push(`**${notificationSettings.name}** ${notificationSettings.description}`);
+							networksSortedRefernceList[`**${notificationSettings.name}** ${notificationSettings.description}`] = notificationSettings.id;
+						}
 					}
 					else {
-						networksEnabledItemsList.push(`<@&${notificationSettings.roleID}> ${notificationSettings.description}`);
-						networksSortedRefernceList[`<@&${notificationSettings.roleID}> ${notificationSettings.description}`] = notificationSettings.id;
+						if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.name}`) {
+							//Check to make sure client id is the same, in case using a different bot token
+							networksEnabledItemsList.push(`<@&${notificationSettings.roleID}> ${notificationSettings.description}`);
+							networksSortedRefernceList[`<@&${notificationSettings.roleID}> ${notificationSettings.description}`] = notificationSettings.id;
+						}
 					}
 					networksCount++;
 				}
@@ -392,10 +402,13 @@ module.exports = {
 						var count = 0;
 						for (const notificationSettings of client.searchNotificationSettings.iterate()) {
 							if (notificationSettings.category === "custom") {
-								customList[emojiOptions[count]] = `${notificationSettings.roleID}`;
-								setDescription = setDescription + "\n" + `${emojiOptions[count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
-								customList2[emojiOptions[count]] = `<@&${notificationSettings.roleID}> ${notificationSettings.description}`;
-								count++;
+								if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.roleID}`) {
+									//Check to make sure client id is the same, in case using a different bot token
+									customList[emojiOptions[count]] = `${notificationSettings.roleID}`;
+									setDescription = setDescription + "\n" + `${emojiOptions[count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
+									customList2[emojiOptions[count]] = `<@&${notificationSettings.roleID}> ${notificationSettings.description}`;
+									count++;
+								}
 							}
 						}
 
@@ -487,6 +500,19 @@ module.exports = {
 				}
 			}
 
+			for (const exclusionList of client.searchLibraryExclusionSettings.iterate()) {
+				// Deletes an old library
+				var deleteLibrary = true;
+				for (var i = 0; i < library.length; i++) {
+          if (exclusionList.name === library[i].section_name.trim()) {
+						deleteLibrary = false;
+					}
+				}
+				if (deleteLibrary) {
+					client.deleteNotificationSettings.run(`${exclusionList.id}`);
+				}
+			}
+
 			var customList2 = {};
 
 			var emojiOptions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
@@ -502,9 +528,12 @@ module.exports = {
 			var count = 0;
 			for (const exclusionList of client.searchLibraryExclusionSettings.iterate()) {
 				if (exclusionList.excluded === "false") {
-					customList2[emojiOptions[count]] = `${exclusionList.name}`;
-					setDescription = setDescription + "\n" + `${emojiOptions[count]} ${exclusionList.name}`;
-					count++;
+					if (exclusionList.id === `${message.guild.id}-${client.user.id}-${exclusionList.name}`) {
+						//Check to make sure client id is the same, in case using a different bot token
+						customList2[emojiOptions[count]] = `${exclusionList.name}`;
+						setDescription = setDescription + "\n" + `${emojiOptions[count]} ${exclusionList.name}`;
+						count++;
+					}
 				}
 			}
 			if (count < 1) {
@@ -1281,9 +1310,12 @@ module.exports = {
 
 			for (const notificationSettings of client.searchNotificationSettings.iterate()) {
 				if (notificationSettings.category === "custom" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
-					addLine = true;
-					page1Description = page1Description + `\n${tenNumbers[page1Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
-					page1Count++;
+					if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.roleID}`) {
+						//Check to make sure client id is the same, in case using a different bot token
+						addLine = true;
+						page1Description = page1Description + `\n${tenNumbers[page1Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
+						page1Count++;
+					}
 				}
 			}
 			if (addLine) {
@@ -1292,9 +1324,12 @@ module.exports = {
 			}
 			for (const notificationSettings of client.searchNotificationSettings.iterate()) {
 				if (notificationSettings.category === "movies" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
-					addLine = true;
-					page1Description = page1Description + `\n${tenNumbers[page1Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
-					page1Count++;
+					if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.name}`) {
+						//Check to make sure client id is the same, in case using a different bot token
+						addLine = true;
+						page1Description = page1Description + `\n${tenNumbers[page1Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
+						page1Count++;
+					}
 				}
 			}
 			if (addLine) {
@@ -1303,8 +1338,11 @@ module.exports = {
 			}
 			for (const notificationSettings of client.searchNotificationSettings.iterate()) {
 				if (notificationSettings.category === "tv" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
-					page1Description = page1Description + `\n${tenNumbers[page1Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
-					page1Count++;
+					if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.name}`) {
+						//Check to make sure client id is the same, in case using a different bot token
+						page1Description = page1Description + `\n${tenNumbers[page1Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
+						page1Count++;
+					}
 				}
 			}
 
@@ -1333,8 +1371,11 @@ module.exports = {
 
 			for (const notificationSettings of client.searchNotificationSettings.iterate()) {
 				if (notificationSettings.category === "networks" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
-					page2Description = page2Description + `\n${tenNumbers[page2Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
-					page2Count++;
+					if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.name}`) {
+						//Check to make sure client id is the same, in case using a different bot token
+						page2Description = page2Description + `\n${tenNumbers[page2Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
+						page2Count++;
+					}
 				}
 			}
 
