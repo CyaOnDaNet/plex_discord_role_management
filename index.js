@@ -368,6 +368,10 @@ var j = schedule.scheduleJob('* */2 * * * *', async function() {
 					}
 
 					if (!Boolean(bypassAgain)) {
+            watchingQuery.watching = "false";
+            client.setUserList.run(watchingQuery);
+            watchingQuery = client.getLinkByPlexUserName.get(`${watchingQuery.plexUserName}`);
+
 						userToModify.removeRole(guildSettings.watchingRole)
 							.catch(console.error);
 					}
@@ -560,6 +564,10 @@ async function processHook(data) {
       }
 
       if (!Boolean(bypass)) {
+        userList.watching = "false";
+        client.setUserList.run(userList);
+        userList = client.getLinkByPlexUserName.get(`${userList.plexUserName}`);
+
         userToModify.removeRole(guildSettings.watchingRole)
           .catch(console.error);
       }
