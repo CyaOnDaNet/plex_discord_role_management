@@ -1,4 +1,4 @@
-var pjson = require('./package.json');
+var pjson = require('../package.json');
 
 module.exports = {
 	name: 'bot',

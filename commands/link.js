@@ -26,7 +26,7 @@ module.exports = {
 
 			var userExists = false;
 			for (var i = 0; i < users.length; i++) {
-				if (plexUserName == users[i].username) {
+				if (plexUserName.toLowerCase() === users[i].username.toLowerCase()) {
 					userExists = true;
 					plexUserName = users[i].username; //This allows for any upper or lower case discrepancies to be ignored while still storing the actual PlexUsername
 				}
