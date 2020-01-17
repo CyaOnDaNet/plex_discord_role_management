@@ -156,7 +156,7 @@ client.on('ready', ()=> {
     sql.pragma("journal_mode = wal");
   }
 
-  // And then we have prepared statements to get and set tvShowsNotificationSettings data.
+  // And then we have prepared statements to get and set notificationSettings data.
 	client.deleteNotificationSettings = sql.prepare("DELETE FROM notificationSettings WHERE id = ?");
   client.getNotificationSettings = sql.prepare("SELECT * FROM notificationSettings WHERE id = ?");
   client.searchNotificationSettings = sql.prepare("SELECT * FROM notificationSettings");
@@ -222,7 +222,7 @@ client.on('message', async message => {
   }
 });
 
-var j = schedule.scheduleJob('* */2 * * * *', async function() {
+var j = schedule.scheduleJob('0 */2 * * * *', async function() {
   // Checks the plex server for activity using Tautulli and repeats every 2 minutes, serves as a fallback in the event webhook trigger has failed.
   let userList;
 
@@ -346,6 +346,7 @@ var j = schedule.scheduleJob('* */2 * * * *', async function() {
 
 	try {
 		// Now we recheck activeStreams to set watching to false for everyone else
+    var watchIsFalse = [];
 		for (const watchingQuery of client.searchGuildUserList.iterate()) {
 			if (watchingQuery.watching === 'true') {
 				var bypass = false;
@@ -368,6 +369,9 @@ var j = schedule.scheduleJob('* */2 * * * *', async function() {
 					}
 
 					if (!Boolean(bypassAgain)) {
+            watchingQuery.watching = "false";
+            watchIsFalse.push(watchingQuery);
+
 						userToModify.removeRole(guildSettings.watchingRole)
 							.catch(console.error);
 					}
@@ -395,6 +399,12 @@ var j = schedule.scheduleJob('* */2 * * * *', async function() {
 				}
 			}
 		}
+    if (watchIsFalse) {
+      for (var i = 0; i < watchIsFalse.length; i++) {
+        client.setUserList.run(watchIsFalse[i]);
+        watchIsFalse[i] = client.getLinkByPlexUserName.get(`${watchIsFalse[i].plexUserName}`);
+      }
+    }
 	} catch (err) {
 		//...
     if (DEBUG === 1) {
@@ -560,6 +570,10 @@ async function processHook(data) {
       }
 
       if (!Boolean(bypass)) {
+        userList.watching = "false";
+        client.setUserList.run(userList);
+        userList = client.getLinkByPlexUserName.get(`${userList.plexUserName}`);
+
         userToModify.removeRole(guildSettings.watchingRole)
           .catch(console.error);
       }

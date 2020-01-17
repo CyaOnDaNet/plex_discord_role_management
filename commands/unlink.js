@@ -13,9 +13,7 @@ module.exports = {
       let userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
 
       if (!userList) {
-        userList = { id: `${message.guild.id}-${client.user.id}-${mentionedUser.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: null, watching: "false" };
-        client.setUserList.run(userList);
-        userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+        return message.channel.send('Discord User was never linked to begin with, nobody to unlink!');
       }
       else {
         userList.plexUserName = null;

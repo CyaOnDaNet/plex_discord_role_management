@@ -1,3 +1,5 @@
+var pjson = require('../package.json');
+
 module.exports = {
 	name: 'bot',
 	description: 'Bot Settings that can be configured',
@@ -20,6 +22,7 @@ module.exports = {
       embed = new Discord.RichEmbed()
         .setAuthor(client.user.username, client.user.avatarURL)
         .setDescription("Below is a list of important bot info:\n")
+				.addField("Bot Version: ", `\`${pjson.version}\``, true)
         .addField("Prefix: ", '`' + prefix + '`',  true)
         .setFooter("Fetched")
         .setTimestamp(new Date())
