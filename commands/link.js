@@ -14,7 +14,7 @@ module.exports = {
       let userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
 
 			if (plexUserName === null || plexUserName === undefined || plexUserName === "") {
-				return message.channel.send(`You did not specify a valid Plex User to link!\nPlease use the format: ${prefix}link @DiscordUser PlexUsername`);
+				return message.channel.send(`You did not specify a valid Plex User to link!\nPlease use the format: \`${prefix}link @DiscordUser PlexUsername\``);
 			}
 
 			var users = await tautulli.tautulliService.getUsers();
@@ -26,13 +26,14 @@ module.exports = {
 
 			var userExists = false;
 			for (var i = 0; i < users.length; i++) {
-				if (plexUserName === users[i].username) {
+				if (plexUserName == users[i].username) {
 					userExists = true;
+					plexUserName = users[i].username; //This allows for any upper or lower case discrepancies to be ignored while still storing the actual PlexUsername
 				}
 			}
 
 			if (!userExists) {
-				return message.channel.send(`Couldn't find the Plex User: ${plexUserName}, please try again!\nFor a list of Plex usernames, type: \`${prefix}users\``);
+				return message.channel.send(`Couldn't find the Plex User: \`${plexUserName}\`, please try again!\nFor a list of Plex usernames, type: \`${prefix}users\``);
 			}
 
       if (!userList) {
