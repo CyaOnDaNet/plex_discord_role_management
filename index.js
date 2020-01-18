@@ -191,7 +191,7 @@ client.on('ready', ()=> {
   }
 
   // And then we have prepared statements to get and set previousNotifierList data.
-	client.clearPreviousNotifierList = sql.prepare("TRUNCATE TABLE previousNotifierList");
+	client.clearPreviousNotifierList = sql.prepare("DELETE FROM previousNotifierList");
   client.getPreviousNotifierList = sql.prepare("SELECT * FROM previousNotifierList WHERE id = ?");
   client.searchPreviousNotifierList = sql.prepare("SELECT * FROM previousNotifierList");
   client.setPreviousNotifierList = sql.prepare("INSERT OR REPLACE INTO previousNotifierList (id, guild, messageID) VALUES (@id, @guild, @messageID);");
