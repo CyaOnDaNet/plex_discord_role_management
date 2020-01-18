@@ -18,7 +18,22 @@ const onCreatedBody = '{ "trigger": "recentlyAdded", "title": "{title}", "imdb_i
 module.exports = async(config, port) => {
   class tautulliService {
     constructor() {
-      this.baseURL = `${config.tautulli_ip}:${config.tautulli_port}/api/v2?apikey=${config.tautulli_api_key}&cmd=`;
+      if (config.tautulli_port === "" || config.tautulli_port === null || config.tautulli_port === undefined) {
+        //assume webroot override is in effect
+        this.baseURL = `${config.tautulli_ip}`;
+      }
+      else {
+        this.baseURL = `${config.tautulli_ip}:${config.tautulli_port}`;
+      }
+
+      var lastChar = this.baseURL[this.baseURL.length -1];
+      if (lastChar == "/") {
+        this.baseURL = `${this.baseURL}api/v2?apikey=${config.tautulli_api_key}&cmd=`;
+      }
+      else {
+        this.baseURL = `${this.baseURL}/api/v2?apikey=${config.tautulli_api_key}&cmd=`;
+      }
+
       if (!this.baseURL.startsWith("http://") && !this.baseURL.startsWith("https://")) {
         // we need an http or https specified so we will asumme http
         this.baseURL = "http://" + this.baseURL;
@@ -198,14 +213,10 @@ module.exports = async(config, port) => {
 	  }
   }
 
-
-  var baseURL = `${config.tautulli_ip}:${config.tautulli_port}/api/v2?apikey=${config.tautulli_api_key}&cmd=`;
-  if (!baseURL.startsWith("http://") && !baseURL.startsWith("https://")) {
-    // we need an http or https specified so we will asumme http
-    baseURL = "http://" + baseURL;
-  }
   service = new tautulliService();
   module.exports.tautulliService = service;
+
+  var baseURL = service.baseURL;
 
   try {
     const response = await fetch(baseURL + `get_notifiers&out_type=json`,  {
