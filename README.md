@@ -18,7 +18,7 @@
 
 
 ## Important Note about Configuration
-If you have changed your webroot of Sonarr or Tautulli, leave the `sonarr_port` and or `tautulli_port` fields blank. Specify the entire base URL in the ip section instead. So for example, if you normally access Tautulli at `http://192.168.0.101:8181/tautulli/home` instead of the default `http://192.168.0.101:8181/home`, enter 192.168.0.101:8181/tautulli as the `tautulli_ip` and leave the `tautulli_port` field blank. Also, if you access Sonarr or Tautulli with TLS encryption, specify `https://` in the beginning of the ip field.
+If you have changed your webroot of Sonarr or Tautulli, leave the `sonarr_port` and or `tautulli_port` fields blank. Specify the entire base URL in the ip section instead. So for example, if you normally access Tautulli at `http://192.168.0.101:8181/tautulli/home` instead of the default `http://192.168.0.101:8181/home`, enter `192.168.0.101:8181/tautulli` as the `tautulli_ip` and leave the `tautulli_port` field blank. Also, if you access Sonarr or Tautulli with TLS encryption, specify `https://` in the beginning of the ip field.
 
 
 ## Normal Installation
