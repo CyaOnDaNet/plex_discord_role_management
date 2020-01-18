@@ -179,6 +179,23 @@ client.on('ready', ()=> {
   client.searchLibraryExclusionSettings = sql.prepare("SELECT * FROM libraryExclusion");
   client.setLibraryExclusionSettings = sql.prepare("INSERT OR REPLACE INTO libraryExclusion (id, guild, name, excluded) VALUES (@id, @guild, @name, @excluded);");
 
+  // Check if the table "previousNotifierList" exists.
+  const previousNotifierList = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'previousNotifierList';").get();
+  if (!previousNotifierList['count(*)']) {
+    // If the table isn't there, create it and setup the database correctly.
+    sql.prepare("CREATE TABLE previousNotifierList (id TEXT PRIMARY KEY, guild TEXT, messageID TEXT);").run();
+    // Ensure that the "id" row is always unique and indexed.
+    sql.prepare("CREATE UNIQUE INDEX idx_previousNotifierList_id ON previousNotifierList (id);").run();
+    sql.pragma("synchronous = 1");
+    sql.pragma("journal_mode = wal");
+  }
+
+  // And then we have prepared statements to get and set previousNotifierList data.
+	client.clearPreviousNotifierList = sql.prepare("TRUNCATE TABLE previousNotifierList");
+  client.getPreviousNotifierList = sql.prepare("SELECT * FROM previousNotifierList WHERE id = ?");
+  client.searchPreviousNotifierList = sql.prepare("SELECT * FROM previousNotifierList");
+  client.setPreviousNotifierList = sql.prepare("INSERT OR REPLACE INTO previousNotifierList (id, guild, messageID) VALUES (@id, @guild, @messageID);");
+
   online = true;
   const tautulliService = tautulli(config, config.node_hook_port);
   const sonarrService = sonarr(config);
