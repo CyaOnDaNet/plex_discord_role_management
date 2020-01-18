@@ -7,7 +7,7 @@ const isDocker = require('is-docker');
 var _ = require('lodash');
 
 const mainProgram = require("../index.js");
-const apiName = 'Plex-Discord Role Management API - Beta';
+const apiName = 'Plex-Discord Role Management API';
 
 const DEBUG = 0;  // 1 for database debugging
 
@@ -27,7 +27,7 @@ module.exports = async(config, port) => {
 
     async updateTautulliHook() {
       try {
-        const response = await fetch(baseURL + `get_notifiers`,  {
+        const response = await fetch(baseURL + `get_notifiers&out_type=json`,  {
             method: 'GET'
         });
         const json = await response.json();
@@ -62,7 +62,7 @@ module.exports = async(config, port) => {
 
     async getLibraries() {
       try {
-        const response = await fetch(this.baseURL + `get_libraries`,  {
+        const response = await fetch(this.baseURL + `get_libraries&out_type=json`,  {
             method: 'GET'
         });
         const json = await response.json();
@@ -75,7 +75,7 @@ module.exports = async(config, port) => {
 
     async getNotifiers() {
       try {
-        const response = await fetch(this.baseURL + `get_notifiers`,  {
+        const response = await fetch(this.baseURL + `get_notifiers&out_type=json`,  {
             method: 'GET'
         });
         const json = await response.json();
@@ -88,7 +88,7 @@ module.exports = async(config, port) => {
 
     async getUsers() {
       try {
-        const response = await fetch(this.baseURL + `get_users`,  {
+        const response = await fetch(this.baseURL + `get_users&out_type=json`,  {
             method: 'GET'
         });
         const json = await response.json();
@@ -101,7 +101,7 @@ module.exports = async(config, port) => {
 
     async getActivity() {
       try {
-        const response = await fetch(this.baseURL + `get_activity`,  {
+        const response = await fetch(this.baseURL + `get_activity&out_type=json`,  {
             method: 'GET'
         });
         const json = await response.json();
@@ -119,7 +119,7 @@ module.exports = async(config, port) => {
 			before.data.map((x) => { beforeMap[x.id] = x; });
 
       try {
-        const response = await fetch(this.baseURL + `add_notifier_config&agent_id=25`,  {
+        const response = await fetch(this.baseURL + `add_notifier_config&agent_id=25&out_type=json`,  {
             method: 'GET'
         });
         const json = await response.json();
@@ -138,7 +138,7 @@ module.exports = async(config, port) => {
 
     async getNotifierConfig(notifierId) {
       try {
-        const response = await fetch(this.baseURL + `get_notifier_config&notifier_id=${notifierId}`,  {
+        const response = await fetch(this.baseURL + `get_notifier_config&notifier_id=${notifierId}&out_type=json`,  {
             method: 'GET'
         });
         const json = await response.json();
@@ -208,7 +208,7 @@ module.exports = async(config, port) => {
   module.exports.tautulliService = service;
 
   try {
-    const response = await fetch(baseURL + `get_notifiers`,  {
+    const response = await fetch(baseURL + `get_notifiers&out_type=json`,  {
         method: 'GET'
     });
     const json = await response.json();
