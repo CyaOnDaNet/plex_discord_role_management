@@ -48,6 +48,7 @@ module.exports = {
 			var enabledItemsList = [];
 			var sortedEmojiList = {};
 			var sortedRefernceList = {};
+			var roleLimitHit = false;
 			for (const notificationSettings of client.searchNotificationSettings.iterate()) {
 				if (notificationSettings.category != "networks" && notificationSettings.category != "custom") {
 					if (notificationSettings.roleID === null || notificationSettings.roleID === undefined) {
@@ -153,7 +154,19 @@ module.exports = {
 
 												successfullyEnabledItems = await successfullyEnabledItems + `\n > <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
 				              })
-				              .catch(console.error)
+											.catch(function(error) {
+												count2--;
+					              if (error.code == 30005) {
+					                //Max Role Count on Server Hit
+					                if (!roleLimitHit) {
+					                  console.log(error);
+					                }
+					                roleLimitHit = true;
+					              }
+					              else {
+					                console.log(error);
+					              }
+					            });
 				          }
 								}
 								count2++;
@@ -176,6 +189,9 @@ module.exports = {
 									setDescription = "Successfully disabled the following:\n" + successfullyDisabledItems;
 								}
 								embed.setDescription(setDescription);
+								if (roleLimitHit) {
+									embed.addField("\u200b", "***Note:*** Some Roles could not be created do to hitting the discord limit!");
+								}
 							}
 
 							sentMessage.edit({embed});
@@ -274,6 +290,7 @@ module.exports = {
 								.setColor(0x00AE86);
 
 							var count2 = 0;
+							var roleLimitHit2 = false;
 							for(let emojis of selectedEmojis) {
 								let notificationSettings = client.getNotificationSettings.get(networksSortedEmojiList[emojis]);
 								//console.log(notificationSettings.name);
@@ -312,7 +329,19 @@ module.exports = {
 
 												successfullyEnabledItems = await successfullyEnabledItems + `\n > <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
 				              })
-				              .catch(console.error)
+											.catch(function(error) {
+												count2--;
+											  if (error.code == 30005) {
+											    //Max Role Count on Server Hit
+											    if (!roleLimitHit2) {
+											      console.log(error);
+											    }
+											    roleLimitHit2 = true;
+											  }
+											  else {
+											    console.log(error);
+											  }
+											});
 				          }
 								}
 								count2++;
@@ -335,6 +364,9 @@ module.exports = {
 									networksSetDescription = "Successfully disabled the following TV Networks:\n" + successfullyDisabledItems;
 								}
 								embed2.setDescription(networksSetDescription);
+								if (roleLimitHit2) {
+									embed2.addField("\u200b", "***Note:*** Some Roles could not be created do to hitting the discord limit!");
+								}
 							}
 
 							sentMessage2.edit({embed: embed2});
@@ -816,6 +848,7 @@ module.exports = {
 							let tvShowsNotificationSettings;
 							var setDescription = "";
 							var count2 = 0;
+							var roleLimitHit = false;
 
 							for(let emojis of selectedEmojis) {
 								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
@@ -834,7 +867,20 @@ module.exports = {
 											client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
 											tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 										})
-										.catch(console.error)
+										.catch(function(error) {
+											count2--;
+  										if (error.code == 30005) {
+    										//Max Role Count on Server Hit
+    										if (!roleLimitHit) {
+      										console.log(error);
+    										}
+    										roleLimitHit = true;
+  										}
+  										else {
+    										console.log(error);
+  										}
+										});
+
 									count2++;
 								}
 							}
@@ -851,6 +897,10 @@ module.exports = {
 								}
 								else {
 									setDescription = "Successfully included the following shows:" + setDescription;
+								}
+
+								if (roleLimitHit) {
+									setDescription = "Roles could not be created do to hitting the discord limit!";
 								}
 								embed = new Discord.RichEmbed()
 									.setDescription(setDescription)
@@ -976,6 +1026,8 @@ module.exports = {
 								return sentMessage.edit({embed});
 							}
 
+							var roleLimitHit = false;
+
               let newRole = await message.guild.roles.find(role => role.name === groupName);
 							if (newRole) {
 								let tvShowsNotificationSettings;
@@ -1096,7 +1148,25 @@ module.exports = {
 									sentMessage.edit({embed});
 
 									})
-									.catch(console.error)
+									.catch(function(error) {
+  									if (error.code == 30005) {
+    									//Max Role Count on Server Hit
+    									if (!roleLimitHit) {
+												setDescription = "Role could not be created do to hitting the discord limit, nothing grouped!";
+												embed = new Discord.RichEmbed()
+													.setDescription(setDescription)
+													.setTimestamp(new Date())
+													.setColor(0x00AE86);
+
+												sentMessage.edit({embed});
+      									console.log(error);
+    									}
+    									roleLimitHit = true;
+  									}
+  									else {
+    									console.log(error);
+  									}
+									});
 							}
 					})
 					.catch(console.error);
@@ -1219,6 +1289,7 @@ module.exports = {
 
 							let tvShowsNotificationSettings;
 							var setDescription = "";
+							var roleLimitHit = false;
 
 							for (let emojis of selectedEmojis) {
 								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
@@ -1269,7 +1340,18 @@ module.exports = {
 												client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
 												tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 											})
-											.catch(console.error);
+											.catch(function(error) {
+  											if (error.code == 30005) {
+    											//Max Role Count on Server Hit
+    											if (!roleLimitHit) {
+      											console.log(error);
+    											}
+    											roleLimitHit = true;
+  											}
+  											else {
+    											console.log(error);
+  											}
+											});
 									}
 								}
 							}
@@ -1278,6 +1360,10 @@ module.exports = {
 							.setDescription(setDescription)
 							.setTimestamp(new Date())
 							.setColor(0x00AE86);
+
+							if (roleLimitHit) {
+							  embed.addField("\u200b", "***Note:*** Some Roles could not be re-created after ungrouping do to hitting the discord limit!");
+							}
 
 						sentMessage.edit({embed});
 					})

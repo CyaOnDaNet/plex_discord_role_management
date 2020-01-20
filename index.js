@@ -862,6 +862,7 @@ async function updateShowList(message) {
 	}
 	let showsList = [];
 	var count = 0;
+  var roleLimitHit = false;
 	for (var i = 0; i < json.length; i++) {
 		if (json[i].status === "continuing") {
 			// Create an Entry for the show in the database
@@ -889,7 +890,21 @@ async function updateShowList(message) {
 							client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
 							tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 						})
-						.catch(console.error)
+						.catch(function(error) {
+              if (error.code == 30005) {
+                //Max Role Count on Server Hit
+                if (!roleLimitHit) {
+                  console.log(error);
+                }
+                tvShowsNotificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: null};
+  							client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+  							tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+                roleLimitHit = true;
+              }
+              else {
+                console.log(error);
+              }
+            });
 				}
 			}
 			count++;
@@ -928,7 +943,18 @@ async function updateShowList(message) {
 							client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
 							tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 						})
-						.catch(console.error)
+            .catch(function(error) {
+              if (error.code == 30005) {
+                //Max Role Count on Server Hit
+                if (!roleLimitHit) {
+                  console.log(error);
+                }
+                roleLimitHit = true;
+              }
+              else {
+                console.log(error);
+              }
+            });
 				}
 			}
 			else if (!tvShowsNotificationSettings) {
