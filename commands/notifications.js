@@ -65,7 +65,11 @@ module.exports = {
 							sortedRefernceList[`<@&${notificationSettings.roleID}> ${notificationSettings.description}`] = notificationSettings.id;
 						}
 					}
-					count++;
+
+					if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.name}`) {
+						//Check to make sure client id is the same, in case using a different bot token
+						count++;
+					}
 				}
 			}
 
@@ -122,15 +126,24 @@ module.exports = {
 
 								if(notificationSettings.roleID != null) {
 									//delete role and remove from database
-									await message.guild.roles.find(role => role.id === notificationSettings.roleID).delete()
-									  .then(async () => {
-											notificationSettings.roleID = null;
-											client.setNotificationSettings.run(notificationSettings);
-					            notificationSettings = client.getNotificationSettings.get(sortedEmojiList[emojis]);
+									if (await message.guild.roles.find(role => role.id === notificationSettings.roleID) != null) {
+										await message.guild.roles.find(role => role.id === notificationSettings.roleID).delete()
+										  .then(async () => {
+												notificationSettings.roleID = null;
+												client.setNotificationSettings.run(notificationSettings);
+						            notificationSettings = client.getNotificationSettings.get(sortedEmojiList[emojis]);
 
-											successfullyDisabledItems = await successfullyDisabledItems + `\n > **${notificationSettings.name}** ${notificationSettings.description}`;
-										})
-									  .catch(console.error);
+												successfullyDisabledItems = await successfullyDisabledItems + `\n > **${notificationSettings.name}** ${notificationSettings.description}`;
+											})
+										  .catch(console.error);
+									}
+									else {
+										notificationSettings.roleID = null;
+										client.setNotificationSettings.run(notificationSettings);
+										notificationSettings = client.getNotificationSettings.get(sortedEmojiList[emojis]);
+
+										successfullyDisabledItems = await successfullyDisabledItems + `\n > **${notificationSettings.name}** ${notificationSettings.description}`;
+									}
 								}
 								else {
 									// Create role and store in database
@@ -172,11 +185,19 @@ module.exports = {
 								count2++;
 							}
 
-							if (count2 === 0) {
-								embed = new Discord.RichEmbed()
-									.setDescription("Nothing selected in time, nothing edited.")
-									.setTimestamp(new Date())
-									.setColor(0x00AE86);
+							if (count2 <= 0) {
+								if (roleLimitHit) {
+									embed = new Discord.RichEmbed()
+										.setDescription("**Action Failed!**\nDiscord Role Limit Hit!\nPlease delete some roles and try again.")
+										.setTimestamp(new Date())
+										.setColor(0x00AE86);
+								}
+								else {
+									embed = new Discord.RichEmbed()
+										.setDescription("Nothing selected in time, nothing edited.")
+										.setTimestamp(new Date())
+										.setColor(0x00AE86);
+								}
 							}
 							else {
 								if (successfullyEnabledItems != "") {
@@ -190,7 +211,7 @@ module.exports = {
 								}
 								embed.setDescription(setDescription);
 								if (roleLimitHit) {
-									embed.addField("\u200b", "***Note:*** Some Roles could not be created do to hitting the discord limit!");
+									embed.addField("\u200b", "***Note:*** Some Roles could not be created due to hitting the discord limit!");
 								}
 							}
 
@@ -239,7 +260,10 @@ module.exports = {
 							networksSortedRefernceList[`<@&${notificationSettings.roleID}> ${notificationSettings.description}`] = notificationSettings.id;
 						}
 					}
-					networksCount++;
+					if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.name}`) {
+						//Check to make sure client id is the same, in case using a different bot token
+						networksCount++;
+					}
 				}
 			}
 
@@ -297,15 +321,24 @@ module.exports = {
 
 								if(notificationSettings.roleID != null) {
 									//delete role and remove from database
-									await message.guild.roles.find(role => role.id === notificationSettings.roleID).delete()
-									  .then(async () => {
-											notificationSettings.roleID = null;
-											client.setNotificationSettings.run(notificationSettings);
-					            notificationSettings = client.getNotificationSettings.get(networksSortedEmojiList[emojis]);
+									if (await message.guild.roles.find(role => role.id === notificationSettings.roleID) != null) {
+										await message.guild.roles.find(role => role.id === notificationSettings.roleID).delete()
+										  .then(async () => {
+												notificationSettings.roleID = null;
+												client.setNotificationSettings.run(notificationSettings);
+						            notificationSettings = client.getNotificationSettings.get(networksSortedEmojiList[emojis]);
 
-											successfullyDisabledItems = await successfullyDisabledItems + `\n > **${notificationSettings.name}** ${notificationSettings.description}`;
-										})
-									  .catch(console.error);
+												successfullyDisabledItems = await successfullyDisabledItems + `\n > **${notificationSettings.name}** ${notificationSettings.description}`;
+											})
+										  .catch(console.error);
+									}
+									else {
+										notificationSettings.roleID = null;
+										client.setNotificationSettings.run(notificationSettings);
+										notificationSettings = client.getNotificationSettings.get(networksSortedEmojiList[emojis]);
+
+										successfullyDisabledItems = await successfullyDisabledItems + `\n > **${notificationSettings.name}** ${notificationSettings.description}`;
+									}
 								}
 								else {
 									// Create role and store in database
@@ -347,11 +380,19 @@ module.exports = {
 								count2++;
 							}
 
-							if (count2 === 0) {
-								embed2 = new Discord.RichEmbed()
-									.setDescription("Nothing selected in time, nothing edited.")
-									.setTimestamp(new Date())
-									.setColor(0x00AE86);
+							if (count2 <= 0) {
+								if (roleLimitHit2) {
+								  embed2 = new Discord.RichEmbed()
+								    .setDescription("**Action Failed!**\nDiscord Role Limit Hit!\nPlease delete some roles and try again.")
+								    .setTimestamp(new Date())
+								    .setColor(0x00AE86);
+								}
+								else {
+								  embed2 = new Discord.RichEmbed()
+								    .setDescription("Nothing selected in time, nothing edited.")
+								    .setTimestamp(new Date())
+								    .setColor(0x00AE86);
+								}
 							}
 							else {
 								if (successfullyEnabledItems != "") {
@@ -365,7 +406,7 @@ module.exports = {
 								}
 								embed2.setDescription(networksSetDescription);
 								if (roleLimitHit2) {
-									embed2.addField("\u200b", "***Note:*** Some Roles could not be created do to hitting the discord limit!");
+									embed2.addField("\u200b", "***Note:*** Some Roles could not be created due to hitting the discord limit!");
 								}
 							}
 
@@ -741,16 +782,26 @@ module.exports = {
 								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 								if (tvShowsNotificationSettings.roleID != null || tvShowsNotificationSettings.roleID != undefined) {
 									count2++;
-									await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
-										.then(async () => {
-											tvShowsNotificationSettings.exclude = "true";
-											tvShowsNotificationSettings.include = null;
-											tvShowsNotificationSettings.roleID = null;
-											setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
-											client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-											tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
-										})
-										.catch(console.error);
+									if (await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
+										await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+											.then(async () => {
+												tvShowsNotificationSettings.exclude = "true";
+												tvShowsNotificationSettings.include = null;
+												tvShowsNotificationSettings.roleID = null;
+												setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+												client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+												tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+											})
+											.catch(console.error);
+									}
+									else {
+										tvShowsNotificationSettings.exclude = "true";
+										tvShowsNotificationSettings.include = null;
+										tvShowsNotificationSettings.roleID = null;
+										setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+										client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+										tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+									}
 								}
 							}
 
@@ -885,11 +936,19 @@ module.exports = {
 								}
 							}
 
-							if (count2 === 0) {
-								embed = new Discord.RichEmbed()
-									.setDescription("Nothing selected in time, nothing included.")
-									.setTimestamp(new Date())
-									.setColor(0x00AE86);
+							if (count2 <= 0) {
+								if (roleLimitHit) {
+								  embed = new Discord.RichEmbed()
+								    .setDescription("**Action Failed!**\nDiscord Role Limit Hit!\nPlease delete some roles and try again.")
+								    .setTimestamp(new Date())
+								    .setColor(0x00AE86);
+								}
+								else {
+									embed = new Discord.RichEmbed()
+										.setDescription("Nothing selected in time, nothing included.")
+										.setTimestamp(new Date())
+										.setColor(0x00AE86);
+								}
 							}
 							else {
 								if (count2 == 1) {
@@ -900,7 +959,7 @@ module.exports = {
 								}
 
 								if (roleLimitHit) {
-									setDescription = "Roles could not be created do to hitting the discord limit!";
+									setDescription = "Roles could not be created due to hitting the discord limit!";
 								}
 								embed = new Discord.RichEmbed()
 									.setDescription(setDescription)
@@ -1050,19 +1109,32 @@ module.exports = {
 											tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 										}
 										else {
-											await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
-											  .then(async () => {
-												  tvShowsNotificationSettings.is_group = "true";
-												  tvShowsNotificationSettings.groupName = groupName;
-												  tvShowsNotificationSettings.groupRole = newRole.id;
-												  tvShowsNotificationSettings.exclude = null;
-												  tvShowsNotificationSettings.include = null;
-												  tvShowsNotificationSettings.roleID = null;
-												  setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
-												  client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-												  tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
-											  })
-											  .catch(console.error);
+											if (await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
+												await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+												  .then(async () => {
+													  tvShowsNotificationSettings.is_group = "true";
+													  tvShowsNotificationSettings.groupName = groupName;
+													  tvShowsNotificationSettings.groupRole = newRole.id;
+													  tvShowsNotificationSettings.exclude = null;
+													  tvShowsNotificationSettings.include = null;
+													  tvShowsNotificationSettings.roleID = null;
+													  setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+													  client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+													  tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+												  })
+												  .catch(console.error);
+											}
+											else {
+												tvShowsNotificationSettings.is_group = "true";
+												tvShowsNotificationSettings.groupName = groupName;
+												tvShowsNotificationSettings.groupRole = newRole.id;
+												tvShowsNotificationSettings.exclude = null;
+												tvShowsNotificationSettings.include = null;
+												tvShowsNotificationSettings.roleID = null;
+												setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+												client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+												tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+											}
 										}
 									}
 									else {
@@ -1112,19 +1184,32 @@ module.exports = {
 													tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 												}
 												else {
-													await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
-													  .then(async () => {
-														  tvShowsNotificationSettings.is_group = "true";
-														  tvShowsNotificationSettings.groupName = groupName;
-														  tvShowsNotificationSettings.groupRole = role.id;
-														  tvShowsNotificationSettings.exclude = null;
-														  tvShowsNotificationSettings.include = null;
-														  tvShowsNotificationSettings.roleID = null;
-														  setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
-														  client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-														  tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
-													  })
-													  .catch(console.error);
+													if (await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
+														await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+														  .then(async () => {
+															  tvShowsNotificationSettings.is_group = "true";
+															  tvShowsNotificationSettings.groupName = groupName;
+															  tvShowsNotificationSettings.groupRole = role.id;
+															  tvShowsNotificationSettings.exclude = null;
+															  tvShowsNotificationSettings.include = null;
+															  tvShowsNotificationSettings.roleID = null;
+															  setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+															  client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+															  tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+														  })
+														  .catch(console.error);
+													}
+													else {
+														tvShowsNotificationSettings.is_group = "true";
+														tvShowsNotificationSettings.groupName = groupName;
+														tvShowsNotificationSettings.groupRole = role.id;
+														tvShowsNotificationSettings.exclude = null;
+														tvShowsNotificationSettings.include = null;
+														tvShowsNotificationSettings.roleID = null;
+														setDescription = setDescription + "\n > " + tvShowsNotificationSettings.title;
+														client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+														tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
+													}
 												}
 											}
 											else {
@@ -1152,7 +1237,7 @@ module.exports = {
   									if (error.code == 30005) {
     									//Max Role Count on Server Hit
     									if (!roleLimitHit) {
-												setDescription = "Role could not be created do to hitting the discord limit, nothing grouped!";
+												setDescription = "Role could not be created due to hitting the discord limit, nothing grouped!";
 												embed = new Discord.RichEmbed()
 													.setDescription(setDescription)
 													.setTimestamp(new Date())
@@ -1313,10 +1398,12 @@ module.exports = {
 									}
 								}
 								if (deleteRole) {
-									await message.guild.roles.find(role => role.id === oldRole).delete()
-										.then(async () => {
-										})
-										.catch(console.error);
+									if (await message.guild.roles.find(role => role.id === oldRole) != null) {
+										await message.guild.roles.find(role => role.id === oldRole).delete()
+											.then(async () => {
+											})
+											.catch(console.error);
+									}
 								}
 
 								if (tvShowsNotificationSettings.status == "continuing") {
@@ -1362,7 +1449,7 @@ module.exports = {
 							.setColor(0x00AE86);
 
 							if (roleLimitHit) {
-							  embed.addField("\u200b", "***Note:*** Some Roles could not be re-created after ungrouping do to hitting the discord limit!");
+							  embed.addField("\u200b", "***Note:*** Some Roles could not be re-created after ungrouping due to hitting the discord limit!");
 							}
 
 						sentMessage.edit({embed});
@@ -1512,7 +1599,14 @@ module.exports = {
       sortList = await sortList.sort();
 
       for (var i = 0; i < sortList.length; i++) {
-        notificationSettings = client.getTvShowsNotificationSettingsBySortTitle.get(sortList[i]);
+				notificationSettings = "";
+				for (const tempNotificationSetting of client.getTvShowsNotificationSettingsBySortTitle.all(sortList[i])) {
+          if (tempNotificationSetting.guild == message.guild.id) {
+						notificationSettings = tempNotificationSetting;
+						break;
+					}
+				}
+
         if (!notificationSettings) {
           // GroupName
           notificationSettings = client.getTvShowsNotificationSettingsByGroupName.get(sortList[i]);

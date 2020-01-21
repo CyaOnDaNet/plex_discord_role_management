@@ -524,6 +524,7 @@ client.on('raw', async event => {
 
 		for (let exemptNames of exemptEmbedReactRoles) {
 			//return if an embed was called that needed emoji response to prevent accidentally trying to react role
+      if(!message.embeds[0].author.name) return;
 			if(message.embeds[0].author.name === exemptNames) return;
 		}
 
@@ -878,7 +879,7 @@ async function updateShowList(message) {
 					client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
 					tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 				}
-				else {
+				else if (!roleLimitHit) {
 					let newRole = await message.guild.createRole({
 						name: json[i].title,
 						color: 'BLUE',
@@ -906,22 +907,69 @@ async function updateShowList(message) {
               }
             });
 				}
+        else {
+          tvShowsNotificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: null};
+          client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+          tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+        }
 			}
-			count++;
+      else if (tvShowsNotificationSettings.guild == message.guild.id && tvShowsNotificationSettings.roleID === null && tvShowsNotificationSettings.exclude === null && tvShowsNotificationSettings.groupRole === null && tvShowsNotificationSettings.is_group === null && tvShowsNotificationSettings.groupName === null) {
+        // Create a new role with data
+				var role = await message.guild.roles.find(role => role.name === json[i].title);
+
+				if (role) {
+					tvShowsNotificationSettings.roleID = role.id;
+          client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+					tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+				}
+				else if (!roleLimitHit) {
+					let newRole = await message.guild.createRole({
+						name: json[i].title,
+						color: 'BLUE',
+						mentionable: true
+					})
+						.then(role => {
+							tvShowsNotificationSettings.roleID = role.id;
+							client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+							tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+						})
+						.catch(function(error) {
+              if (error.code == 30005) {
+                //Max Role Count on Server Hit
+                if (!roleLimitHit) {
+                  console.log(error);
+                }
+                roleLimitHit = true;
+              }
+              else {
+                console.log(error);
+              }
+            });
+				}
+      }
+      count++;
 		}
 		else {
 			// Delete an Entry for the show in the database
 			tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 
 			if (tvShowsNotificationSettings && tvShowsNotificationSettings.is_group === null && tvShowsNotificationSettings.include === null && tvShowsNotificationSettings.roleID != null) {
-				await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
-					.then(async () => {
-						tvShowsNotificationSettings.roleID = null;
-						tvShowsNotificationSettings.status = json[i].status;
-						client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
-						tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
-					})
-					.catch(console.error);
+        if (await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
+          await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+  					.then(async () => {
+  						tvShowsNotificationSettings.roleID = null;
+  						tvShowsNotificationSettings.status = json[i].status;
+  						client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+  						tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+  					})
+  					.catch(console.error);
+        }
+        else {
+          tvShowsNotificationSettings.roleID = null;
+          tvShowsNotificationSettings.status = json[i].status;
+          client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
+          tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
+        }
 			}
 			else if (tvShowsNotificationSettings && tvShowsNotificationSettings.is_group === null && tvShowsNotificationSettings.include != null && tvShowsNotificationSettings.roleID === null) {
 				// Create a new role with data
@@ -932,7 +980,7 @@ async function updateShowList(message) {
 					client.setTvShowsNotificationSettings.run(tvShowsNotificationSettings);
 					tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 				}
-				else {
+				else if (!roleLimitHit) {
 					let newRole = await message.guild.createRole({
 						name: json[i].title,
 						color: 'BLUE',
