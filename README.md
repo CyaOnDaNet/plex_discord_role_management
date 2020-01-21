@@ -116,6 +116,6 @@ docker run -d \
 * [x] Finished Everything I initially intended this bot to be able to do.
 * [x] Added a delete command for cleanup prior to bot removal from a server.
 * [x] Cleaned up and tested bot configuration when in multiple Discord servers. The bot can properly handle being in multiple servers. 
-* [x] Added a way to update Role-React mentions while bot was offline. Potentially negative side-effect (depending on how you look at it) is that calling `!notifications list` again will reset everyones role settings after bot reboot if they have not already clicked on their new prefernces from the freshly generated `!notifications list`.
+* [x] Added a way to update Role-React mentions while bot was offline. Potentially negative side-effect (depending on how you look at it) is that calling `!notifications list` again will reset everyones role settings after bot reboot if they have not already clicked on their new preferences from the freshly generated `!notifications list`.
 * [x] Added error handling when reaching Discord Server Role Limit.
 
