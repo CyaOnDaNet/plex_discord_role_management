@@ -69,7 +69,7 @@ docker run -d \
 
 1. After all cofiguration settings have been applied, the bot has been invited to the server, and the bot is online with no errors in the console; you are ready to configure its discord settings. First off, if you want to change the prefix, do it with `!bot prefix newprefix` where newprefix is the actual new prefix.
 
-2. In some sort of Admin only channel, do all the following stuff until the last step. We want to run `!link @DiscordUser PlexUsername` for every user in the server, you can verify the settings with `!linklist` and use `!unlink @DiscordUser` to unlink someone. If you don't know the exact spelling of someone's plex username, the command `!users` will pull a list for you. Now create a Watching Role in Discord and make sure the Mentionable box is ticked. Run this command with the Role you just created `!role @WatchingRole`. If you want to see if its working, run `!bot logchannel @channel` to get a log of the auto-assigning of the role. Run `!bot logchannel off` to disable logging.
+2. In some sort of Admin only channel, do all the following stuff until the last step. We want to run `!link @DiscordUser PlexUsername` for every user in the server, you can verify the settings with `!linklist` and use `!unlink @DiscordUser` to unlink someone. If you don't know the exact spelling of someone's plex username, the command `!users` will pull a list for you. Now create a Watching Role in Discord and make sure the Mentionable box is ticked. Run this command with the Role you just created `!role @WatchingRole`. If you want to see if its working, run `!bot logchannel #channel` to get a log of the auto-assigning of the role. Run `!bot logchannel off` to disable logging.
 
 3. Run the `!notifications edit` command to setup some notification preferences now. If you have any custom Discord Roles you would like to be React-Roles (so users can opt in and out of them) use the `!notifications custom add @mentionedRole Optional Description` command. Run `!notifications library` to exclude any Plex libraries from recently added notifications.
 
@@ -86,7 +86,7 @@ docker run -d \
 -  `!bot [subcommand]` : Various bot commands
       - `!bot info` : Lists current info like logging channel, recently added channel, etc.
       - `!bot prefix newprefix` : Allows you to change the bot prefix
-      - `!bot logchannel @channel` : Allows you top set the logchannel or turn off logging with `!bot logchannel off`
+      - `!bot logchannel #channel` : Allows you top set the logchannel or turn off logging with `!bot logchannel off`
 -  `!link @DiscordUser PlexUsername` : Links a Discord User Tag with their respective Plex username
 -  `!unlink @DiscordUser PlexUsername` : Unlinks a Discord User Tag with a Plex username
 -  `!linklist` : Shows a list of all linked Plex-Discord Users
@@ -103,14 +103,19 @@ docker run -d \
       - `!notifications list` : Lists the react-role embeds to be used for role specified notifications. Should be called in its own channel that others can view but not send in. For now, it needs to be recalled to reflect new changes.
       - `!notifications channel` : Sets the channel that recently added shows are notified in.
 -  `!role @WatchingRole` : Assigns the Watching Role that the bot assigns to Users when they are watching Plex. *NOTE: The Bot's Role needs to be higher than the Watching Role*
+-  `!delete` : Deletes all Discord Roles managed by this bot, to be used prior to removing the bot from Server for easy cleanup.
 
 ***
 
 ## To Do:
-* [ ] Automate auto-updating of TV show react roles somehow so `!notifications list` doesn't need to be called each time we want to have a new show listed. The problem here is that if I simply edit the existing embeds, people's react-role clicks might be off.
+* [ ] Automate auto-updating of TV show react roles somehow so `!notifications list` doesn't need to be called each time we want to have a new show listed. The problem here is that if I simply edit the existing embeds, people's react-role clicks will be off.
 
 ***
 
 ## Completed:
 * [x] Finished Everything I initially intended this bot to be able to do.
+* [x] Added a delete command for cleanup prior to bot removal from a server.
+* [x] Cleaned up and tested bot configuration when in multiple Discord servers. The bot can properly handle being in multiple servers. 
+* [x] Added a way to update Role-React mentions while bot was offline. Potentially negative side-effect (depending on how you look at it) is that calling `!notifications list` again will reset everyones role settings after bot reboot if they have not already clicked on their new prefernces from the freshly generated `!notifications list`.
+* [x] Added error handling when reaching Discord Server Role Limit.
 
