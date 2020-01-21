@@ -26,7 +26,7 @@ module.exports = {
 									selectedEmojis.push(selectedOptions._emoji.name);
 								}
 							});
-							var setDescription = "Successfully removed the following Custom React Roles:\n(*Don't forget to delete the role in Discord, I don't manage custom roles!*)\n\n";
+							var setDescription = "";
 							embed = new Discord.RichEmbed()
 								.setTimestamp(new Date())
 								.setColor(0x00AE86);
@@ -116,6 +116,8 @@ module.exports = {
 										client.setGuildSettings.run(guildSettings);
 										guildSettings = client.getGuildSettings.get(message.guild.id);
 									}
+
+									await client.clearPreviousNotifierList.run(`${message.guild.id}`);  //clear notifier list too
 
 								}
 								count++;
