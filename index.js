@@ -192,7 +192,7 @@ client.on('ready', ()=> {
   }
 
   // And then we have prepared statements to get and set previousNotifierList data.
-	client.clearPreviousNotifierList = sql.prepare("DELETE FROM previousNotifierList");
+	client.clearPreviousNotifierList = sql.prepare("DELETE FROM previousNotifierList WHERE guild = ?");
   client.getPreviousNotifierList = sql.prepare("SELECT * FROM previousNotifierList WHERE id = ?");
   client.searchPreviousNotifierList = sql.prepare("SELECT * FROM previousNotifierList");
   client.setPreviousNotifierList = sql.prepare("INSERT OR REPLACE INTO previousNotifierList (id, guild, messageID) VALUES (@id, @guild, @messageID);");
@@ -200,9 +200,11 @@ client.on('ready', ()=> {
   online = true;
   const tautulliService = tautulli(config, config.node_hook_port);
   const sonarrService = sonarr(config);
+
+  updateReactRolesWhileOffline();
 });
 
-
+var runOnce = {};
 client.on('message', async message => {
   if (message.author.bot) return;
   let guildSettings;
@@ -215,7 +217,11 @@ client.on('message', async message => {
       client.setGuildSettings.run(guildSettings);
       guildSettings = client.getGuildSettings.get(message.guild.id);
     }
-		generateNotificationSettings(message);
+
+    if (!runOnce[message.guild.id]) {
+      generateNotificationSettings(message);
+      runOnce[message.guild.id] = "done";
+    }
   }
   else {
     // DM Message
@@ -1215,6 +1221,65 @@ async function generateNotificationSettings(message) {
 		notificationSettings = { id: `${message.guild.id}-${client.user.id}-The CW`, guild: message.guild.id, name: `The CW`, category: `networks`, description: ``, roleID: null };
 		client.setNotificationSettings.run(notificationSettings);
 	}
+}
+
+async function updateReactRolesWhileOffline() {
+  for (let previousNotifierList of client.searchPreviousNotifierList.iterate()) {
+    client.guilds.get(previousNotifierList.guild).channels.tap(channel => {
+      if (channel.type == "text") {
+        channel.fetchMessage(`${previousNotifierList.messageID}`)
+          .then(async message => {
+            var emoji;
+            var args = message.embeds[0].description.trim().split(/\r?\n/);
+            for (var i = 0; i < args.length; i++){
+              if (args[i].indexOf("<@&") === -1) return;       //Invalid React Role Mention Clicked
+
+              var emojiKey = args[i].slice(0, args[i].indexOf("<@&")).trim();    //Grab Emoji
+              var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].indexOf(">"));
+              var reaction = message.reactions.get(emojiKey);
+              let reactions = await reaction.fetchUsers();
+              var roleList = [];  //List of users that are supposed to have that role
+
+              reactions.tap(async user => {
+                if (user.id != client.user.id) {
+                  //console.log(`User ID: ${user.id}    Username: ${user.username}    Role ID: ${roleID}    Emoji:   ${emojiKey}`);
+                  roleList.push(user.id);
+                  var userRole = client.guilds.get(previousNotifierList.guild).members.find(member => member.id === user.id).roles.find(role => role.id === roleID);
+
+                  if (userRole === "" || userRole === null || userRole === undefined) {
+                    let userToModify = message.guild.members.get(user.id);
+                    userToModify.addRole(roleID)
+                      .catch(console.error);
+                  }
+                }
+              });
+
+              var roleUser = client.guilds.get(previousNotifierList.guild).roles.find(role => role.id === roleID).members.find(member => {
+                var removeRole = true;
+                for (var i = 0; i < roleList.length; i++) {
+                  if (member.id == client.user.id || member.id == roleList[i]) {
+                    removeRole = false;
+                  }
+                }
+                if (removeRole) {
+                  let userToModify = message.guild.members.get(member.id);
+                  userToModify.removeRole(roleID)
+                    .catch(console.error);
+                }
+              });
+            }
+          })
+          .catch(function(error) {
+            if (error.code == 10008) {
+              //unknown message, therefore not the right channel, do not log this.
+            }
+            else {
+              console.log(error);
+            }
+          });
+      }
+    });
+  }
 }
 
 module.exports.updateShowList = updateShowList;

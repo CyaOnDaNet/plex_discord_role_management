@@ -1474,6 +1474,7 @@ module.exports = {
       }
 			const mainProgram = require("../index.js");
       await mainProgram.updateShowList(message);
+			await client.clearPreviousNotifierList.run(`${message.guild.id}`);
 
       var tenNumbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 
@@ -1526,6 +1527,7 @@ module.exports = {
 
       if (page1Count >= 1) {
 				let page1SentMessage = await message.channel.send({embed});
+				client.setPreviousNotifierList.run({ id: `${message.guild.id}-${client.user.id}-${page1SentMessage.id}`, guild: message.guild.id, messageID: page1SentMessage.id });
 				page1SentMessage.react(tenNumbers[0])
 					.then(async () => { if (page1Count > 1) await page1SentMessage.react(tenNumbers[1]) })
 					.then(async () => { if (page1Count > 2) await page1SentMessage.react(tenNumbers[2]) })
@@ -1559,6 +1561,7 @@ module.exports = {
 
       if (page2Count >= 1) {
 				let page2SentMessage = await message.channel.send({embed});
+				client.setPreviousNotifierList.run({ id: `${message.guild.id}-${client.user.id}-${page2SentMessage.id}`, guild: message.guild.id, messageID: page2SentMessage.id });
 				page2SentMessage.react(tenNumbers[0])
 					.then(async () => { if (page2Count > 1) await page2SentMessage.react(tenNumbers[1]) })
 					.then(async () => { if (page2Count > 2) await page2SentMessage.react(tenNumbers[2]) })
@@ -1658,6 +1661,7 @@ module.exports = {
         }
         embed.setDescription(pageBody);
         var emojiTime = await message.channel.send({embed});
+				client.setPreviousNotifierList.run({ id: `${message.guild.id}-${client.user.id}-${emojiTime.id}`, guild: message.guild.id, messageID: emojiTime.id });
         for (var i = 0; i < emojiCount; i++) {
           await emojiTime.react(tenNumbers[i])
             .then()
