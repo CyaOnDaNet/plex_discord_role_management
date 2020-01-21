@@ -7,7 +7,7 @@ const isDocker = require('is-docker');
 var _ = require('lodash');
 
 const mainProgram = require("../index.js");
-const apiName = 'Plex-Discord Role Management API - Beta';
+const apiName = 'Plex-Discord Role Management API';
 
 const DEBUG = 0;  // 1 for database debugging
 
