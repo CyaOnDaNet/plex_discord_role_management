@@ -11,7 +11,13 @@ module.exports = {
         return message.channel.send("You did not specify a valid Discord User to link!");
       }
       var plexUserName = message.content.slice(message.content.indexOf(mentionedUser.id) + mentionedUser.id.length + 1).trim();
-      let userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+			let userList = "";
+			for (const tempUser of client.getLinkByDiscordUserID.all(mentionedUser.id)) {
+			  if (tempUser.guild == message.guild.id) {
+			    userList = tempUser;
+			    break;
+			  }
+			}
 
 			if (plexUserName === null || plexUserName === undefined || plexUserName === "") {
 				return message.channel.send(`You did not specify a valid Plex User to link!\nPlease use the format: \`${prefix}link @DiscordUser PlexUsername\``);
@@ -39,12 +45,10 @@ module.exports = {
       if (!userList) {
         userList = { id: `${message.guild.id}-${client.user.id}-${mentionedUser.id}`, guild: message.guild.id, discordUserID: mentionedUser.id, plexUserName: plexUserName, watching: "false" };
         client.setUserList.run(userList);
-        userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
       }
       else {
         userList.plexUserName = plexUserName;
         client.setUserList.run(userList);
-        userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
       }
 
       message.channel.send('Succesfully linked **' + mentionedUser.username + '** as Plex user: `' + plexUserName + '`');

@@ -119,6 +119,7 @@ client.on('ready', ()=> {
   }
 
   // And then we have prepared statements to get and set userList data.
+  client.getLinkByID = sql.prepare("SELECT * FROM userList WHERE id = ?");
   client.getLinkByDiscordUserID = sql.prepare("SELECT * FROM userList WHERE discordUserID = ?");
   client.getLinkByPlexUserName = sql.prepare("SELECT * FROM userList WHERE plexUserName = ?");
   client.searchGuildUserList = sql.prepare("SELECT * FROM userList");
@@ -241,7 +242,6 @@ client.on('message', async message => {
 
 var j = schedule.scheduleJob('0 */2 * * * *', async function() {
   // Checks the plex server for activity using Tautulli and repeats every 2 minutes, serves as a fallback in the event webhook trigger has failed.
-  let userList;
 
 	if (online === false) {
     console.log("Database not ready for scheduled job, client not fully online yet. Waiting to try again...");
@@ -262,101 +262,102 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
 			if (!activeStreams[i].user || activeStreams[i].user === undefined) break;
 
 			try {
-				userList = await client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
+        for (let userList of client.getLinkByPlexUserName.all(`${activeStreams[i].user}`)) {
+          if (userList === undefined) {
+            // No record of plex username exists in database; therefore it has not been setup and we do nothing.
+            if (undefinedStreamers.indexOf(activeStreams[i].user) === -1) {
+              // prevents logs from filling up with duplicate entries
+              console.log("Unlinked active streamer detected: " + `${activeStreams[i].user}`);
+              undefinedStreamers.push(activeStreams[i].user);
+
+              for (const guildSettings of client.searchGuildSettings.iterate()) {
+                if (guildSettings.logChannelBoolean === "on") {
+                  var sendOption = 0;
+                  if (client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel) === undefined) {
+                    // Channel is invalid
+                    break;
+                  } else {
+                    sendOption = 1;
+                  }
+                  if (client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+                    // Channel is invalid
+                    break;
+                  }
+                  if (!Boolean(bypass) && sendOption === 1) {
+                    client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
+                  } else if (!Boolean(bypass)) {
+                    client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
+                  }
+                }
+              }
+            }
+          } else {
+            // This is where we assign the watching role
+            let guildSettings = client.getGuildSettings.get(userList.guild);
+            userList.watching = "true";
+            client.setUserList.run(userList);
+            var tmpID = userList.id;
+            userList = client.getLinkByID.get(tmpID);
+
+            let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
+
+            var bypass = false;
+            var roles = userToModify._roles;
+
+            for (var y = 0; y < roles.length; y++) {
+              if (roles[y] === guildSettings.watchingRole) {
+                bypass = true;
+              }
+            }
+
+            var roleOption = 0;
+            if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
+              // Role is invalid
+              console.log("Invalid watching role detected, please re-apply role command.");
+              break;
+            } else {
+              roleOption = 1;
+            }
+
+            if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
+              // Role is invalid
+              console.log("Invalid watching role detected, please re-apply role command.");
+              break;
+            }
+
+            if (!Boolean(bypass)) {
+              userToModify.addRole(guildSettings.watchingRole)
+                .catch(console.error);
+            }
+
+            if (guildSettings.logChannelBoolean === "on") {
+              var sendOption = 0;
+              if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+                // Channel is invalid
+                console.log("Invalid logging channel detected, please re-apply logchannel command.");
+                break;
+              } else {
+                sendOption = 1;
+              }
+              if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+                // Channel is invalid
+                console.log("Invalid logging channel detected, please re-apply logchannel command.");
+                break;
+              }
+              if (!Boolean(bypass) && sendOption === 1) {
+                client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+              } else if (!Boolean(bypass)) {
+                client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+              }
+            }
+          }
+        }
 			} catch (err) {
 				//...
         if (DEBUG === 1) {
           console.log(`Database not ready yet, failed on initial client.getLinkByPlexUserName.get(\`${activeStreams[i].user}\`).`);
           console.log(err)
         }
-			}
-			//userList = await client.getLinkByPlexUserName.get(`${activeStreams[i].user}`).catch();
-			if (userList === undefined) {
-				// No record of plex username exists in database; therefore it has not been setup and we do nothing.
-				if (undefinedStreamers.indexOf(activeStreams[i].user) === -1) {
-					// prevents logs from filling up with duplicate entries
-					console.log("Unlinked active streamer detected: " + `${activeStreams[i].user}`);
-					undefinedStreamers.push(activeStreams[i].user);
-
-					for (const guildSettings of client.searchGuildSettings.iterate()) {
-						if (guildSettings.logChannelBoolean === "on") {
-							var sendOption = 0;
-							if (client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel) === undefined) {
-								// Channel is invalid
-								break;
-							} else {
-								sendOption = 1;
-							}
-							if (client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
-								// Channel is invalid
-								break;
-							}
-							if (!Boolean(bypass) && sendOption === 1) {
-								client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
-							} else if (!Boolean(bypass)) {
-								client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
-							}
-						}
-					}
-				}
-			} else {
-				// This is where we assign the watching role
-				let guildSettings = client.getGuildSettings.get(userList.guild);
-				userList.watching = "true";
-				client.setUserList.run(userList);
-				userList = client.getLinkByPlexUserName.get(`${activeStreams[i].user}`);
-
-				let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
-
-				var bypass = false;
-				var roles = userToModify._roles;
-
-				for (var y = 0; y < roles.length; y++) {
-					if (roles[y] === guildSettings.watchingRole) {
-						bypass = true;
-					}
-				}
-
-				var roleOption = 0;
-				if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
-					// Role is invalid
-					console.log("Invalid watching role detected, please re-apply role command.");
-					break;
-				} else {
-					roleOption = 1;
-				}
-
-				if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
-					// Role is invalid
-					console.log("Invalid watching role detected, please re-apply role command.");
-					break;
-				}
-
-				if (!Boolean(bypass)) {
-					userToModify.addRole(guildSettings.watchingRole)
-						.catch(console.error);
-				}
-
-				if (guildSettings.logChannelBoolean === "on") {
-					var sendOption = 0;
-					if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
-						// Channel is invalid
-						console.log("Invalid logging channel detected, please re-apply logchannel command.");
-						break;
-					} else {
-						sendOption = 1;
-					}
-					if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
-						// Channel is invalid
-						console.log("Invalid logging channel detected, please re-apply logchannel command.");
-						break;
-					}
-					if (!Boolean(bypass) && sendOption === 1) {
-						client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
-					} else if (!Boolean(bypass)) {
-						client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
-					}
-				}
 			}
 		}
 	}
@@ -419,7 +420,6 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
     if (watchIsFalse) {
       for (var i = 0; i < watchIsFalse.length; i++) {
         client.setUserList.run(watchIsFalse[i]);
-        watchIsFalse[i] = client.getLinkByPlexUserName.get(`${watchIsFalse[i].plexUserName}`);
       }
     }
 	} catch (err) {
@@ -566,6 +566,52 @@ async function processHook(data) {
       plexName = data.username;
       userList = client.getLinkByPlexUserName.get(`${plexName}`);
     }
+    else {
+      for (let userList of client.getLinkByPlexUserName.all(`${plexName}`)) {
+        // This is where we remove the watching role
+        let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
+        let guildSettings = client.getGuildSettings.get(userList.guild);
+        var bypass = true;
+        var roles = userToModify._roles;
+
+        for (var i = 0; i < roles.length; i++) {
+          if (roles[i] === guildSettings.watchingRole) {
+            bypass = false;
+          }
+        }
+
+        if (!Boolean(bypass)) {
+          userList.watching = "false";
+          client.setUserList.run(userList);
+          var tmpID = userList.id;
+          userList = client.getLinkByID.get(tmpID);
+
+          userToModify.removeRole(guildSettings.watchingRole)
+            .catch(console.error);
+        }
+
+        if (guildSettings.logChannelBoolean === "on") {
+          var channelOption = 0;
+          if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+            // Channel is invalid
+            console.log("Invalid logging channel detected, please re-apply logchannel command.");
+            return;
+          } else {
+            channelOption = 1;
+          }
+          if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
+            // Channel is invalid
+            console.log("Invalid logging channel detected, please re-apply logchannel command.");
+            return;
+          }
+          if (!Boolean(bypass) && channelOption === 1) {
+            client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+          } else if (!Boolean(bypass)) {
+            client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+          }
+        }
+      }
+    }
     if (userList === undefined) {
       // No record of plex username exists in database; therefore it has not been setup and we do nothing.
       if (undefinedStreamers.indexOf(plexName) === -1) {
@@ -575,45 +621,48 @@ async function processHook(data) {
       }
     }
     else {
-      // This is where we remove the watching role
-      let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
-      let guildSettings = client.getGuildSettings.get(userList.guild);
-      var bypass = true;
-      var roles = userToModify._roles;
+      for (let userList of client.getLinkByPlexUserName.all(`${plexName}`)) {
+        // This is where we remove the watching role
+        let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
+        let guildSettings = client.getGuildSettings.get(userList.guild);
+        var bypass = true;
+        var roles = userToModify._roles;
 
-      for (var i = 0; i < roles.length; i++) {
-        if (roles[i] === guildSettings.watchingRole) {
-          bypass = false;
+        for (var i = 0; i < roles.length; i++) {
+          if (roles[i] === guildSettings.watchingRole) {
+            bypass = false;
+          }
         }
-      }
 
-      if (!Boolean(bypass)) {
-        userList.watching = "false";
-        client.setUserList.run(userList);
-        userList = client.getLinkByPlexUserName.get(`${userList.plexUserName}`);
+        if (!Boolean(bypass)) {
+          userList.watching = "false";
+          client.setUserList.run(userList);
+          var tmpID = userList.id;
+          userList = client.getLinkByID.get(tmpID);
 
-        userToModify.removeRole(guildSettings.watchingRole)
-          .catch(console.error);
-      }
-
-      if (guildSettings.logChannelBoolean === "on") {
-        var channelOption = 0;
-        if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
-          // Channel is invalid
-          console.log("Invalid logging channel detected, please re-apply logchannel command.");
-          return;
-        } else {
-          channelOption = 1;
+          userToModify.removeRole(guildSettings.watchingRole)
+            .catch(console.error);
         }
-        if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
-          // Channel is invalid
-          console.log("Invalid logging channel detected, please re-apply logchannel command.");
-          return;
-        }
-        if (!Boolean(bypass) && channelOption === 1) {
-          client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
-        } else if (!Boolean(bypass)) {
-          client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+
+        if (guildSettings.logChannelBoolean === "on") {
+          var channelOption = 0;
+          if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+            // Channel is invalid
+            console.log("Invalid logging channel detected, please re-apply logchannel command.");
+            return;
+          } else {
+            channelOption = 1;
+          }
+          if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
+            // Channel is invalid
+            console.log("Invalid logging channel detected, please re-apply logchannel command.");
+            return;
+          }
+          if (!Boolean(bypass) && channelOption === 1) {
+            client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+          } else if (!Boolean(bypass)) {
+            client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+          }
         }
       }
     }
@@ -627,6 +676,68 @@ async function processHook(data) {
       plexName = data.username;
       userList = client.getLinkByPlexUserName.get(`${plexName}`);
     }
+    else {
+      for (let userList of client.getLinkByPlexUserName.all(`${plexName}`)) {
+        // This is where we assign the watching role
+        let guildSettings = client.getGuildSettings.get(userList.guild);
+        userList.watching = "true";
+        client.setUserList.run(userList);
+        var tmpID = userList.id;
+        userList = client.getLinkByID.get(tmpID);
+
+        let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
+
+        var bypass = false;
+        var roles = userToModify._roles;
+
+        for (var y = 0; y < roles.length; y++) {
+          if (roles[y] === guildSettings.watchingRole) {
+            bypass = true;
+          }
+        }
+
+        var roleOption = 0;
+        if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
+          // Role is invalid
+          console.log("Invalid watching role detected, please re-apply role command.");
+          return;
+        } else {
+          roleOption = 1;
+        }
+
+        if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
+          // Role is invalid
+          console.log("Invalid watching role detected, please re-apply role command.");
+          return;
+        }
+
+        if (!Boolean(bypass)) {
+          userToModify.addRole(guildSettings.watchingRole)
+            .catch(console.error);
+        }
+
+        if (guildSettings.logChannelBoolean === "on") {
+          var sendOption = 0;
+          if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+            // Channel is invalid
+            console.log("Invalid logging channel detected, please re-apply logchannel command.");
+            return;
+          } else {
+            sendOption = 1;
+          }
+          if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+            // Channel is invalid
+            console.log("Invalid logging channel detected, please re-apply logchannel command.");
+            return;
+          }
+          if (!Boolean(bypass) && sendOption === 1) {
+            client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+          } else if (!Boolean(bypass)) {
+            client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+          }
+        }
+      }
+    }
     if (userList === undefined) {
       // No record of plex username exists in database; therefore it has not been setup and we do nothing.
       if (undefinedStreamers.indexOf(plexName) === -1) {
@@ -636,61 +747,64 @@ async function processHook(data) {
       }
     }
     else {
-      // This is where we assign the watching role
-      let guildSettings = client.getGuildSettings.get(userList.guild);
-      userList.watching = "true";
-      client.setUserList.run(userList);
-      userList = client.getLinkByPlexUserName.get(`${plexName}`);
+      for (let userList of client.getLinkByPlexUserName.all(`${plexName}`)) {
+        // This is where we assign the watching role
+        let guildSettings = client.getGuildSettings.get(userList.guild);
+        userList.watching = "true";
+        client.setUserList.run(userList);
+        var tmpID = userList.id;
+        userList = client.getLinkByID.get(tmpID);
 
-      let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
+        let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
 
-      var bypass = false;
-      var roles = userToModify._roles;
+        var bypass = false;
+        var roles = userToModify._roles;
 
-      for (var y = 0; y < roles.length; y++) {
-        if (roles[y] === guildSettings.watchingRole) {
-          bypass = true;
+        for (var y = 0; y < roles.length; y++) {
+          if (roles[y] === guildSettings.watchingRole) {
+            bypass = true;
+          }
         }
-      }
 
-      var roleOption = 0;
-      if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
-        // Role is invalid
-        console.log("Invalid watching role detected, please re-apply role command.");
-        return;
-      } else {
-        roleOption = 1;
-      }
-
-      if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
-        // Role is invalid
-        console.log("Invalid watching role detected, please re-apply role command.");
-        return;
-      }
-
-      if (!Boolean(bypass)) {
-        userToModify.addRole(guildSettings.watchingRole)
-          .catch(console.error);
-      }
-
-      if (guildSettings.logChannelBoolean === "on") {
-        var sendOption = 0;
-        if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
-          // Channel is invalid
-          console.log("Invalid logging channel detected, please re-apply logchannel command.");
+        var roleOption = 0;
+        if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
+          // Role is invalid
+          console.log("Invalid watching role detected, please re-apply role command.");
           return;
         } else {
-          sendOption = 1;
+          roleOption = 1;
         }
-        if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
-          // Channel is invalid
-          console.log("Invalid logging channel detected, please re-apply logchannel command.");
+
+        if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
+          // Role is invalid
+          console.log("Invalid watching role detected, please re-apply role command.");
           return;
         }
-        if (!Boolean(bypass) && sendOption === 1) {
-          client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
-        } else if (!Boolean(bypass)) {
-          client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+
+        if (!Boolean(bypass)) {
+          userToModify.addRole(guildSettings.watchingRole)
+            .catch(console.error);
+        }
+
+        if (guildSettings.logChannelBoolean === "on") {
+          var sendOption = 0;
+          if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+            // Channel is invalid
+            console.log("Invalid logging channel detected, please re-apply logchannel command.");
+            return;
+          } else {
+            sendOption = 1;
+          }
+          if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+            // Channel is invalid
+            console.log("Invalid logging channel detected, please re-apply logchannel command.");
+            return;
+          }
+          if (!Boolean(bypass) && sendOption === 1) {
+            client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+          } else if (!Boolean(bypass)) {
+            client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+          }
         }
       }
     }

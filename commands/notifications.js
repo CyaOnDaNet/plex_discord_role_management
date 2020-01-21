@@ -1609,7 +1609,13 @@ module.exports = {
 
         if (!notificationSettings) {
           // GroupName
-          notificationSettings = client.getTvShowsNotificationSettingsByGroupName.get(sortList[i]);
+					notificationSettings = "";
+					for (const tempNotificationSetting of client.getTvShowsNotificationSettingsByGroupName.all(sortList[i])) {
+	          if (tempNotificationSetting.guild == message.guild.id) {
+							notificationSettings = tempNotificationSetting;
+							break;
+						}
+					}
           var role = message.guild.roles.find(role => role.id === notificationSettings.groupRole);
           if (role != null) {
             showsList[i] = role;

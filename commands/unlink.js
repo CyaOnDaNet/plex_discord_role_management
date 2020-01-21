@@ -10,7 +10,13 @@ module.exports = {
       if(!mentionedUser) {
         return message.channel.send("You did not specify a valid user to link!");
       }
-      let userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
+			let userList = "";
+			for (const tempUser of client.getLinkByDiscordUserID.all(mentionedUser.id)) {
+			  if (tempUser.guild == message.guild.id) {
+			    userList = tempUser;
+			    break;
+			  }
+			}
 
       if (!userList) {
         return message.channel.send('Discord User was never linked to begin with, nobody to unlink!');
@@ -18,7 +24,6 @@ module.exports = {
       else {
         userList.plexUserName = null;
         client.setUserList.run(userList);
-        userList = client.getLinkByDiscordUserID.get(mentionedUser.id);
       }
 
       message.channel.send('Succesfully unlinked **' + mentionedUser.username + '** from a Plex account.');
