@@ -1,6 +1,6 @@
 {
   "name": "plex_discord_role_management",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "A discord bot that synchronizes with Tautulli and Sonarr to deliver tailored notifications.",
   "main": "index.js",
   "scripts": {
