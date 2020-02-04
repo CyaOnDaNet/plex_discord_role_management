@@ -238,7 +238,7 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
 	}
 	var result = await tautulli.tautulliService.getActivity();
 	if (result == "error") {
-		console.log("Couldn't connect to Tautulli, check your settings.");
+		console.log("~Scheduled Watching Check Failed!~ Couldn't connect to Tautulli, check your settings.");
 		return;
 	}
 
