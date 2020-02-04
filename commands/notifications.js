@@ -738,11 +738,19 @@ module.exports = {
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
 
-			var json = await sonarr.sonarrService.lookUpSeries(messageAfterCommand);
-			if (json == "error") {
-				console.log("Couldn't connect to Sonarr, check your settings.");
-				return message.channel.send("Couldn't connect to Sonarr, check your settings.");
-			}
+			var json;
+			for (let sonarrInstance in sonarr) {
+				var tempJSON = await sonarr[sonarrInstance].lookUpSeries(messageAfterCommand);
+		    if (tempJSON == "error") {
+		  		console.log("Couldn't connect to Sonarr, check your settings.");
+					return message.channel.send("Couldn't connect to Sonarr, check your settings.");
+		  	}
+		    else {
+		      if (json === "" || json === null || json === undefined) json = tempJSON;
+		      else json = json.concat(tempJSON);  // join all sonarr instace results together
+		    }
+		  }
+
 			var description = "Select the emoji that corresponds to the show you want to exclude:\n";
 			var count = 0;
 			var showEmojiList = {};
@@ -860,11 +868,19 @@ module.exports = {
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
 
-			var json = await sonarr.sonarrService.lookUpSeries(messageAfterCommand);
-			if (json == "error") {
-				console.log("Couldn't connect to Sonarr, check your settings.");
-				return message.channel.send("Couldn't connect to Sonarr, check your settings.");
-			}
+			var json;
+			for (let sonarrInstance in sonarr) {
+		    var tempJSON = await sonarr[sonarrInstance].lookUpSeries(messageAfterCommand);
+		    if (tempJSON == "error") {
+		  		console.log("Couldn't connect to Sonarr, check your settings.");
+					return message.channel.send("Couldn't connect to Sonarr, check your settings.");
+		  	}
+		    else {
+		      if (json === "" || json === null || json === undefined) json = tempJSON;
+		      else json = json.concat(tempJSON);  // join all sonarr instace results together
+		    }
+		  }
+
 			var description = "Select the emoji that corresponds to the show you want to include:\n";
 			var count = 0;
 			var showEmojiList = {};
@@ -1025,16 +1041,23 @@ module.exports = {
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
 
-			//var json = await sonarr.sonarrService.lookUpSeries(showNamesToSearch[i]);
 			var description = "Select the emojis that correspond to the shows you want to group up:\n";
 			var count = 0;
 			var showEmojiList = {};
 			for (var j = 0; j < showNamesToSearch.length; j++) {
-	      var json = await sonarr.sonarrService.lookUpSeries(showNamesToSearch[j]);
-				if (json == "error") {
-					console.log("Couldn't connect to Sonarr, check your settings.");
-					return message.channel.send("Couldn't connect to Sonarr, check your settings.");
-				}
+				var json;
+				for (let sonarrInstance in sonarr) {
+			    var tempJSON = await sonarr[sonarrInstance].lookUpSeries(showNamesToSearch[j]);
+			    if (tempJSON == "error") {
+			  		console.log("Couldn't connect to Sonarr, check your settings.");
+						return message.channel.send("Couldn't connect to Sonarr, check your settings.");
+			  	}
+			    else {
+			      if (json === "" || json === null || json === undefined) json = tempJSON;
+			      else json = json.concat(tempJSON);  // join all sonarr instace results together
+			    }
+			  }
+
 				for (var i = 0; i < json.length; i++) {
 					if (count >= 9) break;
 					for (const tvNotificationSettings of client.searchTvShowsNotificationSettings.iterate()) {
@@ -1309,16 +1332,23 @@ module.exports = {
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
 
-			//var json = await sonarr.sonarrService.lookUpSeries(showNamesToSearch[i]);
 			var description = "Select the emojis that correspond to the shows you want to ungroup:\n";
 			var count = 0;
 			var showEmojiList = {};
 			for (var j = 0; j < showNamesToSearch.length; j++) {
-				var json = await sonarr.sonarrService.lookUpSeries(showNamesToSearch[j]);
-				if (json == "error") {
-					console.log("Couldn't connect to Sonarr, check your settings.");
-					return message.channel.send("Couldn't connect to Sonarr, check your settings.");
-				}
+				var json;
+				for (let sonarrInstance in sonarr) {
+			    var tempJSON = await sonarr[sonarrInstance].lookUpSeries(showNamesToSearch[j]);
+			    if (tempJSON == "error") {
+			  		console.log("Couldn't connect to Sonarr, check your settings.");
+						return message.channel.send("Couldn't connect to Sonarr, check your settings.");
+			  	}
+			    else {
+			      if (json === "" || json === null || json === undefined) json = tempJSON;
+			      else json = json.concat(tempJSON);  // join all sonarr instace results together
+			    }
+			  }
+
 				for (var i = 0; i < json.length; i++) {
 					if (count >= 9) break;
 					for (const tvNotificationSettings of client.searchTvShowsNotificationSettings.iterate()) {

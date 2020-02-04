@@ -8,12 +8,12 @@ const process = require('process');
 const isDocker = require('is-docker');
 const fs = require('fs');
 
-const DEBUG = 0;  // 1 for database debugging
+var DEBUG = 0;  // 1 for database debugging
 
 var configFile;
 var config = {};
 const tautulli = require('./src/tautulli.js');
-const sonarr = require('./src/sonarr.js');
+const Sonarr = require('./src/sonarr.js');
 const sql = new SQLite('./config/database.sqlite');
 
 var configFilePath = './config/config.json';
@@ -21,6 +21,8 @@ var configFilePath = './config/config.json';
 fs.access(configFilePath, fs.F_OK, (err) => {
   if (err) {
     // File does not exist, should be using docker environmental variables if thats the case.
+    // assigning sample config file to check process.env for present values
+	  configFile = require('./config/config.sample.json')
   } else {
 		configFile = require("./config/config.json");
 	}
@@ -28,40 +30,22 @@ fs.access(configFilePath, fs.F_OK, (err) => {
 
 
 if (isDocker()) {
-	if (process.env.botToken !== undefined) config.botToken = process.env.botToken;
-	else config.botToken = configFile.botToken;
-
-	if (process.env.defaultPrefix !== undefined) config.defaultPrefix = process.env.defaultPrefix;
-	else config.defaultPrefix = configFile.defaultPrefix;
-
-	if (process.env.tautulli_ip !== undefined) config.tautulli_ip = process.env.tautulli_ip;
-	else config.tautulli_ip = configFile.tautulli_ip;
-
-	if (process.env.tautulli_port !== undefined) config.tautulli_port = process.env.tautulli_port;
-	else config.tautulli_port = configFile.tautulli_port;
-
-	if (process.env.tautulli_api_key !== undefined) config.tautulli_api_key = process.env.tautulli_api_key;
-	else config.tautulli_api_key = configFile.tautulli_api_key;
-
-	if (process.env.sonarr_ip !== undefined) config.sonarr_ip = process.env.sonarr_ip;
-	else config.sonarr_ip = configFile.sonarr_ip;
-
-	if (process.env.sonarr_port !== undefined) config.sonarr_port = process.env.sonarr_port;
-	else config.sonarr_port = configFile.sonarr_port;
-
-	if (process.env.sonarr_api_key !== undefined) config.sonarr_api_key = process.env.sonarr_api_key;
-	else config.sonarr_api_key = configFile.sonarr_api_key;
-
-	if (process.env.node_hook_ip !== undefined) config.node_hook_ip = process.env.node_hook_ip;
-	else config.node_hook_ip = configFile.node_hook_ip;
-
-	if (process.env.node_hook_port !== undefined) config.node_hook_port = process.env.node_hook_port;
-	else config.node_hook_port = configFile.node_hook_port;
+  for (let [key, value] of Object.entries(configFile)) {
+		// checking keys from provided config file to available env keys
+		if (process.env[key] !== undefined) config[key] = process.env[key]
+		else config[key] = configFile[key]
+	}
 }
 else {
 	config = require("./config/config.json");
 }
 
+if (config.DEBUG_MODE) DEBUG = config.DEBUG_MODE;
+
+var sonarr = {};
+sonarr.sonarr1 = new Sonarr(config.sonarr_ip, config.sonarr_port, config.sonarr_api_key);
+if (config.sonarr_ip_2 && config.sonarr_ip_2 != "OPTIONAL_ADDITIONAL_SONARR_IP_ADDRESS" && config.sonarr_ip_2 != "" && config.sonarr_ip_2 != null && config.sonarr_ip_2 != undefined) sonarr.sonarr2 = new Sonarr(config.sonarr_ip_2, config.sonarr_port_2, config.sonarr_api_key_2);
+if (config.sonarr_ip_3 && config.sonarr_ip_3 != "OPTIONAL_ADDITIONAL_SONARR_IP_ADDRESS" && config.sonarr_ip_3 != "" && config.sonarr_ip_3 != null && config.sonarr_ip_3 != undefined) sonarr.sonarr3 = new Sonarr(config.sonarr_ip_3, config.sonarr_port_3, config.sonarr_api_key_3);
 
 client.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
@@ -199,7 +183,6 @@ client.on('ready', ()=> {
 
   online = true;
   const tautulliService = tautulli(config, config.node_hook_port);
-  const sonarrService = sonarr(config);
 
   updateReactRolesWhileOffline();
 });
@@ -850,10 +833,17 @@ async function processHook(data) {
 					if (showNetwork === "" || showNetwork === null || showNetwork === undefined) {
 						if (showsByTHETVDB != "" && showsByTHETVDB != null && showsByTHETVDB != undefined) {
 							if (!existsInDatabase) {
-								var json = await sonarr.sonarrService.lookUpSeries(`tvdb:${showsByTHETVDB}`);
-								if (json == "error") {
-									console.log("Couldn't connect to Sonarr, check your settings.");
-								}
+                var json;
+                for (let sonarrInstance in sonarr) {
+            	    var tempJSON = await sonarr[sonarrInstance].lookUpSeries(`tvdb:${showsByTHETVDB}`);
+                  if (tempJSON == "error") {
+                		return console.log("Couldn't connect to Sonarr, check your settings.");
+                	}
+                  else {
+                    if (json === "" || json === null || json === undefined) json = tempJSON;
+                    else json = json.concat(tempJSON);  // join all sonarr instace results together
+                  }
+                }
 								for (var i = 0; i < json.length; i++) {
 									if (showsByTHETVDB == json[i].tvdbId) {
 										showNetwork = json[i].network;
@@ -977,10 +967,18 @@ async function processHook(data) {
 async function updateShowList(message) {
   // grabs list of currently airing shows and adds them to notifications channel
 	let tvShowsNotificationSettings;
-	var json = await sonarr.sonarrService.getSeries();
-	if (json == "error") {
-		return console.log("Couldn't connect to Sonarr, check your settings.");
-	}
+  var json;
+  for (let sonarrInstance in sonarr) {
+    var tempJSON = await sonarr[sonarrInstance].getSeries();
+    if (tempJSON == "error") {
+  		return console.log("Couldn't connect to Sonarr, check your settings.");
+  	}
+    else {
+      if (json === "" || json === null || json === undefined) json = tempJSON;
+      else json = json.concat(tempJSON);  // join all sonarr instace results together
+    }
+  }
+
 	let showsList = [];
 	var count = 0;
   var roleLimitHit = false;

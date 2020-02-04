@@ -5,12 +5,18 @@ module.exports = {
 	usage: '',
 	adminCommand: false,
 	async execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr) {
-		var json = await sonarr.sonarrService.getSeries();
-		if (json == "error") {
-			console.log("Couldn't connect to Sonarr, check your settings.");
-			return message.channel.send("Couldn't connect to Sonarr, check your settings.");
-		}
-
+		var json;
+		for (let sonarrInstance in sonarr) {
+	    var tempJSON = await sonarr[sonarrInstance].getSeries();
+	    if (tempJSON == "error") {
+	  		console.log("Couldn't connect to Sonarr, check your settings.");
+				return message.channel.send("Couldn't connect to Sonarr, check your settings.");
+	  	}
+	    else {
+	      if (json === "" || json === null || json === undefined) json = tempJSON;
+	      else json = json.concat(tempJSON);  // join all sonarr instace results together
+	    }
+	  }
 		var showsList = "\n";
 		var showListPage = 1;
 
