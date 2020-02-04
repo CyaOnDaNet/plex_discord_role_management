@@ -27,9 +27,10 @@ If you have changed your webroot of Sonarr or Tautulli, leave the `sonarr_port` 
 2. Clone the repo or download a zip and unpackage it.
 3. Navigate to the root folder and in the console, type `npm install`
     * You should see packages beginning to install
-4. Take your bot token from the Pre-Installation section and enter it into the `config/config.json`.
+4. Make a copy of `config/config.example.json` and save it as `config.json` in the same `config` directory.
+4. Take your bot token from the Pre-Installation section and enter it into `config/config.json`.
 5. Inside the `config/config.json` file, replace the placeholders with your Tautulli and Sonarr information. The `node_hook_ip` and `node_hook_port` are referring to the machine running this bot so tautulli knows where to send webhooks. The `node_hook_port` can be any available open port.
-6. Once you have the configs set up correctly, it is time to bring your bot *Online*. Navigate to the root of the app (where `index.js` is located) and in your console, type `node index.js`
+6. Once you have the config set up correctly, it is time to bring your bot *Online*. Navigate to the root of the app (where `index.js` is located) and in your console, type `node index.js`
     * This will start your server. The console will need to be running for the bot to run.
 
 If I am missing any steps, feel free to reach out or open an issue/bug in the Issues for this repository.
@@ -40,19 +41,26 @@ If I am missing any steps, feel free to reach out or open an issue/bug in the Is
 ```
 docker run -d \
   --name='plex_discord_role_management' \
-  -e TZ=YOUR_TIMEZONE \
+  -e TZ=<timezone> \
   -e 'botToken'='YOUR_DISCORD_BOT_TOKEN' \
   -e 'defaultPrefix'='!' \
+  -e 'node_hook_ip'='THE_IP_ADDRESS_OF_THE_HOST_MACHINE' \
+  -e 'node_hook_port'='YOUR_HOST_PORT' \
   -e 'tautulli_ip'='YOUR_TAUTULLI_IP_ADDRESS' \
   -e 'tautulli_port'='YOUR_TAUTULLI_PORT' \
   -e 'tautulli_api_key'='YOUR_TAUTULLI_API_KEY' \
   -e 'sonarr_ip'='YOUR_SONARR_IP_ADDRESS' \
   -e 'sonarr_port'='YOUR_SONARR_PORT' \
   -e 'sonarr_api_key'='YOUR_SONARR_API_KEY' \
-  -e 'node_hook_ip'='THE_IP_ADDRESS_OF_THE_HOST_MACHINE' \
-  -e 'node_hook_port'='YOUR_HOST_PORT' \
+  -e 'sonarr_ip_2'='OPTIONAL_ADDITIONAL_SONARR_IP_ADDRESS' \
+  -e 'sonarr_port_2'='OPTIONAL_ADDITIONAL_SONARR_PORT' \
+  -e 'sonarr_api_key_2'='OPTIONAL_ADDITIONAL_SONARR_API_KEY' \
+  -e 'sonarr_ip_3'='OPTIONAL_ADDITIONAL_SONARR_IP_ADDRESS' \
+  -e 'sonarr_port_3'='OPTIONAL_ADDITIONAL_SONARR_PORT' \
+  -e 'sonarr_api_key_3'='OPTIONAL_ADDITIONAL_SONARR_API_KEY' \
+  -e 'DEBUG_MODE'='0' \
   -p 'YOUR_HOST_PORT:3000/tcp' \
-  -v '/PATH/TO/YOUR/HOST/APPDATA':'/app/config':'rw' \
+  -v '/PATH/TO/YOUR/HOST/APPDATA':'/app/config':'rw'   \
   cyaondanet/plex_discord_role_management:latest
 ```
 
@@ -116,7 +124,8 @@ docker run -d \
 ## Completed:
 * [x] Finished Everything I initially intended this bot to be able to do.
 * [x] Added a delete command for cleanup prior to bot removal from a server.
-* [x] Cleaned up and tested bot configuration when in multiple Discord servers. The bot can properly handle being in multiple servers. 
+* [x] Cleaned up and tested bot configuration when in multiple Discord servers. The bot can now properly handle being in multiple servers. 
 * [x] Added a way to update Role-React mentions while bot was offline. Potentially negative side-effect (depending on how you look at it) is that calling `!notifications list` again will reset everyones role settings after bot reboot if they have not already clicked on their new preferences from the freshly generated `!notifications list`.
 * [x] Added error handling when reaching Discord Server Role Limit.
-
+* [x] Added the ability to have multiple sonarr instances.
+* [x] Added retry to Tautulli webhook connection so at system startup there is no conflict if the bot finishes starting before Tautulli
