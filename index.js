@@ -876,6 +876,21 @@ async function processHook(data) {
                     else json = json.concat(tempJSON);  // join all sonarr instace results together
                   }
                 }
+                // Let's remove any duplicate shows that are on multiple sonarr instances
+            		var tempJSON = [];
+            		for (var i = 0; i < json.length; i++) {
+              		var found = false;
+              		for (var j = 0; j < tempJSON.length; j++) {
+                		if (tempJSON[j].title == json[i].title && tempJSON[j].tvdbId == json[i].tvdbId && tempJSON[j].imdbId == json[i].imdbId) {
+                  		found = true;
+                  		break;
+                		}
+              		}
+              		if (!found) {
+                		tempJSON.push(json[i]);
+              		}
+            		}
+            		json = tempJSON;
 								for (var i = 0; i < json.length; i++) {
 									if (showsByTHETVDB == json[i].tvdbId) {
 										showNetwork = json[i].network;
@@ -1010,6 +1025,21 @@ async function updateShowList(message) {
       else json = json.concat(tempJSON);  // join all sonarr instace results together
     }
   }
+  // Let's remove any duplicate shows that are on multiple sonarr instances
+  var tempJSON = [];
+  for (var i = 0; i < json.length; i++) {
+    var found = false;
+    for (var j = 0; j < tempJSON.length; j++) {
+      if (tempJSON[j].title == json[i].title && tempJSON[j].tvdbId == json[i].tvdbId && tempJSON[j].imdbId == json[i].imdbId) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      tempJSON.push(json[i]);
+    }
+  }
+  json = tempJSON;
 
 	let showsList = [];
 	var count = 0;
