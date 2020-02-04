@@ -1,0 +1,5 @@
+node_modules
+
+config/**
+!config/config.example.json
+!config/README.md

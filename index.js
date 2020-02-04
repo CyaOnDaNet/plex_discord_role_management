@@ -8,60 +8,44 @@ const process = require('process');
 const isDocker = require('is-docker');
 const fs = require('fs');
 
-const DEBUG = 0;  // 1 for database debugging
+var DEBUG = 0;   // Ignored if defined in config or env variable, 1 for database debugging, 2 for sonarr instance debugging
 
-var configFile;
+var configFile = null;
 var config = {};
 const tautulli = require('./src/tautulli.js');
-const sonarr = require('./src/sonarr.js');
+const Sonarr = require('./src/sonarr.js');
 const sql = new SQLite('./config/database.sqlite');
 
-var configFilePath = './config/config.json';
-
-fs.access(configFilePath, fs.F_OK, (err) => {
-  if (err) {
-    // File does not exist, should be using docker environmental variables if thats the case.
-  } else {
-		configFile = require("./config/config.json");
-	}
-});
-
+try {
+	configFile = require("./config/config.json");
+} catch(e) {
+	// File does not exist, should be using docker environmental variables if thats the case.
+	// assigning example config file to check process.env for present values
+	configFile = require('./src/config.example.json');
+}
 
 if (isDocker()) {
-	if (process.env.botToken !== undefined) config.botToken = process.env.botToken;
-	else config.botToken = configFile.botToken;
-
-	if (process.env.defaultPrefix !== undefined) config.defaultPrefix = process.env.defaultPrefix;
-	else config.defaultPrefix = configFile.defaultPrefix;
-
-	if (process.env.tautulli_ip !== undefined) config.tautulli_ip = process.env.tautulli_ip;
-	else config.tautulli_ip = configFile.tautulli_ip;
-
-	if (process.env.tautulli_port !== undefined) config.tautulli_port = process.env.tautulli_port;
-	else config.tautulli_port = configFile.tautulli_port;
-
-	if (process.env.tautulli_api_key !== undefined) config.tautulli_api_key = process.env.tautulli_api_key;
-	else config.tautulli_api_key = configFile.tautulli_api_key;
-
-	if (process.env.sonarr_ip !== undefined) config.sonarr_ip = process.env.sonarr_ip;
-	else config.sonarr_ip = configFile.sonarr_ip;
-
-	if (process.env.sonarr_port !== undefined) config.sonarr_port = process.env.sonarr_port;
-	else config.sonarr_port = configFile.sonarr_port;
-
-	if (process.env.sonarr_api_key !== undefined) config.sonarr_api_key = process.env.sonarr_api_key;
-	else config.sonarr_api_key = configFile.sonarr_api_key;
-
-	if (process.env.node_hook_ip !== undefined) config.node_hook_ip = process.env.node_hook_ip;
-	else config.node_hook_ip = configFile.node_hook_ip;
-
-	if (process.env.node_hook_port !== undefined) config.node_hook_port = process.env.node_hook_port;
-	else config.node_hook_port = configFile.node_hook_port;
+  for (let [key, value] of Object.entries(configFile)) {
+		// checking keys from provided config file to available env keys
+		if (process.env[key] !== undefined) config[key] = process.env[key]
+		else config[key] = configFile[key]
+	}
 }
 else {
 	config = require("./config/config.json");
 }
 
+if (config.DEBUG_MODE) DEBUG = config.DEBUG_MODE;
+if(DEBUG != 0) console.log(`Debugging is enabled: Mode ${DEBUG}`);
+
+var sonarr = {};
+sonarr.sonarr1 = new Sonarr(config.sonarr_ip, config.sonarr_port, config.sonarr_api_key);
+if (config.sonarr_ip_2 && config.sonarr_ip_2 != "OPTIONAL_ADDITIONAL_SONARR_IP_ADDRESS" && config.sonarr_ip_2 != "" && config.sonarr_ip_2 != null && config.sonarr_ip_2 != undefined) sonarr.sonarr2 = new Sonarr(config.sonarr_ip_2, config.sonarr_port_2, config.sonarr_api_key_2);
+if (config.sonarr_ip_3 && config.sonarr_ip_3 != "OPTIONAL_ADDITIONAL_SONARR_IP_ADDRESS" && config.sonarr_ip_3 != "" && config.sonarr_ip_3 != null && config.sonarr_ip_3 != undefined) sonarr.sonarr3 = new Sonarr(config.sonarr_ip_3, config.sonarr_port_3, config.sonarr_api_key_3);
+
+if(DEBUG == 2) {
+  console.log(sonarr);
+}
 
 client.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
@@ -199,7 +183,6 @@ client.on('ready', ()=> {
 
   online = true;
   const tautulliService = tautulli(config, config.node_hook_port);
-  const sonarrService = sonarr(config);
 
   updateReactRolesWhileOffline();
 });
@@ -255,7 +238,7 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
 	}
 	var result = await tautulli.tautulliService.getActivity();
 	if (result == "error") {
-		console.log("Couldn't connect to Tautulli, check your settings.");
+		console.log("~Scheduled Watching Check Failed!~ Couldn't connect to Tautulli, check your settings.");
 		return;
 	}
 
@@ -306,8 +289,12 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
             userList = client.getLinkByID.get(tmpID);
 
             let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
-
             var bypass = false;
+
+            if (userToModify === undefined) {
+        			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+        			continue;
+        		}
             var roles = userToModify._roles;
 
             for (var y = 0; y < roles.length; y++) {
@@ -360,7 +347,7 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
         }
 			} catch (err) {
 				//...
-        if (DEBUG === 1) {
+        if (DEBUG == 1) {
           console.log(`Database not ready yet, failed on initial client.getLinkByPlexUserName.get(\`${activeStreams[i].user}\`).`);
           console.log(err)
         }
@@ -384,6 +371,11 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
 					let userToModify = client.guilds.get(watchingQuery.guild).members.get(watchingQuery.discordUserID);
 					let guildSettings = client.getGuildSettings.get(watchingQuery.guild);
 					var bypassAgain = true;
+
+          if (userToModify === undefined) {
+      			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+      			continue;
+      		}
 					var roles = userToModify._roles;
 
 					for (var i = 0; i < roles.length; i++) {
@@ -430,7 +422,7 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
     }
 	} catch (err) {
 		//...
-    if (DEBUG === 1) {
+    if (DEBUG == 1) {
       console.log("Database not ready yet, failed on recheck of activeStreams.");
       console.log(err)
     }
@@ -578,6 +570,11 @@ async function processHook(data) {
         let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
         let guildSettings = client.getGuildSettings.get(userList.guild);
         var bypass = true;
+
+        if (userToModify === undefined) {
+    			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+    			continue;
+    		}
         var roles = userToModify._roles;
 
         for (var i = 0; i < roles.length; i++) {
@@ -632,6 +629,11 @@ async function processHook(data) {
         let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
         let guildSettings = client.getGuildSettings.get(userList.guild);
         var bypass = true;
+
+        if (userToModify === undefined) {
+    			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+    			continue;
+    		}
         var roles = userToModify._roles;
 
         for (var i = 0; i < roles.length; i++) {
@@ -692,8 +694,12 @@ async function processHook(data) {
         userList = client.getLinkByID.get(tmpID);
 
         let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
-
         var bypass = false;
+
+        if (userToModify === undefined) {
+    			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+    			continue;
+    		}
         var roles = userToModify._roles;
 
         for (var y = 0; y < roles.length; y++) {
@@ -762,8 +768,12 @@ async function processHook(data) {
         userList = client.getLinkByID.get(tmpID);
 
         let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
-
         var bypass = false;
+
+        if (userToModify === undefined) {
+    			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+    			continue;
+    		}
         var roles = userToModify._roles;
 
         for (var y = 0; y < roles.length; y++) {
@@ -850,10 +860,32 @@ async function processHook(data) {
 					if (showNetwork === "" || showNetwork === null || showNetwork === undefined) {
 						if (showsByTHETVDB != "" && showsByTHETVDB != null && showsByTHETVDB != undefined) {
 							if (!existsInDatabase) {
-								var json = await sonarr.sonarrService.lookUpSeries(`tvdb:${showsByTHETVDB}`);
-								if (json == "error") {
-									console.log("Couldn't connect to Sonarr, check your settings.");
-								}
+                var json;
+                for (let sonarrInstance in sonarr) {
+            	    var tempJSON = await sonarr[sonarrInstance].lookUpSeries(`tvdb:${showsByTHETVDB}`);
+                  if (tempJSON == "error") {
+                		return console.log("Couldn't connect to Sonarr, check your settings.");
+                	}
+                  else {
+                    if (json === "" || json === null || json === undefined) json = tempJSON;
+                    else json = json.concat(tempJSON);  // join all sonarr instace results together
+                  }
+                }
+                // Let's remove any duplicate shows that are on multiple sonarr instances
+            		var tempJSON = [];
+            		for (var i = 0; i < json.length; i++) {
+              		var found = false;
+              		for (var j = 0; j < tempJSON.length; j++) {
+                		if (tempJSON[j].title == json[i].title && tempJSON[j].tvdbId == json[i].tvdbId && tempJSON[j].imdbId == json[i].imdbId) {
+                  		found = true;
+                  		break;
+                		}
+              		}
+              		if (!found) {
+                		tempJSON.push(json[i]);
+              		}
+            		}
+            		json = tempJSON;
 								for (var i = 0; i < json.length; i++) {
 									if (showsByTHETVDB == json[i].tvdbId) {
 										showNetwork = json[i].network;
@@ -977,10 +1009,33 @@ async function processHook(data) {
 async function updateShowList(message) {
   // grabs list of currently airing shows and adds them to notifications channel
 	let tvShowsNotificationSettings;
-	var json = await sonarr.sonarrService.getSeries();
-	if (json == "error") {
-		return console.log("Couldn't connect to Sonarr, check your settings.");
-	}
+  var json;
+  for (let sonarrInstance in sonarr) {
+    var tempJSON = await sonarr[sonarrInstance].getSeries();
+    if (tempJSON == "error") {
+  		return console.log("Couldn't connect to Sonarr, check your settings.");
+  	}
+    else {
+      if (json === "" || json === null || json === undefined) json = tempJSON;
+      else json = json.concat(tempJSON);  // join all sonarr instace results together
+    }
+  }
+  // Let's remove any duplicate shows that are on multiple sonarr instances
+  var tempJSON = [];
+  for (var i = 0; i < json.length; i++) {
+    var found = false;
+    for (var j = 0; j < tempJSON.length; j++) {
+      if (tempJSON[j].title == json[i].title && tempJSON[j].tvdbId == json[i].tvdbId && tempJSON[j].imdbId == json[i].imdbId) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      tempJSON.push(json[i]);
+    }
+  }
+  json = tempJSON;
+
 	let showsList = [];
 	var count = 0;
   var roleLimitHit = false;
