@@ -289,8 +289,12 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
             userList = client.getLinkByID.get(tmpID);
 
             let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
-
             var bypass = false;
+
+            if (userToModify === undefined) {
+        			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+        			continue;
+        		}
             var roles = userToModify._roles;
 
             for (var y = 0; y < roles.length; y++) {
@@ -367,6 +371,11 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
 					let userToModify = client.guilds.get(watchingQuery.guild).members.get(watchingQuery.discordUserID);
 					let guildSettings = client.getGuildSettings.get(watchingQuery.guild);
 					var bypassAgain = true;
+
+          if (userToModify === undefined) {
+      			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+      			continue;
+      		}
 					var roles = userToModify._roles;
 
 					for (var i = 0; i < roles.length; i++) {
@@ -561,6 +570,11 @@ async function processHook(data) {
         let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
         let guildSettings = client.getGuildSettings.get(userList.guild);
         var bypass = true;
+
+        if (userToModify === undefined) {
+    			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+    			continue;
+    		}
         var roles = userToModify._roles;
 
         for (var i = 0; i < roles.length; i++) {
@@ -615,6 +629,11 @@ async function processHook(data) {
         let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
         let guildSettings = client.getGuildSettings.get(userList.guild);
         var bypass = true;
+
+        if (userToModify === undefined) {
+    			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+    			continue;
+    		}
         var roles = userToModify._roles;
 
         for (var i = 0; i < roles.length; i++) {
@@ -675,8 +694,12 @@ async function processHook(data) {
         userList = client.getLinkByID.get(tmpID);
 
         let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
-
         var bypass = false;
+
+        if (userToModify === undefined) {
+    			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+    			continue;
+    		}
         var roles = userToModify._roles;
 
         for (var y = 0; y < roles.length; y++) {
@@ -745,8 +768,12 @@ async function processHook(data) {
         userList = client.getLinkByID.get(tmpID);
 
         let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
-
         var bypass = false;
+
+        if (userToModify === undefined) {
+    			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
+    			continue;
+    		}
         var roles = userToModify._roles;
 
         for (var y = 0; y < roles.length; y++) {
