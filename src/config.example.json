@@ -1,0 +1,19 @@
+{
+    "botToken": "YOUR_DISCORD_BOT_TOKEN",
+    "defaultPrefix": "!",
+    "node_hook_ip": "THE_IP_ADDRESS_OF_THIS_NODEJS_BOT",
+    "node_hook_port": "3000",
+    "tautulli_ip": "YOUR_TAUTULLI_IP_ADDRESS",
+    "tautulli_port": "YOUR_TAUTULLI_PORT",
+    "tautulli_api_key": "YOUR_TAUTULLI_API_KEY",
+    "sonarr_ip": "YOUR_SONARR_IP_ADDRESS",
+    "sonarr_port": "YOUR_SONARR_PORT",
+    "sonarr_api_key": "YOUR_SONARR_API_KEY",
+    "sonarr_ip_2": "OPTIONAL_ADDITIONAL_SONARR_IP_ADDRESS",
+    "sonarr_port_2": "OPTIONAL_ADDITIONAL_SONARR_PORT",
+    "sonarr_api_key_2": "OPTIONAL_ADDITIONAL_SONARR_API_KEY",
+    "sonarr_ip_3": "OPTIONAL_ADDITIONAL_SONARR_IP_ADDRESS",
+    "sonarr_port_3": "OPTIONAL_ADDITIONAL_SONARR_PORT",
+    "sonarr_api_key_3": "OPTIONAL_ADDITIONAL_SONARR_API_KEY",
+    "DEBUG_MODE":"0"
+}
