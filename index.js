@@ -16,20 +16,16 @@ const tautulli = require('./src/tautulli.js');
 const Sonarr = require('./src/sonarr.js');
 const sql = new SQLite('./config/database.sqlite');
 
-var configFilePath = './config/config.json';
-
 console.log(configFile);
 
-fs.access(configFilePath, fs.F_OK, (err) => {
-  if (err) {
-    // File does not exist, should be using docker environmental variables if thats the case.
-    // assigning sample config file to check process.env for present values
-	  configFile = require('./src/config.example.json');
-    console.log("Error Source");
-  } else {
-		configFile = require("./config/config.json");
-	}
-});
+try {
+	configFile = require("./config/config.json");
+} catch(e) {
+	// File does not exist, should be using docker environmental variables if thats the case.
+	// assigning example config file to check process.env for present values
+	configFile = require('./src/config.example.json');
+  console.log("Error Source");
+}
 
 console.log(configFile);
 if (isDocker()) {
