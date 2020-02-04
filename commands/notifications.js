@@ -1091,8 +1091,8 @@ module.exports = {
 				var tempJSON = [];
 				for (var i = 0; i < json.length; i++) {
 		  		var found = false;
-		  		for (var j = 0; j < tempJSON.length; j++) {
-		    		if (tempJSON[j].title == json[i].title && tempJSON[j].tvdbId == json[i].tvdbId && tempJSON[j].imdbId == json[i].imdbId) {
+		  		for (var y = 0; y < tempJSON.length; y++) {
+		    		if (tempJSON[y].title == json[i].title && tempJSON[y].tvdbId == json[i].tvdbId && tempJSON[y].imdbId == json[i].imdbId) {
 		      		found = true;
 		      		break;
 		    		}
@@ -1397,8 +1397,8 @@ module.exports = {
 				var tempJSON = [];
 				for (var i = 0; i < json.length; i++) {
 		  		var found = false;
-		  		for (var j = 0; j < tempJSON.length; j++) {
-		    		if (tempJSON[j].title == json[i].title && tempJSON[j].tvdbId == json[i].tvdbId && tempJSON[j].imdbId == json[i].imdbId) {
+		  		for (var y = 0; y < tempJSON.length; y++) {
+		    		if (tempJSON[y].title == json[i].title && tempJSON[y].tvdbId == json[i].tvdbId && tempJSON[y].imdbId == json[i].imdbId) {
 		      		found = true;
 		      		break;
 		    		}
