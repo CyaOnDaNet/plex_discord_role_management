@@ -22,7 +22,7 @@ fs.access(configFilePath, fs.F_OK, (err) => {
   if (err) {
     // File does not exist, should be using docker environmental variables if thats the case.
     // assigning sample config file to check process.env for present values
-	  configFile = require('./config/config.sample.json')
+	  configFile = require('./config/config.example.json')
   } else {
 		configFile = require("./config/config.json");
 	}
