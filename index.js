@@ -28,7 +28,7 @@ fs.access(configFilePath, fs.F_OK, (err) => {
 	}
 });
 
-
+console.log(configFile);
 if (isDocker()) {
   for (let [key, value] of Object.entries(configFile)) {
 		// checking keys from provided config file to available env keys
