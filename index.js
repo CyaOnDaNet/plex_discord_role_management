@@ -8,7 +8,7 @@ const process = require('process');
 const isDocker = require('is-docker');
 const fs = require('fs');
 
-var DEBUG = 0;  // 1 for database debugging
+var DEBUG = 0;   // Ignored if defined in config or env variable, 1 for database debugging, 2 for sonarr instance debugging
 
 var configFile;
 var config = {};
@@ -41,11 +41,16 @@ else {
 }
 
 if (config.DEBUG_MODE) DEBUG = config.DEBUG_MODE;
+if(DEBUG != 0) console.log(`Debugging is enabled: Mode ${DEBUG}`);
 
 var sonarr = {};
 sonarr.sonarr1 = new Sonarr(config.sonarr_ip, config.sonarr_port, config.sonarr_api_key);
 if (config.sonarr_ip_2 && config.sonarr_ip_2 != "OPTIONAL_ADDITIONAL_SONARR_IP_ADDRESS" && config.sonarr_ip_2 != "" && config.sonarr_ip_2 != null && config.sonarr_ip_2 != undefined) sonarr.sonarr2 = new Sonarr(config.sonarr_ip_2, config.sonarr_port_2, config.sonarr_api_key_2);
 if (config.sonarr_ip_3 && config.sonarr_ip_3 != "OPTIONAL_ADDITIONAL_SONARR_IP_ADDRESS" && config.sonarr_ip_3 != "" && config.sonarr_ip_3 != null && config.sonarr_ip_3 != undefined) sonarr.sonarr3 = new Sonarr(config.sonarr_ip_3, config.sonarr_port_3, config.sonarr_api_key_3);
+
+if(DEBUG == 2) {
+  console.log(sonarr);
+}
 
 client.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
@@ -347,7 +352,7 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
         }
 			} catch (err) {
 				//...
-        if (DEBUG === 1) {
+        if (DEBUG == 1) {
           console.log(`Database not ready yet, failed on initial client.getLinkByPlexUserName.get(\`${activeStreams[i].user}\`).`);
           console.log(err)
         }
@@ -422,7 +427,7 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
     }
 	} catch (err) {
 		//...
-    if (DEBUG === 1) {
+    if (DEBUG == 1) {
       console.log("Database not ready yet, failed on recheck of activeStreams.");
       console.log(err)
     }
