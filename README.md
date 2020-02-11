@@ -21,6 +21,10 @@
 If you have changed your webroot of Sonarr or Tautulli, leave the `sonarr_port` and or `tautulli_port` fields blank. Specify the entire base URL in the ip section instead. So for example, if you normally access Tautulli at `http://192.168.0.101:8181/tautulli/home` instead of the default `http://192.168.0.101:8181/home`, enter `192.168.0.101:8181/tautulli` as the `tautulli_ip` and leave the `tautulli_port` field blank. Also, if you access Sonarr or Tautulli with TLS encryption, specify `https://` in the beginning of the ip field.
 
 
+## Important Note about Images
+If you want to have images included in your Discord notifications, image hosting must be enabled in Tautulli. Go to `Settings > 3rd Party APIs` and select an option from the `Image Host` drop down. 
+
+
 ## Normal Installation
 
 1. Install Node.js: https://nodejs.org/
