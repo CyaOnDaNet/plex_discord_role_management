@@ -9,7 +9,7 @@ module.exports = {
 			const filter = (reaction, user) => emojiOptions.indexOf(reaction.emoji.name) != -1;
 
 			exemptEmbedReactRoles.push(`Delete All Tracked Roles`);
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor('Delete All Tracked Roles') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
 				.setDescription("⚠ **Warning** ⚠\nThis will delete all Discord Roles created by this bot, this is typically only something you want to do if removing this bot from the server. Click 👍 to confirm deletion.")
 				.setTimestamp(new Date())
@@ -21,13 +21,14 @@ module.exports = {
 					sentMessage.awaitReactions(filter, { time: 15000 })
 						.then(async collected => {
 							var selectedEmojis = [];
-							collected.tap(selectedOptions => {
-								if (selectedOptions.users.get(message.author.id) != undefined) {
+							collected.each(selectedOptions => {
+								if (selectedOptions.users.cache.get(message.author.id) != undefined) {
 									selectedEmojis.push(selectedOptions._emoji.name);
 								}
 							});
+
 							var setDescription = "";
-							embed = new Discord.RichEmbed()
+							embed = new Discord.MessageEmbed()
 								.setTimestamp(new Date())
 								.setColor(0x00AE86);
 
@@ -50,8 +51,8 @@ module.exports = {
 
 									for (const showNotification of client.searchTvShowsNotificationSettings.iterate()) {
 				            if (showNotification.guild == message.guild.id && showNotification.roleID != null && showNotification.roleID != undefined && showNotification.roleID != "") {
-											if (await message.guild.roles.find(role => role.id === showNotification.roleID) != null) {
-												await message.guild.roles.find(role => role.id === showNotification.roleID).delete()
+											if (await message.guild.roles.cache.find(role => role.id === showNotification.roleID) != null) {
+												await message.guild.roles.cache.find(role => role.id === showNotification.roleID).delete()
 													.then(async () => {
 														deleteList.push(showNotification.id);
 													})
@@ -62,8 +63,8 @@ module.exports = {
 											}
 				            }
 										if (showNotification.guild == message.guild.id && showNotification.groupRole != null && showNotification.groupRole != undefined && showNotification.groupRole != "") {
-											if (await message.guild.roles.find(role => role.id === showNotification.groupRole) != null) {
-												await message.guild.roles.find(role => role.id === showNotification.groupRole).delete()
+											if (await message.guild.roles.cache.find(role => role.id === showNotification.groupRole) != null) {
+												await message.guild.roles.cache.find(role => role.id === showNotification.groupRole).delete()
 													.then(async () => {
 														deleteList.push(showNotification.id);
 													})
@@ -88,8 +89,8 @@ module.exports = {
 
 									for (const notificationSetting of client.searchNotificationSettings.iterate()) {
 										if (notificationSetting.guild == message.guild.id && notificationSetting.roleID != null && notificationSetting.roleID != undefined && notificationSetting.roleID != "" && notificationSetting.category != "custom") {
-											if (await message.guild.roles.find(role => role.id === notificationSetting.roleID) != null) {
-												await message.guild.roles.find(role => role.id === notificationSetting.roleID).delete()
+											if (await message.guild.roles.cache.find(role => role.id === notificationSetting.roleID) != null) {
+												await message.guild.roles.cache.find(role => role.id === notificationSetting.roleID).delete()
 													.then(async () => {
 														deleteNotificationList.push(notificationSetting.id);
 													})
@@ -124,7 +125,7 @@ module.exports = {
 							}
 
 							if (count === 0) {
-								embed = new Discord.RichEmbed()
+								embed = new Discord.MessageEmbed()
 									.setDescription("Nothing selected in time, action cancelled!")
 									.setTimestamp(new Date())
 									.setColor(0x00AE86);

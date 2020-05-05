@@ -41,7 +41,7 @@ module.exports = {
 				}
 			}
 
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor('Here\'s a list of all my commands:')
 				.setDescription(`${description}`)
 				.addField('\u200b', `You can send \`${prefix}help [command name]\` to get info on a specific command!`)
@@ -78,7 +78,7 @@ module.exports = {
 			if (data[i] === undefined || data[i] === null) break;
       description = description + data[i] + "\n";
 		}
-		embed = new Discord.RichEmbed()
+		embed = new Discord.MessageEmbed()
 			.setAuthor(`Here is more info about the ${command.name} command`)
 			.setDescription(`${description}`)
 			.setFooter("Helped")

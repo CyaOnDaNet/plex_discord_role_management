@@ -8,7 +8,7 @@ const process = require('process');
 const isDocker = require('is-docker');
 const fs = require('fs');
 
-var DEBUG = 0;   // Ignored if defined in config or env variable, 1 for database debugging, 2 for sonarr instance debugging
+var DEBUG = 0;   // Ignored if defined in config or env variable, 1 for database debugging, 2 for sonarr instance debugging, 3 for startup role checking
 
 var configFile = null;
 var config = {};
@@ -262,20 +262,20 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
               for (const guildSettings of client.searchGuildSettings.iterate()) {
                 if (guildSettings.logChannelBoolean === "on") {
                   var sendOption = 0;
-                  if (client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel) === undefined) {
+                  if (client.guilds.cache.get(guildSettings.guild).channels.resolve(guildSettings.logChannel) === undefined) {
                     // Channel is invalid
                     break;
                   } else {
                     sendOption = 1;
                   }
-                  if (client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+                  if (client.guilds.cache.get(guildSettings.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
                     // Channel is invalid
                     break;
                   }
                   if (!Boolean(bypass) && sendOption === 1) {
-                    client.guilds.get(guildSettings.guild).channels.get(guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
+                    client.guilds.cache.get(guildSettings.guild).channels.resolve(guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
                   } else if (!Boolean(bypass)) {
-                    client.guilds.get(guildSettings.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
+                    client.guilds.cache.get(guildSettings.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel).send("Unlinked active streamer detected: " + `**${activeStreams[i].user}**`);
                   }
                 }
               }
@@ -288,7 +288,7 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
             var tmpID = userList.id;
             userList = client.getLinkByID.get(tmpID);
 
-            let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
+            let userToModify = client.guilds.cache.get(userList.guild).members.resolve(userList.discordUserID);
             var bypass = false;
 
             if (userToModify === undefined) {
@@ -304,7 +304,7 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
             }
 
             var roleOption = 0;
-            if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
+            if (client.guilds.cache.get(userList.guild).roles.fetch(guildSettings.watchingRole) === undefined) {
               // Role is invalid
               console.log("Invalid watching role detected, please re-apply role command.");
               break;
@@ -312,35 +312,35 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
               roleOption = 1;
             }
 
-            if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
+            if (client.guilds.cache.get(userList.guild).roles.cache.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
               // Role is invalid
               console.log("Invalid watching role detected, please re-apply role command.");
               break;
             }
 
             if (!Boolean(bypass)) {
-              userToModify.addRole(guildSettings.watchingRole)
+              userToModify.roles.add(guildSettings.watchingRole)
                 .catch(console.error);
             }
 
             if (guildSettings.logChannelBoolean === "on") {
               var sendOption = 0;
-              if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+              if (client.guilds.cache.get(userList.guild).channels.resolve(guildSettings.logChannel) === undefined) {
                 // Channel is invalid
                 console.log("Invalid logging channel detected, please re-apply logchannel command.");
                 break;
               } else {
                 sendOption = 1;
               }
-              if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+              if (client.guilds.cache.get(userList.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
                 // Channel is invalid
                 console.log("Invalid logging channel detected, please re-apply logchannel command.");
                 break;
               }
               if (!Boolean(bypass) && sendOption === 1) {
-                client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+                client.guilds.cache.get(userList.guild).channels.resolve(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
               } else if (!Boolean(bypass)) {
-                client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+                client.guilds.cache.get(userList.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
               }
             }
           }
@@ -368,7 +368,7 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
 				}
 				if (!Boolean(bypass)) {
 					// This is where we remove the watching role
-					let userToModify = client.guilds.get(watchingQuery.guild).members.get(watchingQuery.discordUserID);
+					let userToModify = client.guilds.cache.get(watchingQuery.guild).members.resolve(watchingQuery.discordUserID);
 					let guildSettings = client.getGuildSettings.get(watchingQuery.guild);
 					var bypassAgain = true;
 
@@ -388,28 +388,28 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
             watchingQuery.watching = "false";
             watchIsFalse.push(watchingQuery);
 
-						userToModify.removeRole(guildSettings.watchingRole)
+						userToModify.roles.remove(guildSettings.watchingRole)
 							.catch(console.error);
 					}
 
 					if (guildSettings.logChannelBoolean === "on") {
 						var channelOption = 0;
-						if (client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel) === undefined) {
+						if (client.guilds.cache.get(watchingQuery.guild).channels.resolve(guildSettings.logChannel) === undefined) {
 							// Channel is invalid
 							console.log("Invalid logging channel detected, please re-apply logchannel command.");
 							break;
 						} else {
 							channelOption = 1;
 						}
-						if (client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
+						if (client.guilds.cache.get(watchingQuery.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
 							// Channel is invalid
 							console.log("Invalid logging channel detected, please re-apply logchannel command.");
 							break;
 						}
 						if (!Boolean(bypassAgain) && channelOption === 1) {
-							client.guilds.get(watchingQuery.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+							client.guilds.cache.get(watchingQuery.guild).channels.resolve(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
 						} else if (!Boolean(bypassAgain)) {
-							client.guilds.get(watchingQuery.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+							client.guilds.cache.get(watchingQuery.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
 						}
 					}
 				}
@@ -441,17 +441,17 @@ client.on('raw', async packet => {
     // We don't want this to run on unrelated packets
     if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) return;
     // Grab the channel to check the message from
-    const channel = client.channels.get(packet.d.channel_id);
+    const channel = client.channels.resolve(packet.d.channel_id);
     // There's no need to emit if the message is cached, because the event will fire anyway for that
-    if (channel.messages.has(packet.d.message_id)) return;
+    if (channel.messages.cache.has(packet.d.message_id)) return;
     // Since we have confirmed the message is not cached, let's fetch it
-    channel.fetchMessage(packet.d.message_id).then(async message => {
+    channel.messages.fetch(packet.d.message_id).then(async message => {
         // Emojis can have identifiers of name:id format, so we have to account for that case as well
         const emoji = packet.d.emoji.id ? `${packet.d.emoji.name}:${packet.d.emoji.id}` : packet.d.emoji.name;
         // This gives us the reaction we need to emit the event properly, in top of the message object
-        const reaction = await message.reactions.get(emoji);
+        const reaction = await message.reactions.cache.get(emoji);
         // Adds the currently reacting user to the reaction's users collection.
-        if (reaction) reaction.users.set(packet.d.user_id, client.users.get(packet.d.user_id));
+        // if (reaction) reaction.users.set(packet.d.user_id, client.users.fetch(packet.d.user_id)); //broke in discord.js v12
         // Check which type of event it is before emitting
 
 				if (client.user.id != message.author.id) return; //Only continue if react was to a message by this bot.
@@ -474,15 +474,15 @@ client.on('raw', async packet => {
 						//console.log(`Made it to primary event handler ${packet.t}`);
 
 						if (packet.t === 'MESSAGE_REACTION_ADD') {
-		            //client.emit('messageReactionAdd', reaction, client.users.get(packet.d.user_id));
-								let userToModify = message.guild.members.get(packet.d.user_id);
-		            userToModify.addRole(roleID)
+		            //client.emit('messageReactionAdd', reaction, client.users.fetch(packet.d.user_id));
+								let userToModify = message.guild.members.resolve(packet.d.user_id);
+		            userToModify.roles.add(roleID)
 		              .catch(console.error);
 		        }
 		        else if (packet.t === 'MESSAGE_REACTION_REMOVE') {
-		            //client.emit('messageReactionRemove', reaction, client.users.get(packet.d.user_id));
-								let userToModify = message.guild.members.get(packet.d.user_id);
-			          userToModify.removeRole(roleID)
+		            //client.emit('messageReactionRemove', reaction, client.users.fetch(packet.d.user_id));
+								let userToModify = message.guild.members.resolve(packet.d.user_id);
+			          userToModify.roles.remove(roleID)
 			            .catch(console.error);
 		        }
 					}
@@ -500,18 +500,18 @@ client.on('raw', async event => {
     if (!events.hasOwnProperty(event.t)) return;
 
     const { d: data } = event;
-    const user = client.users.get(data.user_id);
-    const channel = client.channels.get(data.channel_id);
+    const user = client.users.fetch(data.user_id);
+    const channel = client.channels.resolve(data.channel_id);
 
-    const message = await channel.fetchMessage(data.message_id);
-    const member = message.guild.members.get(user.id);
+    const message = await channel.messages.fetch(data.message_id);
+    const member = message.guild.members.resolve(user.id);
 
     const emojiKey = (data.emoji.id) ? `${data.emoji.name}:${data.emoji.id}` : data.emoji.name;
-    let reaction = message.reactions.get(emojiKey);
+    let reaction = message.reactions.cache.get(emojiKey);
 
     if (!reaction) {
         // Create an object that can be passed through the event like normal
-        const emoji = new Emoji(client.guilds.get(data.guild_id), data.emoji).catch();
+        const emoji = new Emoji(client.guilds.cache.get(data.guild_id), data.emoji).catch();
         reaction = new MessageReaction(message, emoji, 1, data.user_id === client.user.id).catch();
     }
     // Everything above grabs the emoji that was clicked by a user, The below code then matches the react emoji to the role and adds or removes it.
@@ -533,18 +533,18 @@ client.on('raw', async event => {
 
         var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].indexOf(">"));
         var removeRole = true;
-				reaction = await message.reactions.get(emojiKey);
+				reaction = await message.reactions.cache.get(emojiKey);
 
 				//console.log(`Made it to secondary event handler ${event.t}`);
 
 				if (event.t === 'MESSAGE_REACTION_ADD') {
-						let userToModify = message.guild.members.get(event.d.user_id);
-						userToModify.addRole(roleID)
+						let userToModify = message.guild.members.resolve(event.d.user_id);
+						userToModify.roles.add(roleID)
 							.catch(console.error);
 				}
 				else if (event.t === 'MESSAGE_REACTION_REMOVE') {
-						let userToModify = message.guild.members.get(event.d.user_id);
-						userToModify.removeRole(roleID)
+						let userToModify = message.guild.members.resolve(event.d.user_id);
+						userToModify.roles.remove(roleID)
 							.catch(console.error);
 				}
       }
@@ -555,6 +555,7 @@ client.on('raw', async event => {
 
 async function processHook(data) {
   // Processes Tautulli webhooks
+	//console.log(`Hook incoming: "${data.trigger}"`);
 
   if (data.trigger === 'playbackStopped') {
     var plexName = data.user;
@@ -567,7 +568,7 @@ async function processHook(data) {
     else {
       for (let userList of client.getLinkByPlexUserName.all(`${plexName}`)) {
         // This is where we remove the watching role
-        let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
+        let userToModify = client.guilds.cache.get(userList.guild).members.resolve(userList.discordUserID);
         let guildSettings = client.getGuildSettings.get(userList.guild);
         var bypass = true;
 
@@ -589,28 +590,28 @@ async function processHook(data) {
           var tmpID = userList.id;
           userList = client.getLinkByID.get(tmpID);
 
-          userToModify.removeRole(guildSettings.watchingRole)
+          await userToModify.roles.remove(guildSettings.watchingRole)
             .catch(console.error);
         }
 
         if (guildSettings.logChannelBoolean === "on") {
           var channelOption = 0;
-          if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+          if (client.guilds.cache.get(userList.guild).channels.resolve(guildSettings.logChannel) === undefined) {
             // Channel is invalid
             console.log("Invalid logging channel detected, please re-apply logchannel command.");
             return;
           } else {
             channelOption = 1;
           }
-          if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
+          if (client.guilds.cache.get(userList.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
             // Channel is invalid
             console.log("Invalid logging channel detected, please re-apply logchannel command.");
             return;
           }
           if (!Boolean(bypass) && channelOption === 1) {
-            client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+            client.guilds.cache.get(userList.guild).channels.resolve(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
           } else if (!Boolean(bypass)) {
-            client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+            client.guilds.cache.get(userList.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
           }
         }
       }
@@ -626,7 +627,7 @@ async function processHook(data) {
     else {
       for (let userList of client.getLinkByPlexUserName.all(`${plexName}`)) {
         // This is where we remove the watching role
-        let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
+        let userToModify = client.guilds.cache.get(userList.guild).members.resolve(userList.discordUserID);
         let guildSettings = client.getGuildSettings.get(userList.guild);
         var bypass = true;
 
@@ -648,28 +649,28 @@ async function processHook(data) {
           var tmpID = userList.id;
           userList = client.getLinkByID.get(tmpID);
 
-          userToModify.removeRole(guildSettings.watchingRole)
+          userToModify.roles.remove(guildSettings.watchingRole)
             .catch(console.error);
         }
 
         if (guildSettings.logChannelBoolean === "on") {
           var channelOption = 0;
-          if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+          if (client.guilds.cache.get(userList.guild).channels.resolve(guildSettings.logChannel) === undefined) {
             // Channel is invalid
             console.log("Invalid logging channel detected, please re-apply logchannel command.");
             return;
           } else {
             channelOption = 1;
           }
-          if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
+          if (client.guilds.cache.get(userList.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel) === null && channelOption === 0) {
             // Channel is invalid
             console.log("Invalid logging channel detected, please re-apply logchannel command.");
             return;
           }
           if (!Boolean(bypass) && channelOption === 1) {
-            client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+            client.guilds.cache.get(userList.guild).channels.resolve(guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
           } else if (!Boolean(bypass)) {
-            client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
+            client.guilds.cache.get(userList.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully removed for **" + userToModify.user.username + "**!");
           }
         }
       }
@@ -693,7 +694,7 @@ async function processHook(data) {
         var tmpID = userList.id;
         userList = client.getLinkByID.get(tmpID);
 
-        let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
+        let userToModify = client.guilds.cache.get(userList.guild).members.resolve(userList.discordUserID);
         var bypass = false;
 
         if (userToModify === undefined) {
@@ -709,7 +710,7 @@ async function processHook(data) {
         }
 
         var roleOption = 0;
-        if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
+        if (client.guilds.cache.get(userList.guild).roles.fetch(guildSettings.watchingRole) === undefined) {
           // Role is invalid
           console.log("Invalid watching role detected, please re-apply role command.");
           return;
@@ -717,35 +718,35 @@ async function processHook(data) {
           roleOption = 1;
         }
 
-        if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
+        if (client.guilds.cache.get(userList.guild).roles.cache.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
           // Role is invalid
           console.log("Invalid watching role detected, please re-apply role command.");
           return;
         }
 
         if (!Boolean(bypass)) {
-          userToModify.addRole(guildSettings.watchingRole)
+          await userToModify.roles.add(guildSettings.watchingRole)
             .catch(console.error);
         }
 
         if (guildSettings.logChannelBoolean === "on") {
           var sendOption = 0;
-          if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+          if (client.guilds.cache.get(userList.guild).channels.resolve(guildSettings.logChannel) === undefined) {
             // Channel is invalid
             console.log("Invalid logging channel detected, please re-apply logchannel command.");
             return;
           } else {
             sendOption = 1;
           }
-          if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+          if (client.guilds.cache.get(userList.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
             // Channel is invalid
             console.log("Invalid logging channel detected, please re-apply logchannel command.");
             return;
           }
           if (!Boolean(bypass) && sendOption === 1) {
-            client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+            client.guilds.cache.get(userList.guild).channels.resolve(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
           } else if (!Boolean(bypass)) {
-            client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+            client.guilds.cache.get(userList.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
           }
         }
       }
@@ -767,7 +768,7 @@ async function processHook(data) {
         var tmpID = userList.id;
         userList = client.getLinkByID.get(tmpID);
 
-        let userToModify = client.guilds.get(userList.guild).members.get(userList.discordUserID);
+        let userToModify = client.guilds.cache.get(userList.guild).members.resolve(userList.discordUserID);
         var bypass = false;
 
         if (userToModify === undefined) {
@@ -783,7 +784,7 @@ async function processHook(data) {
         }
 
         var roleOption = 0;
-        if (client.guilds.get(userList.guild).roles.get(guildSettings.watchingRole) === undefined) {
+        if (client.guilds.cache.get(userList.guild).roles.fetch(guildSettings.watchingRole) === undefined) {
           // Role is invalid
           console.log("Invalid watching role detected, please re-apply role command.");
           return;
@@ -791,35 +792,35 @@ async function processHook(data) {
           roleOption = 1;
         }
 
-        if (client.guilds.get(userList.guild).roles.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
+        if (client.guilds.cache.get(userList.guild).roles.cache.find(role => role.name === guildSettings.watchingRole) === null && roleOption === 0) {
           // Role is invalid
           console.log("Invalid watching role detected, please re-apply role command.");
           return;
         }
 
         if (!Boolean(bypass)) {
-          userToModify.addRole(guildSettings.watchingRole)
+          userToModify.roles.add(guildSettings.watchingRole)
             .catch(console.error);
         }
 
         if (guildSettings.logChannelBoolean === "on") {
           var sendOption = 0;
-          if (client.guilds.get(userList.guild).channels.get(guildSettings.logChannel) === undefined) {
+          if (client.guilds.cache.get(userList.guild).channels.resolve(guildSettings.logChannel) === undefined) {
             // Channel is invalid
             console.log("Invalid logging channel detected, please re-apply logchannel command.");
             return;
           } else {
             sendOption = 1;
           }
-          if (client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
+          if (client.guilds.cache.get(userList.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel) === null && sendOption === 0) {
             // Channel is invalid
             console.log("Invalid logging channel detected, please re-apply logchannel command.");
             return;
           }
           if (!Boolean(bypass) && sendOption === 1) {
-            client.guilds.get(userList.guild).channels.get(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+            client.guilds.cache.get(userList.guild).channels.resolve(guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
           } else if (!Boolean(bypass)) {
-            client.guilds.get(userList.guild).channels.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
+            client.guilds.cache.get(userList.guild).channels.cache.find(channel => channel.name === guildSettings.logChannel).send("Watching role successfully added for **" + userToModify.user.username + "**!");
           }
         }
       }
@@ -940,7 +941,7 @@ async function processHook(data) {
 					}
 
 					// form embed and send
-					embed = new Discord.RichEmbed()
+					embed = new Discord.MessageEmbed()
 						.setTitle(`${data.title}`)
 						.setURL(`${data.plex_url}`)
 						.setDescription(`${data.summary}`)
@@ -949,7 +950,7 @@ async function processHook(data) {
 						.setTimestamp(new Date())
 						.setColor(0x00AE86);
 					var messageBody = data.messageContent + "\n" + roleExists;
-					client.guilds.get(guildID).channels.get(guildSettings.notificationChannel).send(messageBody, {embed}).catch(console.error);
+					client.guilds.cache.get(guildID).channels.resolve(guildSettings.notificationChannel).send(messageBody, {embed}).catch(console.error);
         }
 				else if (data.contentType === "movie") {
 					var roleExists = "";
@@ -986,7 +987,7 @@ async function processHook(data) {
 					}
 
 					// form embed and send
-					embed = new Discord.RichEmbed()
+					embed = new Discord.MessageEmbed()
 						.setTitle(`${data.title}`)
 						.setURL(`${data.plex_url}`)
 						.setDescription(`${data.summary}`)
@@ -995,7 +996,7 @@ async function processHook(data) {
 						.setTimestamp(new Date())
 						.setColor(0x00AE86);
 					var messageBody = data.messageContent + "\n" + roleExists;
-					client.guilds.get(guildID).channels.get(guildSettings.notificationChannel).send(messageBody, {embed}).catch(console.error);
+					client.guilds.cache.get(guildID).channels.resolve(guildSettings.notificationChannel).send(messageBody, {embed}).catch(console.error);
 
 				}
 				else if (data.contentType === "music") {
@@ -1047,7 +1048,7 @@ async function updateShowList(message) {
 
 			if (!tvShowsNotificationSettings) {
 				// Create a new role with data
-				var role = await message.guild.roles.find(role => role.name === json[i].title);
+				var role = await message.guild.roles.cache.find(role => role.name === json[i].title);
 
 				if (role) {
 					tvShowsNotificationSettings = { id: `${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`, guild: message.guild.id, title: json[i].title, cleanTitle: json[i].cleanTitle, sortTitle: json[i].sortTitle, imdbID_or_themoviedbID: json[i].imdbId, thetvdb_id: `${json[i].tvdbId}`, status: json[i].status, is_group: null, groupName: null, groupRole: null, exclude: null, include: null, network: json[i].network, completeSonarr: JSON.stringify(json[i]), roleID: role.id};
@@ -1055,10 +1056,12 @@ async function updateShowList(message) {
 					tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 				}
 				else if (!roleLimitHit) {
-					let newRole = await message.guild.createRole({
-						name: json[i].title,
-						color: 'BLUE',
-						mentionable: true
+					let newRole = await message.guild.roles.create({
+						data: {
+							name: json[i].title,
+							color: 'BLUE',
+							mentionable: true
+						}
 					})
 						.then(role => {
 							//console.log(`Created new role with name ${role.name} and color ${role.color}`)
@@ -1090,7 +1093,7 @@ async function updateShowList(message) {
 			}
       else if (tvShowsNotificationSettings.guild == message.guild.id && tvShowsNotificationSettings.roleID === null && tvShowsNotificationSettings.exclude === null && tvShowsNotificationSettings.groupRole === null && tvShowsNotificationSettings.is_group === null && tvShowsNotificationSettings.groupName === null) {
         // Create a new role with data
-				var role = await message.guild.roles.find(role => role.name === json[i].title);
+				var role = await message.guild.roles.cache.find(role => role.name === json[i].title);
 
 				if (role) {
 					tvShowsNotificationSettings.roleID = role.id;
@@ -1098,10 +1101,12 @@ async function updateShowList(message) {
 					tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 				}
 				else if (!roleLimitHit) {
-					let newRole = await message.guild.createRole({
-						name: json[i].title,
-						color: 'BLUE',
-						mentionable: true
+					let newRole = await message.guild.roles.create({
+						data: {
+							name: json[i].title,
+							color: 'BLUE',
+							mentionable: true
+						}
 					})
 						.then(role => {
 							tvShowsNotificationSettings.roleID = role.id;
@@ -1129,8 +1134,8 @@ async function updateShowList(message) {
 			tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 
 			if (tvShowsNotificationSettings && tvShowsNotificationSettings.is_group === null && tvShowsNotificationSettings.include === null && tvShowsNotificationSettings.roleID != null) {
-        if (await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
-          await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+        if (await message.guild.roles.cache.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
+          await message.guild.roles.cache.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
   					.then(async () => {
   						tvShowsNotificationSettings.roleID = null;
   						tvShowsNotificationSettings.status = json[i].status;
@@ -1148,7 +1153,7 @@ async function updateShowList(message) {
 			}
 			else if (tvShowsNotificationSettings && tvShowsNotificationSettings.is_group === null && tvShowsNotificationSettings.include != null && tvShowsNotificationSettings.roleID === null) {
 				// Create a new role with data
-				var role = await message.guild.roles.find(role => role.name === json[i].title);
+				var role = await message.guild.roles.cache.find(role => role.name === json[i].title);
 
 				if (role) {
 					tvShowsNotificationSettings.roleID = role.id;
@@ -1156,10 +1161,12 @@ async function updateShowList(message) {
 					tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(`${json[i].cleanTitle}-${json[i].imdbId}-${message.guild.id}`);
 				}
 				else if (!roleLimitHit) {
-					let newRole = await message.guild.createRole({
-						name: json[i].title,
-						color: 'BLUE',
-						mentionable: true
+					let newRole = await message.guild.roles.create({
+						data: {
+							name: json[i].title,
+							color: 'BLUE',
+							mentionable: true
+						}
 					})
 						.then(role => {
 							tvShowsNotificationSettings.roleID = role.id;
@@ -1280,9 +1287,10 @@ async function generateNotificationSettings(message) {
 
 async function updateReactRolesWhileOffline() {
   for (let previousNotifierList of client.searchPreviousNotifierList.iterate()) {
-    client.guilds.get(previousNotifierList.guild).channels.tap(channel => {
+		var channelsWithRole = client.guilds.cache.get(previousNotifierList.guild).channels.cache.array();
+		channelsWithRole.forEach(function(channel) {
       if (channel.type == "text") {
-        channel.fetchMessage(`${previousNotifierList.messageID}`)
+        channel.messages.fetch(`${previousNotifierList.messageID}`)
           .then(async message => {
             var emoji;
             var args = message.embeds[0].description.trim().split(/\r?\n/);
@@ -1291,25 +1299,42 @@ async function updateReactRolesWhileOffline() {
 
               var emojiKey = args[i].slice(0, args[i].indexOf("<@&")).trim();    //Grab Emoji
               var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].indexOf(">"));
-              var reaction = message.reactions.get(emojiKey);
-              let reactions = await reaction.fetchUsers();
+              var reaction = message.reactions.cache.get(emojiKey);
+              let reactions = await reaction.users.fetch();
               var roleList = [];  //List of users that are supposed to have that role
 
-              reactions.tap(async user => {
+              await reactions.each(async user => {
                 if (user.id != client.user.id) {
-                  //console.log(`User ID: ${user.id}    Username: ${user.username}    Role ID: ${roleID}    Emoji:   ${emojiKey}`);
+                  if (DEBUG == 3) console.log(`updateReactRolesWhileOffline -      User ID: ${user.id}    Username: ${user.username}    Role ID: ${roleID}    Emoji:   ${emojiKey}`);
                   roleList.push(user.id);
-                  var userRole = client.guilds.get(previousNotifierList.guild).members.find(member => member.id === user.id).roles.find(role => role.id === roleID);
 
-                  if (userRole === "" || userRole === null || userRole === undefined) {
-                    let userToModify = message.guild.members.get(user.id);
-                    userToModify.addRole(roleID)
-                      .catch(console.error);
-                  }
+									await client.guilds.cache.get(previousNotifierList.guild).members.fetch(user.id)
+									  .then(async member => {
+
+											var userRole = await member.roles.cache.get(roleID);
+
+											if (userRole === "" || userRole === null || userRole === undefined) {
+												if (DEBUG == 3) console.log(`Adding role to ${user.username}:     RoleID: ${roleID}`);
+											  let userToModify = message.guild.members.resolve(user.id);
+											  userToModify.roles.add(roleID)
+											    .catch(console.error);
+											}
+											else {
+												if (DEBUG == 3)  {
+													if (userRole.name) {
+														console.log(`Role is already on ${user.username}: ${userRole.name}     ID: ${userRole.id}`);
+													}
+													else {
+														console.log(`Name did not exist, role info is below:`);
+														console.log(userRole.name);
+													}
+												}
+											}
+										});
                 }
               });
 
-              var roleUser = client.guilds.get(previousNotifierList.guild).roles.find(role => role.id === roleID).members.find(member => {
+              var roleUser = await client.guilds.cache.get(previousNotifierList.guild).roles.resolve(roleID).members.each(member => {
                 var removeRole = true;
                 for (var i = 0; i < roleList.length; i++) {
                   if (member.id == client.user.id || member.id == roleList[i]) {
@@ -1317,8 +1342,9 @@ async function updateReactRolesWhileOffline() {
                   }
                 }
                 if (removeRole) {
-                  let userToModify = message.guild.members.get(member.id);
-                  userToModify.removeRole(roleID)
+									if (DEBUG == 3) console.log(`Removing role from User: ${member.user.username}     ID: ${roleID}`);
+                  let userToModify = message.guild.members.resolve(member.id);
+                  userToModify.roles.remove(roleID)
                     .catch(console.error);
                 }
               });

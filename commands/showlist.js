@@ -49,7 +49,7 @@ module.exports = {
 
 			if (tempStringCountCheck.length >= 2048) {  //Checks For Discord Embed Description Limit
 				if (showListPage === 1) {
-					embed = new Discord.RichEmbed()
+					embed = new Discord.MessageEmbed()
 						.setAuthor(client.user.username, client.user.avatarURL)
 						.setDescription("**Below is a list of shows on the Plex Server that are still continuing:**\n" + showsList)
 						.setFooter("Fetched")
@@ -61,7 +61,7 @@ module.exports = {
 					showsList = "\n";
 				}
 				else {
-					embed = new Discord.RichEmbed()
+					embed = new Discord.MessageEmbed()
 						.setAuthor(client.user.username, client.user.avatarURL)
 						.setDescription(`**Show List __Page ${showListPage}__**:\n` + showsList)
 						.setFooter("Fetched")
@@ -78,7 +78,7 @@ module.exports = {
 		}
 
 		if (showListPage === 1) {
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor(client.user.username, client.user.avatarURL)
 				.setDescription("**Below is a list of shows on the Plex Server that are still continuing:**\n" + showsList)
 				.setFooter("Fetched")
@@ -86,7 +86,7 @@ module.exports = {
 				.setColor(0x00AE86);
 		}
 		else {
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor(client.user.username, client.user.avatarURL)
 				.setDescription(`**Show List __Page ${showListPage}__**:\n` + showsList)
 				.setFooter("Fetched")

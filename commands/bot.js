@@ -19,7 +19,7 @@ module.exports = {
     }
 
     if (command === "info" || command === "information") {
-      embed = new Discord.RichEmbed()
+      embed = new Discord.MessageEmbed()
         .setAuthor(client.user.username, client.user.avatarURL)
         .setDescription("Below is a list of important bot info:\n")
 				.addField("Bot Version: ", `\`${pjson.version}\``, true)

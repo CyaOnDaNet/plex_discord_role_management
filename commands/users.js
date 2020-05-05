@@ -23,7 +23,7 @@ module.exports = {
 
 			if (tempStringCountCheck.length >= 2048) {  //Checks For Discord Embed Description Limit
 				if (userListPage === 1) {
-					embed = new Discord.RichEmbed()
+					embed = new Discord.MessageEmbed()
 						.setAuthor(client.user.username, client.user.avatarURL)
 						.setDescription("**Below is a list of users with access to the Plex Server:**\n" + userList)
 						.setFooter("Fetched")
@@ -35,7 +35,7 @@ module.exports = {
 					userList = "\n";
 				}
 				else {
-					embed = new Discord.RichEmbed()
+					embed = new Discord.MessageEmbed()
 						.setAuthor(client.user.username, client.user.avatarURL)
 						.setDescription(`**User List __Page ${userListPage}__**:\n` + userList)
 						.setFooter("Fetched")
@@ -51,7 +51,7 @@ module.exports = {
 		}
 
 		if (userListPage === 1) {
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor(client.user.username, client.user.avatarURL)
 				.setDescription("**Below is a list of users with access to the Plex Server:**\n" + userList)
 				.setFooter("Fetched")
@@ -59,7 +59,7 @@ module.exports = {
 				.setColor(0x00AE86);
 		}
 		else {
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor(client.user.username, client.user.avatarURL)
 				.setDescription(`**User List __Page ${userListPage}__**:\n` + userList)
 				.setFooter("Fetched")

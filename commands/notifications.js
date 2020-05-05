@@ -37,7 +37,7 @@ module.exports = {
 
 			exemptEmbedReactRoles.push(`Notification Role-Mention Options:`);
 			var setDescription = "";
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor('Notification Role-Mention Options:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
@@ -108,15 +108,15 @@ module.exports = {
 				    .then(async collected => {
 							var selectedEmojis = [];
 							//console.log(`Collected ${collected.size} reactions`)
-							collected.tap(selectedOptions => {
-								if (selectedOptions.users.get(message.author.id) != undefined) {
+							collected.each(selectedOptions => {
+								if (selectedOptions.users.cache.get(message.author.id) != undefined) {
 									selectedEmojis.push(selectedOptions._emoji.name);
 								}
 							});
 
 							var successfullyDisabledItems = "";
 							var successfullyEnabledItems = "";
-							embed = new Discord.RichEmbed()
+							embed = new Discord.MessageEmbed()
 								.setTimestamp(new Date())
 								.setColor(0x00AE86);
 
@@ -127,8 +127,8 @@ module.exports = {
 
 								if(notificationSettings.roleID != null) {
 									//delete role and remove from database
-									if (await message.guild.roles.find(role => role.id === notificationSettings.roleID) != null) {
-										await message.guild.roles.find(role => role.id === notificationSettings.roleID).delete()
+									if (await message.guild.roles.cache.find(role => role.id === notificationSettings.roleID) != null) {
+										await message.guild.roles.cache.find(role => role.id === notificationSettings.roleID).delete()
 										  .then(async () => {
 												notificationSettings.roleID = null;
 												client.setNotificationSettings.run(notificationSettings);
@@ -148,7 +148,7 @@ module.exports = {
 								}
 								else {
 									// Create role and store in database
-									var role = await message.guild.roles.find(role => role.name === notificationSettings.name);
+									var role = await message.guild.roles.cache.find(role => role.name === notificationSettings.name);
 
 				          if (role) {
                     notificationSettings.roleID = role.id;
@@ -156,10 +156,12 @@ module.exports = {
 				            notificationSettings = client.getNotificationSettings.get(sortedEmojiList[emojis]);
 				          }
 				          else {
-				            let newRole = await message.guild.createRole({
-				              name: notificationSettings.name,
-				              color: 'GREEN',
-				              mentionable: true
+				            let newRole = await message.guild.roles.create({
+				              data: {
+												name: notificationSettings.name,
+				                color: 'GREEN',
+				                mentionable: true
+										  }
 				            })
 				              .then(async role => {
 												notificationSettings.roleID = role.id;
@@ -188,13 +190,13 @@ module.exports = {
 
 							if (count2 <= 0) {
 								if (roleLimitHit) {
-									embed = new Discord.RichEmbed()
+									embed = new Discord.MessageEmbed()
 										.setDescription("**Action Failed!**\nDiscord Role Limit Hit!\nPlease delete some roles and try again.")
 										.setTimestamp(new Date())
 										.setColor(0x00AE86);
 								}
 								else {
-									embed = new Discord.RichEmbed()
+									embed = new Discord.MessageEmbed()
 										.setDescription("Nothing selected in time, nothing edited.")
 										.setTimestamp(new Date())
 										.setColor(0x00AE86);
@@ -233,7 +235,7 @@ module.exports = {
 
       var networksSetDescription = "";
 			exemptEmbedReactRoles.push(`TV Network Options:`);
-			embed2 = new Discord.RichEmbed()
+			embed2 = new Discord.MessageEmbed()
 				.setAuthor('TV Network Options:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
@@ -302,15 +304,15 @@ module.exports = {
 				    .then(async collected => {
 							var selectedEmojis = [];
 							//console.log(`Collected ${collected.size} reactions`)
-							collected.tap(selectedOptions => {
-								if (selectedOptions.users.get(message.author.id) != undefined) {
+							collected.each(selectedOptions => {
+								if (selectedOptions.users.cache.get(message.author.id) != undefined) {
 									selectedEmojis.push(selectedOptions._emoji.name);
 								}
 							});
 
 							var successfullyDisabledItems = "";
 							var successfullyEnabledItems = "";
-							embed2 = new Discord.RichEmbed()
+							embed2 = new Discord.MessageEmbed()
 								.setTimestamp(new Date())
 								.setColor(0x00AE86);
 
@@ -322,8 +324,8 @@ module.exports = {
 
 								if(notificationSettings.roleID != null) {
 									//delete role and remove from database
-									if (await message.guild.roles.find(role => role.id === notificationSettings.roleID) != null) {
-										await message.guild.roles.find(role => role.id === notificationSettings.roleID).delete()
+									if (await message.guild.roles.cache.find(role => role.id === notificationSettings.roleID) != null) {
+										await message.guild.roles.cache.find(role => role.id === notificationSettings.roleID).delete()
 										  .then(async () => {
 												notificationSettings.roleID = null;
 												client.setNotificationSettings.run(notificationSettings);
@@ -343,7 +345,7 @@ module.exports = {
 								}
 								else {
 									// Create role and store in database
-									var role = await message.guild.roles.find(role => role.name === notificationSettings.name);
+									var role = await message.guild.roles.cache.find(role => role.name === notificationSettings.name);
 
 				          if (role) {
                     notificationSettings.roleID = role.id;
@@ -351,10 +353,12 @@ module.exports = {
 				            notificationSettings = client.getNotificationSettings.get(networksSortedEmojiList[emojis]);
 				          }
 				          else {
-				            let newRole = await message.guild.createRole({
-				              name: notificationSettings.name,
-				              color: 'GREEN',
-				              mentionable: true
+				            let newRole = await message.guild.roles.create({
+											data: {
+												name: notificationSettings.name,
+					              color: 'GREEN',
+					              mentionable: true
+											}
 				            })
 				              .then(async role => {
 												notificationSettings.roleID = role.id;
@@ -383,13 +387,13 @@ module.exports = {
 
 							if (count2 <= 0) {
 								if (roleLimitHit2) {
-								  embed2 = new Discord.RichEmbed()
+								  embed2 = new Discord.MessageEmbed()
 								    .setDescription("**Action Failed!**\nDiscord Role Limit Hit!\nPlease delete some roles and try again.")
 								    .setTimestamp(new Date())
 								    .setColor(0x00AE86);
 								}
 								else {
-								  embed2 = new Discord.RichEmbed()
+								  embed2 = new Discord.MessageEmbed()
 								    .setDescription("Nothing selected in time, nothing edited.")
 								    .setTimestamp(new Date())
 								    .setColor(0x00AE86);
@@ -468,7 +472,7 @@ module.exports = {
 
 						var setDescription = "The following custom react roles can be removed:\n\n";
 						exemptEmbedReactRoles.push(`Custom React Role Removal:`);
-						embed = new Discord.RichEmbed()
+						embed = new Discord.MessageEmbed()
 							.setAuthor('Custom React Role Removal:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
 							.setTimestamp(new Date())
 							.setColor(0x00AE86);
@@ -499,13 +503,13 @@ module.exports = {
 								sentMessage.awaitReactions(filter, { time: 15000 })
 							    .then(collected => {
 										var selectedEmojis = [];
-										collected.tap(selectedOptions => {
-											if (selectedOptions.users.get(message.author.id) != undefined) {
+										collected.each(selectedOptions => {
+											if (selectedOptions.users.cache.get(message.author.id) != undefined) {
 												selectedEmojis.push(selectedOptions._emoji.name);
 											}
 										});
 										var setDescription = "Successfully removed the following Custom React Roles:\n(*Don't forget to delete the role in Discord, I don't manage custom roles!*)\n\n";
-										embed = new Discord.RichEmbed()
+										embed = new Discord.MessageEmbed()
 											.setTimestamp(new Date())
 											.setColor(0x00AE86);
 
@@ -521,7 +525,7 @@ module.exports = {
 										}
 
 										if (count2 === 0) {
-											embed = new Discord.RichEmbed()
+											embed = new Discord.MessageEmbed()
 												.setDescription("Nothing selected in time, no custom React Roles were removed.")
 												.setTimestamp(new Date())
 												.setColor(0x00AE86);
@@ -594,7 +598,7 @@ module.exports = {
 
 			var setDescription = "The following libraries can be excluded from recently added notifications:\n";
 			exemptEmbedReactRoles.push(`Library Exclusion:`);
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor('Library Exclusion:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
@@ -639,8 +643,8 @@ module.exports = {
 					sentMessage.awaitReactions(filter, { time: 15000 })
 						.then(collected => {
 							var selectedEmojis = [];
-							collected.tap(selectedOptions => {
-								if (selectedOptions.users.get(message.author.id) != undefined) {
+							collected.each(selectedOptions => {
+								if (selectedOptions.users.cache.get(message.author.id) != undefined) {
 									selectedEmojis.push(selectedOptions._emoji.name);
 								}
 							});
@@ -664,7 +668,7 @@ module.exports = {
 							}
 
 							var setResponseDescription = "";
-							embed = new Discord.RichEmbed()
+							embed = new Discord.MessageEmbed()
 								.setTimestamp(new Date())
 								.setColor(0x00AE86);
 
@@ -689,7 +693,7 @@ module.exports = {
 								embed.setDescription(setResponseDescription);
 							}
 							else {
-								embed = new Discord.RichEmbed()
+								embed = new Discord.MessageEmbed()
 									.setDescription("Nothing selected in time, no libraries were excluded.")
 									.setTimestamp(new Date())
 									.setColor(0x00AE86);
@@ -733,7 +737,7 @@ module.exports = {
 				if(`Sonarr Show Lookup:` === exemptNames) findExemptEmbedReactRoles = true;
 			}
 			if (!findExemptEmbedReactRoles) exemptEmbedReactRoles.push(`Sonarr Show Lookup:`);
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor('Sonarr Show Lookup:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
@@ -792,8 +796,8 @@ module.exports = {
 					sentMessage.awaitReactions(filter, { time: 15000 })
 						.then(async collected => {
 							var selectedEmojis = [];
-							collected.tap(selectedOptions => {
-								if (selectedOptions.users.get(message.author.id) != undefined) {
+							collected.each(selectedOptions => {
+								if (selectedOptions.users.cache.get(message.author.id) != undefined) {
 									selectedEmojis.push(selectedOptions._emoji.name);
 								}
 							});
@@ -806,8 +810,8 @@ module.exports = {
 								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 								if (tvShowsNotificationSettings.roleID != null || tvShowsNotificationSettings.roleID != undefined) {
 									count2++;
-									if (await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
-										await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+									if (await message.guild.roles.cache.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
+										await message.guild.roles.cache.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
 											.then(async () => {
 												tvShowsNotificationSettings.exclude = "true";
 												tvShowsNotificationSettings.include = null;
@@ -830,7 +834,7 @@ module.exports = {
 							}
 
 							if (count2 === 0) {
-								embed = new Discord.RichEmbed()
+								embed = new Discord.MessageEmbed()
 									.setDescription("Nothing selected in time, nothing excluded.")
 									.setTimestamp(new Date())
 									.setColor(0x00AE86);
@@ -842,7 +846,7 @@ module.exports = {
 								else {
 									setDescription = "Successfully excluded the following shows:" + setDescription;
 								}
-								embed = new Discord.RichEmbed()
+								embed = new Discord.MessageEmbed()
 									.setDescription(setDescription)
 									.setTimestamp(new Date())
 									.setColor(0x00AE86);
@@ -878,7 +882,7 @@ module.exports = {
 				if(`Sonarr Show Lookup:` === exemptNames) findExemptEmbedReactRoles = true;
 			}
 			if (!findExemptEmbedReactRoles) exemptEmbedReactRoles.push(`Sonarr Show Lookup:`);
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor('Sonarr Show Lookup:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
@@ -937,8 +941,8 @@ module.exports = {
 					sentMessage.awaitReactions(filter, { time: 15000 })
 						.then(async collected => {
 							var selectedEmojis = [];
-							collected.tap(selectedOptions => {
-								if (selectedOptions.users.get(message.author.id) != undefined) {
+							collected.each(selectedOptions => {
+								if (selectedOptions.users.cache.get(message.author.id) != undefined) {
 									selectedEmojis.push(selectedOptions._emoji.name);
 								}
 							});
@@ -952,10 +956,12 @@ module.exports = {
 								tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 								if (tvShowsNotificationSettings.roleID === null || tvShowsNotificationSettings.roleID === undefined) {
 									// Create role and store in database
-									let newRole = await message.guild.createRole({
-										name: tvShowsNotificationSettings.title,
-										color: 'BLUE',
-										mentionable: true
+									let newRole = await message.guild.roles.create({
+										data: {
+											name: tvShowsNotificationSettings.title,
+											color: 'BLUE',
+											mentionable: true
+										}
 									})
 										.then(async role => {
 											tvShowsNotificationSettings.exclude = null;
@@ -985,13 +991,13 @@ module.exports = {
 
 							if (count2 <= 0) {
 								if (roleLimitHit) {
-								  embed = new Discord.RichEmbed()
+								  embed = new Discord.MessageEmbed()
 								    .setDescription("**Action Failed!**\nDiscord Role Limit Hit!\nPlease delete some roles and try again.")
 								    .setTimestamp(new Date())
 								    .setColor(0x00AE86);
 								}
 								else {
-									embed = new Discord.RichEmbed()
+									embed = new Discord.MessageEmbed()
 										.setDescription("Nothing selected in time, nothing included.")
 										.setTimestamp(new Date())
 										.setColor(0x00AE86);
@@ -1008,7 +1014,7 @@ module.exports = {
 								if (roleLimitHit) {
 									setDescription = "Roles could not be created due to hitting the discord limit!";
 								}
-								embed = new Discord.RichEmbed()
+								embed = new Discord.MessageEmbed()
 									.setDescription(setDescription)
 									.setTimestamp(new Date())
 									.setColor(0x00AE86);
@@ -1066,7 +1072,7 @@ module.exports = {
 				if(`Sonarr Show Lookup:` === exemptNames) findExemptEmbedReactRoles = true;
 			}
 			if (!findExemptEmbedReactRoles) exemptEmbedReactRoles.push(`Sonarr Show Lookup:`);
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor('Sonarr Show Lookup:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
@@ -1133,21 +1139,21 @@ module.exports = {
 					sentMessage.awaitReactions(filter, { time: 15000 })
 						.then(async collected => {
 							var selectedEmojis = [];
-							collected.tap(selectedOptions => {
-								if (selectedOptions.users.get(message.author.id) != undefined) {
+							collected.each(selectedOptions => {
+								if (selectedOptions.users.cache.get(message.author.id) != undefined) {
 									selectedEmojis.push(selectedOptions._emoji.name);
 								}
 							});
 
 							if (selectedEmojis.length == 0) {
-								embed = new Discord.RichEmbed()
+								embed = new Discord.MessageEmbed()
 									.setDescription("Nothing selected in time, nothing grouped.")
 									.setTimestamp(new Date())
 									.setColor(0x00AE86);
 								return sentMessage.edit({embed});
 							}
 							else if (selectedEmojis.length == 1) {
-								embed = new Discord.RichEmbed()
+								embed = new Discord.MessageEmbed()
 									.setDescription("Nothing grouped up! A minimum of 2 shows need to be selected!")
 									.setTimestamp(new Date())
 									.setColor(0x00AE86);
@@ -1156,7 +1162,7 @@ module.exports = {
 
 							var roleLimitHit = false;
 
-              let newRole = await message.guild.roles.find(role => role.name === groupName);
+              let newRole = await message.guild.roles.cache.find(role => role.name === groupName);
 							if (newRole) {
 								let tvShowsNotificationSettings;
 								var setDescription = "";
@@ -1165,7 +1171,7 @@ module.exports = {
 									tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 
 									if (tvShowsNotificationSettings.roleID != null || tvShowsNotificationSettings.roleID != undefined) {
-										var oldRole = await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID);
+										var oldRole = await message.guild.roles.cache.find(role => role.id === tvShowsNotificationSettings.roleID);
 										if (oldRole === null) {
 											tvShowsNotificationSettings.is_group = "true";
 											tvShowsNotificationSettings.groupName = groupName;
@@ -1178,8 +1184,8 @@ module.exports = {
 											tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 										}
 										else {
-											if (await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
-												await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+											if (await message.guild.roles.cache.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
+												await message.guild.roles.cache.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
 												  .then(async () => {
 													  tvShowsNotificationSettings.is_group = "true";
 													  tvShowsNotificationSettings.groupName = groupName;
@@ -1219,7 +1225,7 @@ module.exports = {
 									}
 							}
 							setDescription = "Successfully grouped up the following shows:" + setDescription;
-							embed = new Discord.RichEmbed()
+							embed = new Discord.MessageEmbed()
 								.setDescription(setDescription)
 								.setTimestamp(new Date())
 								.setColor(0x00AE86);
@@ -1227,10 +1233,12 @@ module.exports = {
 							sentMessage.edit({embed});
 							}
 							if (!newRole) {
-								newRole = await message.guild.createRole({
-									name: groupName,
-									color: 'BLUE',
-									mentionable: true
+								newRole = await message.guild.roles.create({
+									data: {
+										name: groupName,
+										color: 'BLUE',
+										mentionable: true
+									}
 								})
 									.then(async role => {
 										let tvShowsNotificationSettings;
@@ -1240,7 +1248,7 @@ module.exports = {
 											tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 
 											if (tvShowsNotificationSettings.roleID != null || tvShowsNotificationSettings.roleID != undefined) {
-												var oldRole = await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID);
+												var oldRole = await message.guild.roles.cache.find(role => role.id === tvShowsNotificationSettings.roleID);
 												if (oldRole === null) {
 													tvShowsNotificationSettings.is_group = "true";
 													tvShowsNotificationSettings.groupName = groupName;
@@ -1253,8 +1261,8 @@ module.exports = {
 													tvShowsNotificationSettings = client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
 												}
 												else {
-													if (await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
-														await message.guild.roles.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
+													if (await message.guild.roles.cache.find(role => role.id === tvShowsNotificationSettings.roleID) != null) {
+														await message.guild.roles.cache.find(role => role.id === tvShowsNotificationSettings.roleID).delete()
 														  .then(async () => {
 															  tvShowsNotificationSettings.is_group = "true";
 															  tvShowsNotificationSettings.groupName = groupName;
@@ -1294,7 +1302,7 @@ module.exports = {
 											}
 									}
 									setDescription = "Successfully grouped up the following shows:" + setDescription;
-									embed = new Discord.RichEmbed()
+									embed = new Discord.MessageEmbed()
 										.setDescription(setDescription)
 										.setTimestamp(new Date())
 										.setColor(0x00AE86);
@@ -1307,7 +1315,7 @@ module.exports = {
     									//Max Role Count on Server Hit
     									if (!roleLimitHit) {
 												setDescription = "Role could not be created due to hitting the discord limit, nothing grouped!";
-												embed = new Discord.RichEmbed()
+												embed = new Discord.MessageEmbed()
 													.setDescription(setDescription)
 													.setTimestamp(new Date())
 													.setColor(0x00AE86);
@@ -1344,7 +1352,7 @@ module.exports = {
 			}
 
 			var showNamesToSearch = [];
-			if (messageAfterCommand.indexOf("[") === -1) return message.channel.send("You didn't state any shows to ungroup!");
+			if (messageAfterCommand.indexOf("[") === -1) return message.channel.send("You didn't state any shows to ungroup!\nYou need to state at least 2 shows to ungroup in the format of `" + prefix + ogCommand + " " + command + " [show1] [show2]`");
 			messageAfterCommand = messageAfterCommand.slice(messageAfterCommand.indexOf("["), messageAfterCommand.length).trim();
 			var showCount = 0;
 			var keepGoing =  true;
@@ -1360,7 +1368,7 @@ module.exports = {
 			}
 
 			if (showNamesToSearch.length <= 1) {
-				return message.channel.send("Invalid command format, nothing ungrouped!\nYou need to state at least 2 shows to ungroup in the format of " + prefix + ogCommand + " " + command + "[show1] [show2]");
+				return message.channel.send("Invalid command format, nothing ungrouped!\nYou need to state at least 2 shows to ungroup in the format of `" + prefix + ogCommand + " " + command + " [show1] [show2]`");
 			}
 
 			var emojiOptions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
@@ -1372,7 +1380,7 @@ module.exports = {
 				if(`Sonarr Show Lookup:` === exemptNames) findExemptEmbedReactRoles = true;
 			}
 			if (!findExemptEmbedReactRoles) exemptEmbedReactRoles.push(`Sonarr Show Lookup:`);
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor('Sonarr Show Lookup:') //don't foget to edit exemptEmbedReactRoles above if name changes so it is ignored in index.js role react
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
@@ -1442,21 +1450,21 @@ module.exports = {
 					sentMessage.awaitReactions(filter, { time: 15000 })
 						.then(async collected => {
 							var selectedEmojis = [];
-							collected.tap(selectedOptions => {
-								if (selectedOptions.users.get(message.author.id) != undefined) {
+							collected.each(selectedOptions => {
+								if (selectedOptions.users.cache.get(message.author.id) != undefined) {
 									selectedEmojis.push(selectedOptions._emoji.name);
 								}
 							});
 
 							if (selectedEmojis.length == 0) {
-								embed = new Discord.RichEmbed()
+								embed = new Discord.MessageEmbed()
 									.setDescription("Nothing selected in time, nothing ungrouped.")
 									.setTimestamp(new Date())
 									.setColor(0x00AE86);
 								return sentMessage.edit({embed});
 							}
 							else if (selectedEmojis.length == 1) {
-								embed = new Discord.RichEmbed()
+								embed = new Discord.MessageEmbed()
 									.setDescription("Nothing ungrouped! A minimum of 2 shows need to be selected!")
 									.setTimestamp(new Date())
 									.setColor(0x00AE86);
@@ -1489,8 +1497,8 @@ module.exports = {
 									}
 								}
 								if (deleteRole) {
-									if (await message.guild.roles.find(role => role.id === oldRole) != null) {
-										await message.guild.roles.find(role => role.id === oldRole).delete()
+									if (await message.guild.roles.cache.find(role => role.id === oldRole) != null) {
+										await message.guild.roles.cache.find(role => role.id === oldRole).delete()
 											.then(async () => {
 											})
 											.catch(console.error);
@@ -1499,7 +1507,7 @@ module.exports = {
 
 								if (tvShowsNotificationSettings.status == "continuing") {
 									// Create a new role with data
-									var role = await message.guild.roles.find(role => role.name === tvShowsNotificationSettings.title);
+									var role = await message.guild.roles.cache.find(role => role.name === tvShowsNotificationSettings.title);
 
 									if (role) {
 										tvShowsNotificationSettings.roleID = role.id;
@@ -1508,10 +1516,12 @@ module.exports = {
 									}
 									else {
 										tvShowsNotificationSettings = await client.getTvShowsNotificationSettings.get(showEmojiList[emojis]);
-										let newRole = await message.guild.createRole({
-											name: tvShowsNotificationSettings.title,
-											color: 'BLUE',
-											mentionable: true
+										let newRole = await message.guild.roles.create({
+											data: {
+												name: tvShowsNotificationSettings.title,
+												color: 'BLUE',
+												mentionable: true
+											}
 										})
 											.then(role => {
 												tvShowsNotificationSettings.roleID = role.id;
@@ -1534,7 +1544,7 @@ module.exports = {
 								}
 							}
 						setDescription = "Successfully ungrouped the following shows:" + setDescription;
-						embed = new Discord.RichEmbed()
+						embed = new Discord.MessageEmbed()
 							.setDescription(setDescription)
 							.setTimestamp(new Date())
 							.setColor(0x00AE86);
@@ -1611,7 +1621,7 @@ module.exports = {
 				}
 			}
 
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor('Choose what Groups you would like to be notified for:')
 				.setDescription(page1Description)
 				.setColor(0x00AE86);
@@ -1645,7 +1655,7 @@ module.exports = {
 				}
 			}
 
-			embed = new Discord.RichEmbed()
+			embed = new Discord.MessageEmbed()
 				.setAuthor('Choose what TV Networks you would like to be notified for:')
 				.setDescription(page2Description)
 				.setColor(0x00AE86);
@@ -1710,9 +1720,9 @@ module.exports = {
 							break;
 						}
 					}
-          var role = message.guild.roles.find(role => role.id === notificationSettings.groupRole);
+          var role = message.guild.roles.cache.find(role => role.id === notificationSettings.groupRole);
           if (role != null) {
-            showsList[i] = role;
+            showsList[i] = `<@&${role.id}>`;
 						showsList[i] = showsList[i] + " <- Grouped Show";
           }
           else {
@@ -1721,9 +1731,9 @@ module.exports = {
           }
         }
         else {
-          var role = message.guild.roles.find(role => role.id === notificationSettings.roleID);
+          var role = message.guild.roles.cache.find(role => role.id === notificationSettings.roleID);
           if (role != null) {
-            showsList[i] = role;
+            showsList[i] = `<@&${role.id}>`;
           }
           else {
             showsList[i] = notificationSettings.title;
@@ -1733,7 +1743,7 @@ module.exports = {
 
       var total = showsList.length;
       for (var pages = 0; (pages*10) < total; pages++) {
-        embed = new Discord.RichEmbed()
+        embed = new Discord.MessageEmbed()
           .setColor(0x00AE86);
         if (pages === 0) {
           embed.setAuthor("Choose what individual TV Shows you would like to be notified for:")
@@ -1812,7 +1822,7 @@ module.exports = {
 		    }
 		  }
 
-		  embed = new Discord.RichEmbed()
+		  embed = new Discord.MessageEmbed()
 		    .setAuthor('Choose what Groups you would like to be notified for:')
 		    .setDescription(page1Description)
 		    .setColor(0x00AE86);
@@ -1845,7 +1855,7 @@ module.exports = {
 		    }
 		  }
 
-		  embed = new Discord.RichEmbed()
+		  embed = new Discord.MessageEmbed()
 		    .setAuthor('Choose what TV Networks you would like to be notified for:')
 		    .setDescription(page2Description)
 		    .setColor(0x00AE86);
@@ -1909,9 +1919,9 @@ module.exports = {
 		          break;
 		        }
 		      }
-		      var role = message.guild.roles.find(role => role.id === notificationSettings.groupRole);
+		      var role = message.guild.roles.cache.find(role => role.id === notificationSettings.groupRole);
 		      if (role != null) {
-		        showsList[i] = role;
+		        showsList[i] = `<@&${role.id}>`;
 		        showsList[i] = showsList[i] + " <- Grouped Show";
 		      }
 		      else {
@@ -1920,9 +1930,9 @@ module.exports = {
 		      }
 		    }
 		    else {
-		      var role = message.guild.roles.find(role => role.id === notificationSettings.roleID);
+		      var role = message.guild.roles.cache.find(role => role.id === notificationSettings.roleID);
 		      if (role != null) {
-		        showsList[i] = role;
+		        showsList[i] = `<@&${role.id}>`;
 		      }
 		      else {
 		        showsList[i] = notificationSettings.title;
@@ -1932,7 +1942,7 @@ module.exports = {
 
 		  var total = showsList.length;
 		  for (var pages = 0; (pages*10) < total; pages++) {
-		    embed = new Discord.RichEmbed()
+		    embed = new Discord.MessageEmbed()
 		      .setColor(0x00AE86);
 		    if (pages === 0) {
 		      embed.setAuthor("Choose what individual TV Shows you would like to be notified for:")

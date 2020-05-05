@@ -11,7 +11,7 @@ module.exports = {
 		var fieldCount = 0;
 		var linkListPage = 1;
 
-    embed = new Discord.RichEmbed()
+    embed = new Discord.MessageEmbed()
       .setAuthor(client.user.username, client.user.avatarURL)
       .setDescription("**Below is a list of linked Discord-Plex accounts:**\n\n")
       .setFooter("Fetched")
@@ -26,7 +26,7 @@ module.exports = {
 					fieldCount = 0;
 				  linkListPage++;
 
-					embed = new Discord.RichEmbed()
+					embed = new Discord.MessageEmbed()
 						.setAuthor(client.user.username, client.user.avatarURL)
 						.setDescription(`**Link List __Page ${linkListPage}__**\n\n`)
 						.setFooter("Fetched")
