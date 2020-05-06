@@ -1,5 +1,5 @@
 const Discord = require('discord.js');
-const client = new Discord.Client();
+const client = new Discord.Client({ partials: ['MESSAGE', 'REACTION'] });
 
 const SQLite = require("better-sqlite3");
 const schedule = require('node-schedule');
@@ -432,124 +432,84 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
 	}
 });
 
-/*
- * For some reason, the raw event handlers below both work most of the time on their own but not 100% of the time. By having them both listening and proccessing events, I found that the react-roles work 100% of the time.
- * This is not ideal because I feel like it could lead to performance issues but for now it works. I will look for a better solution later.
- *
- */
-client.on('raw', async packet => {
-    // We don't want this to run on unrelated packets
-    if (!['MESSAGE_REACTION_ADD', 'MESSAGE_REACTION_REMOVE'].includes(packet.t)) return;
-    // Grab the channel to check the message from
-    const channel = client.channels.resolve(packet.d.channel_id);
-    // There's no need to emit if the message is cached, because the event will fire anyway for that
-    if (channel.messages.cache.has(packet.d.message_id)) return;
-    // Since we have confirmed the message is not cached, let's fetch it
-    channel.messages.fetch(packet.d.message_id).then(async message => {
-        // Emojis can have identifiers of name:id format, so we have to account for that case as well
-        const emoji = packet.d.emoji.id ? `${packet.d.emoji.name}:${packet.d.emoji.id}` : packet.d.emoji.name;
-        // This gives us the reaction we need to emit the event properly, in top of the message object
-        const reaction = await message.reactions.cache.get(emoji);
-        // Adds the currently reacting user to the reaction's users collection.
-        // if (reaction) reaction.users.set(packet.d.user_id, client.users.fetch(packet.d.user_id)); //broke in discord.js v12
-        // Check which type of event it is before emitting
+// Add react role event
+client.on('messageReactionAdd', async (reaction, user) => {
+	// When we receive a reaction we check if the reaction is partial or not
+	if (reaction.partial) {
+		// If the message this reaction belongs to was removed the fetching might result in an API error, which we need to handle
+		try {
+			await reaction.fetch();
+		} catch (error) {
+			console.log('Something went wrong when fetching the message: ', error);
+			// Return as `reaction.message.author` may be undefined/null
+			return;
+		}
+	}
+	// Now the message has been cached and is fully available
+	const message = reaction.message;
 
-				if (client.user.id != message.author.id) return; //Only continue if react was to a message by this bot.
-		    if (message.embeds[0] === undefined || message.embeds[0] === null) return; //Only continue if react was to a message embed.
-		    if (client.user.id === packet.d.user_id) return; //Ignore the bot setting up react roles so it doesnt add roles to itself.
+	if (client.user.id != message.author.id) return; //Only continue if react was to a message by this bot.
+	if (message.embeds[0] === undefined || message.embeds[0] === null) return; //Only continue if react was to a message embed.
+	if (client.user.id === reaction.user_id) return; //Ignore the bot setting up react roles so it doesnt add roles to itself.
 
-				for (let exemptNames of exemptEmbedReactRoles) {
-					//return if an embed was called that needed emoji response to prevent accidentally trying to react role
-					if(message.embeds[0].author.name === exemptNames) return;
-				}
+	for (let exemptNames of exemptEmbedReactRoles) {
+		//return if an embed was called that needed emoji response to prevent accidentally trying to react role
+		if(message.embeds[0].author.name === exemptNames) return;
+	}
 
-		    var args = message.embeds[0].description.trim().split(/\r?\n/);
-		    for (var i = 0; i < args.length; i++){
-		      if(args[i].startsWith(emoji)) {
-		        if (args[i].indexOf("<@&") === -1) return console.log("Invalid React Role Mention Clicked: " + args[i]);
+	const emoji = reaction._emoji.id ? `${reaction._emoji.name}:${reaction._emoji.id}` : reaction._emoji.name;
+	var args = message.embeds[0].description.trim().split(/\r?\n/);
+	for (var i = 0; i < args.length; i++){
+		if(args[i].startsWith(emoji)) {
+			if (args[i].indexOf("<@&") === -1) return console.log("Invalid React Role Mention Clicked: " + args[i]);
 
-		        var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].indexOf(">"));
-		        var removeRole = true;
+			var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].indexOf(">"));
 
-						//console.log(`Made it to primary event handler ${packet.t}`);
-
-						if (packet.t === 'MESSAGE_REACTION_ADD') {
-		            //client.emit('messageReactionAdd', reaction, client.users.fetch(packet.d.user_id));
-								let userToModify = message.guild.members.resolve(packet.d.user_id);
-		            userToModify.roles.add(roleID)
-		              .catch(console.error);
-		        }
-		        else if (packet.t === 'MESSAGE_REACTION_REMOVE') {
-		            //client.emit('messageReactionRemove', reaction, client.users.fetch(packet.d.user_id));
-								let userToModify = message.guild.members.resolve(packet.d.user_id);
-			          userToModify.roles.remove(roleID)
-			            .catch(console.error);
-		        }
-					}
-				}
-    });
+			let userToModify = message.guild.members.resolve(user.id);
+			userToModify.roles.add(roleID)
+				.catch(console.error);
+		}
+	}
 });
 
-// This makes the events used a bit more readable
-const events = {
-	MESSAGE_REACTION_ADD: 'messageReactionAdd',
-	MESSAGE_REACTION_REMOVE: 'messageReactionRemove',
-};
-
-client.on('raw', async event => {
-    if (!events.hasOwnProperty(event.t)) return;
-
-    const { d: data } = event;
-    const user = client.users.fetch(data.user_id);
-    const channel = client.channels.resolve(data.channel_id);
-
-    const message = await channel.messages.fetch(data.message_id);
-    const member = message.guild.members.resolve(user.id);
-
-    const emojiKey = (data.emoji.id) ? `${data.emoji.name}:${data.emoji.id}` : data.emoji.name;
-    let reaction = message.reactions.cache.get(emojiKey);
-
-    if (!reaction) {
-        // Create an object that can be passed through the event like normal
-        const emoji = new Emoji(client.guilds.cache.get(data.guild_id), data.emoji).catch();
-        reaction = new MessageReaction(message, emoji, 1, data.user_id === client.user.id).catch();
-    }
-    // Everything above grabs the emoji that was clicked by a user, The below code then matches the react emoji to the role and adds or removes it.
-    if (client.user.id != message.author.id) return; //Only continue if react was to a message by this bot.
-    if (message.embeds[0] === undefined || message.embeds[0] === null) return; //Only continue if react was to a message embed.
-    if (client.user.id === data.user_id) return; //Ignore the bot setting up react roles so it doesnt add roles to itself.
-
-
-		for (let exemptNames of exemptEmbedReactRoles) {
-			//return if an embed was called that needed emoji response to prevent accidentally trying to react role
-      if(!message.embeds[0].author.name) return;
-			if(message.embeds[0].author.name === exemptNames) return;
+// Remove react role event
+client.on('messageReactionRemove', async (reaction, user) => {
+	// When we receive a reaction we check if the reaction is partial or not
+	if (reaction.partial) {
+		// If the message this reaction belongs to was removed the fetching might result in an API error, which we need to handle
+		try {
+			await reaction.fetch();
+		} catch (error) {
+			console.log('Something went wrong when fetching the message: ', error);
+			// Return as `reaction.message.author` may be undefined/null
+			return;
 		}
+	}
+	// Now the message has been cached and is fully available
+	const message = reaction.message;
 
-    var args = message.embeds[0].description.trim().split(/\r?\n/);
-    for (var i = 0; i < args.length; i++){
-      if(args[i].startsWith(emojiKey)) {
-        if (args[i].indexOf("<@&") === -1) return console.log("Invalid React Role Mention Clicked: " + args[i]);
+	if (client.user.id != message.author.id) return; //Only continue if react was to a message by this bot.
+	if (message.embeds[0] === undefined || message.embeds[0] === null) return; //Only continue if react was to a message embed.
+	if (client.user.id === reaction.user_id) return; //Ignore the bot setting up react roles so it doesnt add roles to itself.
 
-        var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].indexOf(">"));
-        var removeRole = true;
-				reaction = await message.reactions.cache.get(emojiKey);
+	for (let exemptNames of exemptEmbedReactRoles) {
+		//return if an embed was called that needed emoji response to prevent accidentally trying to react role
+		if(message.embeds[0].author.name === exemptNames) return;
+	}
 
-				//console.log(`Made it to secondary event handler ${event.t}`);
+	const emoji = reaction._emoji.id ? `${reaction._emoji.name}:${reaction._emoji.id}` : reaction._emoji.name;
+	var args = message.embeds[0].description.trim().split(/\r?\n/);
+	for (var i = 0; i < args.length; i++){
+		if(args[i].startsWith(emoji)) {
+			if (args[i].indexOf("<@&") === -1) return console.log("Invalid React Role Mention Clicked: " + args[i]);
 
-				if (event.t === 'MESSAGE_REACTION_ADD') {
-						let userToModify = message.guild.members.resolve(event.d.user_id);
-						userToModify.roles.add(roleID)
-							.catch(console.error);
-				}
-				else if (event.t === 'MESSAGE_REACTION_REMOVE') {
-						let userToModify = message.guild.members.resolve(event.d.user_id);
-						userToModify.roles.remove(roleID)
-							.catch(console.error);
-				}
-      }
-    }
+			var roleID = args[i].slice(args[i].indexOf("<@&") + 3, args[i].indexOf(">"));
 
+			let userToModify = message.guild.members.resolve(user.id);
+			userToModify.roles.remove(roleID)
+				.catch(console.error);
+		}
+	}
 });
 
 
