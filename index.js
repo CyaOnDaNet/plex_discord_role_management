@@ -924,7 +924,7 @@ async function processHook(data) {
 
 						if (notificationSettings.category === "networks") {
 							if (showNetwork != "") {
-								if (showNetwork.toLowerCase().indexOf(notificationSettings.name.toLowerCase()) != -1) {
+								if (showNetwork.toLowerCase().indexOf(notificationSettings.name.toLowerCase()) != -1 && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
 									if (roleExists && roleExists != "") {
 										roleExists = roleExists + ", <@&" + notificationSettings.roleID + ">";
 									} else {
