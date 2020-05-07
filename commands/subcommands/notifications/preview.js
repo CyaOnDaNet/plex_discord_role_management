@@ -136,7 +136,9 @@ module.exports = {
         }
       }
     }
-    sortList = await sortList.sort();
+		sortList = await sortList.sort(function (a, b) {
+      return a.localeCompare(b, 'en', {'sensitivity': 'base'});
+    });
 
     for (var i = 0; i < sortList.length; i++) {
       notificationSettings = "";
