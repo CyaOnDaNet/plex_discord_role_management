@@ -158,18 +158,26 @@ module.exports = {
         }
         var role = message.guild.roles.cache.find(role => role.id === notificationSettings.groupRole);
         if (role != null) {
-          showsList[i] = `<@&${role.id}>`;
-          showsList[i] = showsList[i] + " <- Grouped Show";
+          showsList[i] = `| <@&${role.id}> | Group`;
         }
         else {
-          showsList[i] = notificationSettings.groupName;
-          showsList[i] = showsList[i] + " <- Grouped Show";
+					showsList[i] = "| " + notificationSettings.groupName + " | Group";
         }
       }
       else {
         var role = message.guild.roles.cache.find(role => role.id === notificationSettings.roleID);
         if (role != null) {
-          showsList[i] = `<@&${role.id}>`;
+					if (notificationSettings.thetvdb_id != null && notificationSettings.thetvdb_id != undefined && notificationSettings.thetvdb_id != "") {
+						var url = `https://www.thetvdb.com/?id=${notificationSettings.thetvdb_id}&tab=series`;
+						showsList[i] = `| <@&${role.id}> | [About](${url})`;
+					}
+					else if (notificationSettings.imdbID_or_themoviedbID != null && notificationSettings.imdbID_or_themoviedbID != undefined && notificationSettings.imdbID_or_themoviedbID != "") {
+						var url = `https://www.imdb.com/title/${notificationSettings.imdbID_or_themoviedbID}`;
+						showsList[i] = `| <@&${role.id}> | [About](${url})`;
+					}
+					else {
+						showsList[i] = `<@&${role.id}>`;
+					}
         }
         else {
           showsList[i] = notificationSettings.title;
