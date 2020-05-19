@@ -1,3 +1,13 @@
+function previewEmbedExpire(Discord, msgToClear, prefix, ogCommand, delayMS) {
+	setTimeout(function(){
+		embedEdited = new Discord.MessageEmbed()
+			.setAuthor('Preview Has Expired')
+			.setDescription(`Please use the \`${prefix}${ogCommand} list\` command to generate your final react-role notifications.`)
+			.setColor(0x00AE86);
+		msgToClear.edit({embed: embedEdited});
+	}, delayMS);
+}
+
 module.exports = {
 	name: 'preview',
   aliases: [],
@@ -66,6 +76,7 @@ module.exports = {
 
     if (page1Count >= 1) {
       let page1SentMessage = await message.channel.send({embed});
+			previewEmbedExpire(Discord, page1SentMessage, prefix, ogCommand, 270000);
       page1SentMessage.react(tenNumbers[0])
         .then(async () => { if (page1Count > 1) await page1SentMessage.react(tenNumbers[1]) })
         .then(async () => { if (page1Count > 2) await page1SentMessage.react(tenNumbers[2]) })
@@ -99,6 +110,7 @@ module.exports = {
 
     if (page2Count >= 1) {
       let page2SentMessage = await message.channel.send({embed});
+			previewEmbedExpire(Discord, page2SentMessage, prefix, ogCommand, 285000);
       page2SentMessage.react(tenNumbers[0])
         .then(async () => { if (page2Count > 1) await page2SentMessage.react(tenNumbers[1]) })
         .then(async () => { if (page2Count > 2) await page2SentMessage.react(tenNumbers[2]) })
@@ -208,6 +220,7 @@ module.exports = {
       }
       embed.setDescription(pageBody);
       var emojiTime = await message.channel.send({embed});
+			previewEmbedExpire(Discord, emojiTime, prefix, ogCommand, 300000);
       for (var i = 0; i < emojiCount; i++) {
         await emojiTime.react(tenNumbers[i])
           .then()
