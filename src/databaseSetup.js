@@ -106,4 +106,21 @@ module.exports = async(client, sql) => {
   client.searchPreviousNotifierList = sql.prepare("SELECT * FROM previousNotifierList");
   client.setPreviousNotifierList = sql.prepare("INSERT OR REPLACE INTO previousNotifierList (id, guild, messageID) VALUES (@id, @guild, @messageID);");
 
+  // Check if the table "newListInactiveUsers" exists.
+  const newListInactiveUsers = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'newListInactiveUsers';").get();
+  if (!newListInactiveUsers['count(*)']) {
+    // If the table isn't there, create it and setup the database correctly.
+    sql.prepare("CREATE TABLE newListInactiveUsers (id TEXT PRIMARY KEY, guild TEXT, discordUserID TEXT, inactive TEXT, wipeRoleReactions TEXT);").run();
+    // Ensure that the "id" row is always unique and indexed.
+    sql.prepare("CREATE UNIQUE INDEX idx_newListInactiveUsers_id ON newListInactiveUsers (id);").run();
+    sql.pragma("synchronous = 1");
+    sql.pragma("journal_mode = wal");
+  }
+
+  // And then we have prepared statements to get and set newListInactiveUsers data.
+	client.deleteNewListInactiveUsers = sql.prepare("DELETE FROM newListInactiveUsers WHERE id = ?");
+  client.getNewListInactiveUsers = sql.prepare("SELECT * FROM newListInactiveUsers WHERE id = ?");
+  client.searchNewListInactiveUsers = sql.prepare("SELECT * FROM newListInactiveUsers");
+  client.setNewListInactiveUsers = sql.prepare("INSERT OR REPLACE INTO newListInactiveUsers (id, guild, discordUserID, inactive, wipeRoleReactions) VALUES (@id, @guild, @discordUserID, @inactive, @wipeRoleReactions);");
+
 }

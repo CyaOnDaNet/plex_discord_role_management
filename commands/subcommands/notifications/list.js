@@ -14,7 +14,115 @@ module.exports = {
     }
     const mainProgram = require("../../../index.js");
     await mainProgram.updateShowList(message);
-    await client.clearPreviousNotifierList.run(`${message.guild.id}`);
+
+		let processingPage = await message.channel.send("Preparing notifiaction list...");
+
+		// Clear Previous Notifier List and Delete the old messages
+		var previousNotifierList = [];
+		for (let previousNotifierListObject of client.searchPreviousNotifierList.iterate()) {
+      await previousNotifierList.push(previousNotifierListObject);
+		}
+		for (var i = 0; i < previousNotifierList.length; i++) {
+			if (message.guild.id == previousNotifierList[i].guild) {
+				// Check if previousNotifierList entry is in the same guild as the message that caled the command.
+				var channelsWithRole = client.guilds.cache.get(previousNotifierList[i].guild).channels.cache.array();
+				for (let index = 0; index < channelsWithRole.length; index++) {
+					if (channelsWithRole[index].type == "text") {
+		        await channelsWithRole[index].messages.fetch(`${previousNotifierList[i].messageID}`)
+		          .then(async message => {
+								// Delete a message
+								let preserveredNotifierList = previousNotifierList[i]; // needed because the notifierList will sometimes change faster then it can process in the callback
+								client.deletePreviousNotifier.run(`${preserveredNotifierList.id}`);  // Clear Previous Notifier
+								message.delete()
+	  							.then(msg => {
+										//console.log(`Cleared message from old notifier list`)
+									})
+	  							.catch(console.error);
+		          })
+		          .catch(function(error) {
+		            if (error.code == 10008) {
+		              //unknown message, therefore not the right channel, do not log this.
+		            }
+		            else {
+		              console.log(error);
+		            }
+		          });
+		      }
+	  		}
+			}
+	  }
+
+		// Iterate through React Role List and set everything to true
+		var userActiveCount = 0;
+		var setInactiveUsersList = [];
+    for (let inactiveUsersList of client.searchNewListInactiveUsers.iterate()) {
+      inactiveUsersList.inactive = "true";
+			await setInactiveUsersList.push(inactiveUsersList);
+			//client.setNewListInactiveUsers.run(inactiveUsersList);  // I need to make an array and re-iterate to do changes, can not run on an open database
+			userActiveCount++;
+		}
+		for (var i = 0; i < setInactiveUsersList.length; i++) {
+			client.setNewListInactiveUsers.run(setInactiveUsersList[i]); // Clear Previous Notifier From Database
+		}
+
+		processingPage.delete()
+			.then(msg => {
+				//
+			})
+			.catch(console.error);
+
+		if (userActiveCount == 0) {
+			// Presumably first time !n list is called since no one is in the database
+			const date = new Date();  // 2009-11-10
+      const month = date.toLocaleString('default', { month: 'long' });
+			const day = date.getDate();
+			const year = date.getFullYear();
+			const nth = function(d) {
+        if (d > 3 && d < 21) return 'th';
+        switch (d % 10) {
+          case 1:  return "st";
+          case 2:  return "nd";
+          case 3:  return "rd";
+          default: return "th";
+        }
+      }
+
+			firstTimeEmbed = new Discord.MessageEmbed()
+	      .setAuthor(`${client.newNotificationListAuthorName}`)
+				.setTitle(`*Created on ${month} ${day}${nth(day)}, ${year}.*`)
+	      .setDescription("Select any desired roles below to receive notifications.\n\nTo unsubscribe from all notifications, click the ❌ below.")
+	      .setColor(0x00AE86);
+
+			let newListWarningPage = await message.channel.send({embed: firstTimeEmbed});
+			client.setPreviousNotifierList.run({ id: `${message.guild.id}-${client.user.id}-${newListWarningPage.id}`, guild: message.guild.id, messageID: newListWarningPage.id });
+			newListWarningPage.react(`❌`);
+		}
+		else if (userActiveCount > 0) {
+			//This is not the first time !n list has been called, people currently have roles
+			const date = new Date();  // 2009-11-10
+      const month = date.toLocaleString('default', { month: 'long' });
+			const day = date.getDate();
+			const year = date.getFullYear();
+			const nth = function(d) {
+        if (d > 3 && d < 21) return 'th';
+        switch (d % 10) {
+          case 1:  return "st";
+          case 2:  return "nd";
+          case 3:  return "rd";
+          default: return "th";
+        }
+      }
+
+			warningEmbed = new Discord.MessageEmbed()
+	      .setAuthor(`${client.newNotificationListAuthorName}`)
+				.setTitle(`*Updated on ${month} ${day}${nth(day)}, ${year}.*`)
+	      .setDescription("Re-add any desired roles below, otherwise we will use your roles from the previous list.\n\nTo unsubscribe from all notifications, click the ❌ below.")
+	      .setColor(0x00AE86);
+
+			let newListWarningPage = await message.channel.send({embed: warningEmbed});
+			client.setPreviousNotifierList.run({ id: `${message.guild.id}-${client.user.id}-${newListWarningPage.id}`, guild: message.guild.id, messageID: newListWarningPage.id });
+			newListWarningPage.react(`❌`);
+		}
 
     var tenNumbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 
