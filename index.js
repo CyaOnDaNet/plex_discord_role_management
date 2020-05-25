@@ -140,6 +140,23 @@ client.on('message', async message => {
   }
 });
 
+// To prevent crashing, lets catch all events we can. I'm unsure if it works yet, but in theory the bot should survive a discord outage now. <- Added in Bot v2.0.0
+client.on("error", (e) => {
+	if (e.code && e.code == "ETIMEDOUT") {
+		console.log("Discord Servers are unreachable!");
+	}
+	else {
+		console.log("Unknown discord client error was thrown, below is the output:")
+		console.error(e);
+	}
+});
+client.on("warn", (e) => {
+	//console.warn(e)
+});
+client.on("debug", (e) => {
+	//console.info(e)
+});
+
 var setActivity = schedule.scheduleJob('*/10 * * * * *', async function() {
 	// Change the Status every 10 seconds.
 	if (setActivityToggle == 0) {
