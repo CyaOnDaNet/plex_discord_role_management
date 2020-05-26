@@ -31,15 +31,24 @@ module.exports = {
 
 		var userList = "\n";
 		var userListPage = 1;
+		var userTotalCount = 0;
+		for (var i = 0; i < users.length; i++) {
+			if (users[i].username == "Local") {
+				//Ignore the Local DLNA account if it's enabled so we have an accurate number
+			}
+			else {
+				await userTotalCount++;
+			}
+		}
 
 		for (var i = 0; i < users.length; i++) {
-			var tempStringCountCheck = "**Below is a list of users with access to the Plex Server:**\n" + userList + "> " + users[i].username + "\n";
+			var tempStringCountCheck = `**Below is a list of the __${userTotalCount}__ users with access to the Plex Server:**\n${userList}> ${users[i].username}\n`;
 
 			if (tempStringCountCheck.length >= 2048) {  //Checks For Discord Embed Description Limit
 				if (userListPage === 1) {
 					embed = new Discord.MessageEmbed()
 						.setAuthor(client.user.username, client.user.avatarURL)
-						.setDescription("**Below is a list of users with access to the Plex Server:**\n" + userList)
+						.setDescription(`**Below is a list of the __${userTotalCount}__ users with access to the Plex Server:**\n${userList}`)
 						.setFooter("Fetched")
 						.setTimestamp(new Date())
 						.setColor(0x00AE86);
@@ -67,7 +76,7 @@ module.exports = {
 		if (userListPage === 1) {
 			embed = new Discord.MessageEmbed()
 				.setAuthor(client.user.username, client.user.avatarURL)
-				.setDescription("**Below is a list of users with access to the Plex Server:**\n" + userList)
+				.setDescription(`**Below is a list of the __${userTotalCount}__ users with access to the Plex Server:**\n${userList}`)
 				.setFooter("Fetched")
 				.setTimestamp(new Date())
 				.setColor(0x00AE86);
