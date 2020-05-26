@@ -9,9 +9,23 @@ module.exports = {
     }
 
 		var users = await tautulli.tautulliService.getUsers();
-		if (users == "error") {
-			console.log("Couldn't connect to Tautulli, check your settings.");
-			return message.channel.send("Couldn't connect to Tautulli, check your settings.");
+		if (users && users.error) {
+			if (users.error == true) {
+				if (users.moreInfo && users.moreInfo != "") {
+					if (users.moreInfo == "Unestablished Connection with Tautulli") {
+						console.log("Command `users` failed because connection with Tautulli hasn't been established yet.");
+						return message.channel.send("A connection with Tautulli hasn't been established yet, wait 30 seconds and try again or check the logs for more details.");
+					}
+					else {
+						console.log("Command `users` failed because I couldn't connect to Tautulli, check your settings.");
+						return message.channel.send(`Couldn't connect to Tautulli, the reason given was:\n\`${users.moreInfo}\``);
+					}
+				}
+				else {
+					console.log("Command `users` failed because I couldn't connect to Tautulli, check your settings.");
+					return message.channel.send("Couldn't connect to Tautulli, check your settings.");
+				}
+			}
 		}
 		users = users.data;
 

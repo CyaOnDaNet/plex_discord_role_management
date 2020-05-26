@@ -10,6 +10,25 @@ module.exports = {
 	async execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr, notificationSettings, args2, ogCommand, command) {
     // allows a library name to be excluded from recently added notifications
     let library = await tautulli.tautulliService.getLibraries();
+		if (library && library.error) {
+			if (library.error == true) {
+				if (library.moreInfo && library.moreInfo != "") {
+					if (library.moreInfo == "Unestablished Connection with Tautulli") {
+						console.log("Command `link` failed because connection with Tautulli hasn't been established yet.");
+						return message.channel.send("A connection with Tautulli hasn't been established yet, wait 30 seconds and try again or check the logs for more details.");
+					}
+					else {
+						console.log("Command `link` failed because I couldn't connect to Tautulli, check your settings.");
+						return message.channel.send(`Couldn't connect to Tautulli, the reason given was:\n\`${library.moreInfo}\``);
+					}
+				}
+				else {
+					console.log("Command `link` failed because I couldn't connect to Tautulli, check your settings.");
+					return message.channel.send("Couldn't connect to Tautulli, check your settings.");
+				}
+			}
+		}
+
     library = library.data;
     let libraryExclusionList;
     var customList = [];

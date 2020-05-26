@@ -5,11 +5,12 @@ const axios = require('axios');
 const jtfd = require("json-to-form-data");
 const isDocker = require('is-docker');
 var _ = require('lodash');
+var establishedConnection = false;
 
 const mainProgram = require("../index.js");
 const apiName = 'Plex-Discord Role Management API - Beta';
 
-var DEBUG = 0;  // Ignored if defined in config or env variable, 1 for database debugging
+var DEBUG = 0;  // Ignored if defined in config or env variable, 1 for database debugging, 2 for sonarr instance debugging, 3 for startup role checking, 4 for tautulli connection logging
 
 const onPlayBody = '{ "trigger": "playbackStarted", "user": "{user}", "username": "{username}" }';
 const onStopBody = '{ "trigger": "playbackStopped", "user": "{user}", "username": "{username}" }';
@@ -17,6 +18,36 @@ const onCreatedBody = '{ "trigger": "recentlyAdded", "title": "{title}", "imdb_i
 
 module.exports = async(config, port) => {
   if (config.DEBUG_MODE) DEBUG = config.DEBUG_MODE;
+
+  async function errorHandling(error, optionalTag) {
+    if (error.code == `ECONNREFUSED`) {
+      if (DEBUG == 4) {
+        if (optionalTag && optionalTag != "") console.log(`~${optionalTag}~ Tautulli connection was refused, do I have API access?`);
+        else console.log(`Tautulli connection was refused, do I have API access?`);
+      }
+    }
+    else if (error.code == `EHOSTUNREACH`) {
+      if (DEBUG == 4) {
+        if (optionalTag && optionalTag != "") console.log(`~${optionalTag}~ Tautulli connection was unreachable, is it offline?`);
+        else console.log(`Tautulli connection was unreachable, is it offline?`);
+      }
+    }
+    else {
+      console.log(error);
+    }
+
+    var errorObject = {};
+    errorObject.error = true;
+    errorObject.moreInfo = "";
+    if (!establishedConnection) {
+      errorObject.moreInfo = "Unestablished Connection with Tautulli";
+      return errorObject;
+    }
+    else {
+      return errorObject;
+    }
+  }
+
   class tautulliService {
     constructor() {
       if (config.tautulli_port === "" || config.tautulli_port === null || config.tautulli_port === undefined) {
@@ -71,13 +102,7 @@ module.exports = async(config, port) => {
           });
         }
       } catch (error) {
-        if (error.code == `ECONNREFUSED`) {
-          console.log(`Tautulli connection refused, is it offline?`);
-        }
-        else {
-          console.log(error);
-        }
-        return "error";
+        return errorHandling(error, "");
       }
     }
 
@@ -89,13 +114,7 @@ module.exports = async(config, port) => {
         const json = await response.json();
         return json.response;
       } catch (error) {
-        if (error.code == `ECONNREFUSED`) {
-          console.log(`Tautulli connection refused, is it offline?`);
-        }
-        else {
-          console.log(error);
-        }
-        return "error";
+        return errorHandling(error, "");
       }
     }
 
@@ -107,13 +126,7 @@ module.exports = async(config, port) => {
         const json = await response.json();
         return json.response;
       } catch (error) {
-        if (error.code == `ECONNREFUSED`) {
-          console.log(`Tautulli connection refused, is it offline?`);
-        }
-        else {
-          console.log(error);
-        }
-        return "error";
+        return errorHandling(error, "");
       }
     }
 
@@ -125,13 +138,7 @@ module.exports = async(config, port) => {
         const json = await response.json();
         return json.response;
       } catch (error) {
-        if (error.code == `ECONNREFUSED`) {
-          console.log(`Tautulli connection refused, is it offline?`);
-        }
-        else {
-          console.log(error);
-        }
-        return "error";
+        return errorHandling(error, "");
       }
     }
 
@@ -143,13 +150,7 @@ module.exports = async(config, port) => {
         const json = await response.json();
         return json.response;
       } catch (error) {
-        if (error.code == `ECONNREFUSED`) {
-          console.log(`Tautulli connection refused, is it offline?`);
-        }
-        else {
-          console.log(error);
-        }
-        return "error";
+        return errorHandling(error, "");
       }
     }
 
@@ -172,13 +173,7 @@ module.exports = async(config, port) => {
           if (!beforeMap[item.id]) this.setNotifierConfig(item.id, notificationUrl, true);
         });
       } catch (error) {
-        if (error.code == `ECONNREFUSED`) {
-          console.log(`Tautulli connection refused, is it offline?`);
-        }
-        else {
-          console.log(error);
-        }
-        return "error";
+        return errorHandling(error, "");
       }
     }
 
@@ -190,13 +185,7 @@ module.exports = async(config, port) => {
         const json = await response.json();
         return json.response.data;
       } catch (error) {
-        if (error.code == `ECONNREFUSED`) {
-          console.log(`Tautulli connection refused, is it offline?`);
-        }
-        else {
-          console.log(error);
-        }
-        return "error";
+        return errorHandling(error, "");
       }
 	  }
 
@@ -243,18 +232,7 @@ module.exports = async(config, port) => {
         if (isNew) console.log('Tautulli Webhook Created!');
         else console.log('Tautulli Webhook Updated!')
       } catch (error) {
-        if (error.code == `ECONNREFUSED`) {
-          console.log(`Tautulli connection refused, is it offline?`);
-        }
-        else {
-          if (error.code == `ECONNREFUSED`) {
-            console.log(`Tautulli connection refused, is it offline?`);
-          }
-          else {
-            console.log(error);
-          }
-        }
-        return "error";
+        return errorHandling(error, "");
       }
 	  }
   }
@@ -288,7 +266,7 @@ module.exports = async(config, port) => {
   }
 
   var count = 0;
-  var maxTries = 3;
+  var maxTries = 5;
 
   async function webhookStartUp() {
     try {
@@ -298,6 +276,7 @@ module.exports = async(config, port) => {
       const json = await response.json();
       if (json.response.result === "success") {
         console.log("Established connection with Tautulli...");
+        establishedConnection = true;
       }
       else {
         console.log("Couldn't fetch notifiers from Tautulli, check your settings")
@@ -399,14 +378,8 @@ module.exports = async(config, port) => {
         setTimeout(webhookStartUp, 30000);
       }
       else {
-        if (error.code == `ECONNREFUSED`) {
-          console.log(`~Tautulli Webhhok Startup Failed!~ Connection was refused, is it offline?`);
-        }
-        else {
-          console.log(`Tautulli Webhhok Startup Failed!`);
-          console.log(error);
-        }
-        return "error";
+        console.log("Webhhok Startup Failed! Adjust your settings and restart the bot to try again.")
+        return errorHandling(error, "Webhhok Startup Failed!");
       }
     }
   }

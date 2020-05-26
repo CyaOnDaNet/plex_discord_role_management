@@ -8,7 +8,7 @@ const process = require('process');
 const isDocker = require('is-docker');
 const fs = require('fs');
 
-var DEBUG = 0;   // Ignored if defined in config or env variable, 1 for database debugging, 2 for sonarr instance debugging, 3 for startup role checking
+var DEBUG = 0;   // Ignored if defined in config or env variable, 1 for database debugging, 2 for sonarr instance debugging, 3 for startup role checking, 4 for tautulli connection logging
 
 var configFile = null;
 var config = {};
@@ -63,6 +63,7 @@ var exemptEmbedReactRoles = [];
 var unenrollFromReactRoleListActive = false;
 var numberOfActiveUsers = "0";
 var setActivityToggle = 0;
+var failed2StartCount = 0;
 
 const defaultGuildSettings = {
   prefix: config.defaultPrefix,
@@ -87,13 +88,7 @@ client.on('ready', async ()=> {
   online = true;
   const tautulliService = tautulli(config, config.node_hook_port);
 
-	// Update numberOfActiveUsers variable
-	var result = await tautulli.tautulliService.getActivity();
-	if (result == "error") {
-		console.log("~Scheduled Watching Check Failed!~ Couldn't connect to Tautulli, check your settings.");
-		return;
-	}
-	numberOfActiveUsers = result.data.stream_count; // Update Stream Count
+	updateNumberOfActiveUsers(); // Update numberOfActiveUsers variable with proper Stream Count
 
   updateReactRolesWhileOffline();
 });
@@ -159,6 +154,10 @@ client.on("debug", (e) => {
 
 var setActivity = schedule.scheduleJob('*/10 * * * * *', async function() {
 	// Change the Status every 10 seconds.
+	if (!client) {
+		console.log("Client not reeady yet");
+		return;
+	}
 	if (setActivityToggle == 0) {
 		client.user.setActivity('Plex | ' + defaultGuildSettings.prefix + 'help', { type: 'WATCHING' });
 		setActivityToggle++;
@@ -180,13 +179,29 @@ var j = schedule.scheduleJob('0 */2 * * * *', async function() {
   // Checks the plex server for activity using Tautulli and repeats every 2 minutes, serves as a fallback in the event webhook trigger has failed.
 
 	if (online === false) {
+		failed2StartCount++;
+		if (failed2StartCount > 5) shutdown(); // I am unsure what causes this but sometimes discord client never becomes ready. To ensure we don't get stuck here, shutdown after 5 failed attempts.
     console.log("Database not ready for scheduled job, client not fully online yet. Waiting to try again...");
 		return;
 	}
 	var result = await tautulli.tautulliService.getActivity();
-	if (result == "error") {
-		console.log("~Scheduled Watching Check Failed!~ Couldn't connect to Tautulli, check your settings.");
-		return;
+	if (result && result.error) {
+		if (result.error == true) {
+			if (result.moreInfo && result.moreInfo != "") {
+				if (result.moreInfo == "Unestablished Connection with Tautulli") {
+					// Do nothing, we are waiting for connection to be established.
+					return;
+				}
+				else {
+					console.log(`~Scheduled Watching Check Failed!~ Failed to connect to Tautulli with reason given as: ${result.moreInfo}`);
+					return;
+				}
+			}
+			else {
+				console.log("~Scheduled Watching Check Failed!~ Couldn't connect to Tautulli, check your settings.");
+				return;
+			}
+		}
 	}
 
 	numberOfActiveUsers = result.data.stream_count; // Update Stream Count
@@ -619,13 +634,8 @@ async function processHook(data) {
         }
       }
     }
-		// Update numberOfActiveUsers variable
-		var result = await tautulli.tautulliService.getActivity();
-		if (result == "error") {
-			console.log("~Scheduled Watching Check Failed!~ Couldn't connect to Tautulli, check your settings.");
-			return;
-		}
-		numberOfActiveUsers = result.data.stream_count; // Update Stream Count
+
+		updateNumberOfActiveUsers(); // Update numberOfActiveUsers variable with proper Stream Count
   }
 
   else if (data.trigger === 'playbackStarted') {
@@ -776,13 +786,8 @@ async function processHook(data) {
         }
       }
     }
-		// Update numberOfActiveUsers variable
-		var result = await tautulli.tautulliService.getActivity();
-		if (result == "error") {
-			console.log("~Scheduled Watching Check Failed!~ Couldn't connect to Tautulli, check your settings.");
-			return;
-		}
-		numberOfActiveUsers = result.data.stream_count; // Update Stream Count
+
+		updateNumberOfActiveUsers(); // Update numberOfActiveUsers variable with proper Stream Count
   }
 
   else if (data.trigger === 'recentlyAdded') {
@@ -1457,6 +1462,30 @@ async function unenrollFromReactRoleList(message) {
 		}
 		await updateReactRolesWhileOffline();
 	}
+}
+
+async function updateNumberOfActiveUsers() {
+	// Update numberOfActiveUsers variable
+	var result = await tautulli.tautulliService.getActivity();
+	if (result && result.error) {
+		if (result.error == true) {
+			if (result.moreInfo && result.moreInfo != "") {
+				if (result.moreInfo == "Unestablished Connection with Tautulli") {
+					// Do nothing, we are waiting for connection to be established.
+					return;
+				}
+				else {
+					console.log(`~numberOfActiveUsers Update Failed!~ Failed to connect to Tautulli with reason given as: ${result.moreInfo}`);
+					return;
+				}
+			}
+			else {
+				console.log("~numberOfActiveUsers Update Failed!~ Couldn't connect to Tautulli, check your settings.");
+				return;
+			}
+		}
+	}
+	numberOfActiveUsers = result.data.stream_count; // Update Stream Count
 }
 
 module.exports.updateShowList = updateShowList;
