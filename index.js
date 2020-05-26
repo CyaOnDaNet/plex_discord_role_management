@@ -73,7 +73,9 @@ const defaultGuildSettings = {
   notificationChannelBoolean: "off",
   adminRole: "",
   watchingRole: "",
-	customRoleCount: 0
+	customRoleCount: 0,
+	changelogChannel: "",
+	changelogChannelBoolean: "off"
 }
 
 client.login(config.botToken);
@@ -102,7 +104,7 @@ client.on('message', async message => {
     // Sets default server settings
     guildSettings = client.getGuildSettings.get(message.guild.id);
     if (!guildSettings) {
-      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, logChannelBoolean: defaultGuildSettings.logChannelBoolean, notificationChannel: defaultGuildSettings.notificationChannel, notificationChannelBoolean: defaultGuildSettings.notificationChannelBoolean, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole, customRoleCount: defaultGuildSettings.customRoleCount };
+      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, logChannelBoolean: defaultGuildSettings.logChannelBoolean, notificationChannel: defaultGuildSettings.notificationChannel, notificationChannelBoolean: defaultGuildSettings.notificationChannelBoolean, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole, customRoleCount: defaultGuildSettings.customRoleCount, changelogChannel: defaultGuildSettings.changelogChannel, changelogChannelBoolean: defaultGuildSettings.changelogChannelBoolean };
       client.setGuildSettings.run(guildSettings);
       guildSettings = client.getGuildSettings.get(message.guild.id);
     }
@@ -416,18 +418,22 @@ client.on('messageReactionAdd', async (reaction, user) => {
 	if (message.embeds[0] === undefined || message.embeds[0] === null) return; //Only continue if react was to a message embed.
 	if (client.user.id === user.id) return; //Ignore the bot setting up react roles so it doesnt add roles to itself.
 
-	if (message.embeds[0].author.name === `⚠️ New Notification List ⚠️`) {
-		if (reaction.emoji.name === '❌') {
-			// Clear Users Roles.
-			if (DEBUG == 3) console.log(`${user.username} clicked the ❌ emoji`);
-			await unenrollFromReactRoleList(message);
-			return;
+	if (message.embeds[0].author) {
+		if (message.embeds[0].author.name === `⚠️ New Notification List ⚠️`) {
+			if (reaction.emoji.name === '❌') {
+				// Clear Users Roles.
+				if (DEBUG == 3) console.log(`${user.username} clicked the ❌ emoji`);
+				await unenrollFromReactRoleList(message);
+				return;
+			}
 		}
 	}
 
 	for (let exemptNames of exemptEmbedReactRoles) {
 		//return if an embed was called that needed emoji response to prevent accidentally trying to react role
-		if(message.embeds[0].author.name === exemptNames) return;
+		if (message.embeds[0].author) {
+		  if (message.embeds[0].author.name === exemptNames) return;
+		}
 	}
 
 	const emoji = reaction._emoji.id ? `${reaction._emoji.name}:${reaction._emoji.id}` : reaction._emoji.name;
@@ -480,7 +486,9 @@ client.on('messageReactionRemove', async (reaction, user) => {
 
 	for (let exemptNames of exemptEmbedReactRoles) {
 		//return if an embed was called that needed emoji response to prevent accidentally trying to react role
-		if(message.embeds[0].author.name === exemptNames) return;
+		if (message.embeds[0].author) {
+		  if (message.embeds[0].author.name === exemptNames) return;
+		}
 	}
 
 	const emoji = reaction._emoji.id ? `${reaction._emoji.name}:${reaction._emoji.id}` : reaction._emoji.name;

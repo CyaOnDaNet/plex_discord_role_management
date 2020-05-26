@@ -8,7 +8,6 @@ module.exports = {
 	subcommands: {
 		'info':'',
 		'prefix':'newprefix',
-		'logchannel':'@channel',
 	},
 	async execute(message, args, prefix, guildSettings, client, Discord, config, fetch, exemptEmbedReactRoles, tautulli, sonarr) {
     // This is where we change bot information
@@ -69,32 +68,7 @@ module.exports = {
       }
     }
     else if (command === "logchannel") {
-      if (args.length > 0) {
-        let mentionedChannel = message.mentions.channels.first();
-        if(!mentionedChannel) {
-          command = args.shift().toLowerCase();
-          if (command === "off") {
-            // disable logChannel
-            guildSettings.logChannelBoolean = "off";
-            client.setGuildSettings.run(guildSettings);
-            guildSettings = client.getGuildSettings.get(message.guild.id);
-            message.channel.send("Logging disabled!");
-          } else {
-            return message.channel.send("You did not specify a valid channel to set the log channel to!");
-          }
-        }
-        else if (message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
-          guildSettings.logChannel = mentionedChannel.id;
-          guildSettings.logChannelBoolean = "on";
-          client.setGuildSettings.run(guildSettings);
-          guildSettings = client.getGuildSettings.get(message.guild.id);
-          message.channel.send("Log channel changed to <#" + guildSettings.logChannel + ">!");
-        } else {
-          return message.channel.send('You do not have permissions to use `' + prefix + 'bot logchannel` in <#' + message.channel.id + '>!');
-        }
-      } else {
-        return message.channel.send("The current log channel is <#" + guildSettings.logChannel + ">!\nTo change it type: `" + guildSettings.prefix + "bot logchannel #logs` (where **#logs** is the desired channel)\nTo disable it type: `" + guildSettings.prefix + "bot logchannel off`");
-      }
+			return message.channel.send(`This command has moved to \`${prefix}notify.\``);
     }
     else if (command === "help") {
       // help message goes here

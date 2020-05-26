@@ -1,4 +1,5 @@
 node_modules
+pending_changes_notes.txt
 
 config/**
 !config/config.example.json
