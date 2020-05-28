@@ -20,10 +20,15 @@ module.exports = async(client, sql) => {
       sql.prepare("ALTER TABLE guildSettings ADD COLUMN changelogChannelBoolean TEXT;").run();
       console.log("Database updated! Added column \"changelogChannelBoolean\" to the \"guildSettings\" table. This change was implemented in Bot v2.0.0");
     }
+    if (nameList.indexOf("botVersion") == -1) {
+      // Alter Table For necesary changes
+      sql.prepare("ALTER TABLE guildSettings ADD COLUMN botVersion TEXT;").run();
+      console.log("Database updated! Added column \"botVersion\" to the \"guildSettings\" table. This change was implemented in Bot v2.0.0");
+    }
   }
   else if (!tableGuildSettings['count(*)']) {
     // If the table isn't there`, create it and setup the database correctly.
-    sql.prepare("CREATE TABLE guildSettings (id TEXT PRIMARY KEY, guild TEXT, prefix TEXT, logChannel TEXT, logChannelBoolean TEXT, notificationChannel TEXT, notificationChannelBoolean TEXT, adminRole TEXT, watchingRole TEXT, customRoleCount INTEGER, changelogChannel TEXT, changelogChannelBoolean TEXT);").run();
+    sql.prepare("CREATE TABLE guildSettings (id TEXT PRIMARY KEY, guild TEXT, prefix TEXT, logChannel TEXT, logChannelBoolean TEXT, notificationChannel TEXT, notificationChannelBoolean TEXT, adminRole TEXT, watchingRole TEXT, customRoleCount INTEGER, changelogChannel TEXT, changelogChannelBoolean TEXT, botVersion TEXT);").run();
     // Ensure that the "id" row is always unique and indexed.
     sql.prepare("CREATE UNIQUE INDEX idx_guildSettings_id ON guildSettings (id);").run();
     sql.pragma("synchronous = 1");
@@ -33,7 +38,7 @@ module.exports = async(client, sql) => {
   // And then we have prepared statements to get and set guildSettings data.
   client.getGuildSettings = sql.prepare("SELECT * FROM guildSettings WHERE guild = ?");
   client.searchGuildSettings = sql.prepare("SELECT * FROM guildSettings");
-  client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, notificationChannel, notificationChannelBoolean, adminRole, watchingRole, customRoleCount, changelogChannel, changelogChannelBoolean) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @notificationChannel, @notificationChannelBoolean, @adminRole, @watchingRole, @customRoleCount, @changelogChannel, @changelogChannelBoolean);");
+  client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, notificationChannel, notificationChannelBoolean, adminRole, watchingRole, customRoleCount, changelogChannel, changelogChannelBoolean, botVersion) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @notificationChannel, @notificationChannelBoolean, @adminRole, @watchingRole, @customRoleCount, @changelogChannel, @changelogChannelBoolean, @botVersion);");
   // END OF TABLE
 
 
