@@ -22,8 +22,9 @@ module.exports = {
     if (!message.channel.guild.member(message.author).hasPermission('ADMINISTRATOR')) {
       return message.channel.send('You do not have permissions to use `' + prefix + ogCommand + " " + command + '`!');
     }
-    const mainProgram = require("../../../index.js");
-    await mainProgram.updateShowList(message);
+
+		const updateShowList = require('../../../src/functions/updateShowList.js');
+    await updateShowList(message, client);
 
     var tenNumbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 
@@ -172,10 +173,10 @@ module.exports = {
         }
         var role = message.guild.roles.cache.find(role => role.id === notificationSettings.groupRole);
         if (role != null) {
-          showsList[i] = `| <@&${role.id}> | Group`;
+          showsList[i] = `| <@&${role.id}> | Grouped Show`;
         }
         else {
-					showsList[i] = "| " + notificationSettings.groupName + " | Group";
+					showsList[i] = "| " + notificationSettings.groupName + " | Grouped Show";
         }
       }
       else {

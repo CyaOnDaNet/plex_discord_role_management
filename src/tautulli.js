@@ -8,6 +8,7 @@ var _ = require('lodash');
 var establishedConnection = false;
 
 const mainProgram = require("../index.js");
+const processHook = require('./functions/processHook.js');
 const apiName = 'Plex-Discord Role Management API - Beta';
 
 var DEBUG = 0;  // Ignored if defined in config or env variable, 1 for database debugging, 2 for sonarr instance debugging, 3 for startup role checking, 4 for tautulli connection logging
@@ -251,17 +252,17 @@ module.exports = async(config, port) => {
 
   app.post('/hooks/tautulli', async (req, res) => {
     res.status(200).send('OK');
-    mainProgram.processHook(req.body); // Process incoming webhooks
+    processHook(req.body); // Process incoming webhooks
   });
 
   if (isDocker()) {
     var server = app.listen(3000, function() {
-      console.log(`Listening on internal docker port:${server.address().port} and external host port:${config.node_hook_port}`);
+      console.log(`~Webhook Service: Tautulli~ Listening on docker port:${server.address().port} and host port:${config.node_hook_port}`);
     });
   }
   else {
     var server = app.listen(port, function() {
-      console.log('Listening on port %d', server.address().port);
+      console.log('~Webhook Service: Tautulli~ Listening on port %d', server.address().port);
     });
   }
 
