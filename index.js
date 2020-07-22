@@ -91,19 +91,61 @@ client.login(config.botToken);
 client.on('ready', async ()=> {
   client.user.setActivity('Plex | ' + defaultGuildSettings.prefix + 'help', { type: 'WATCHING' });
 
-	await databaseSetup(client, sql);
-	client.newNotificationListAuthorName = `⚠️ New Notification List ⚠️`;
+  var backupLocation = './config/backups/database/';
+  var databaseBotVersion = 'unknown_version';
+	const tableGuildSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'guildSettings';").get();
 
-  online = true;
-	await checkForVersionChanges(); //Check For New Version Change and Trigger any notifications.
+	if (tableGuildSettings['count(*)']) {
+    // Table exists, we need to check for necessary changes and apply them on startup.
+    const tableInfo = sql.pragma('table_info(guildSettings)', { simple: false });
+    var nameList = [];
+    for (let i = 0; i < tableInfo.length; i++) {
+      nameList.push(tableInfo[i].name);
+    }
 
-  const tautulliService = await tautulli(config, config.node_hook_port); // start the tautulli webhook service
+    if (nameList.indexOf("botVersion") != -1) {
+			for (const guildSettings of sql.prepare("SELECT * FROM guildSettings").iterate()) {
+				guildSettings.logChannelBoolean === "on"
+				databaseBotVersion = `v${guildSettings.botVersion}`;
+				break;
+			}
+    }
 
-	updateNumberOfActiveUsers(); // Update numberOfActiveUsers variable with proper Stream Count
+		if (!fs.existsSync(`${backupLocation}${databaseBotVersion}/`)) {
+			process.umask(0);    // Needed to set permissions properly in new folder
+	    fs.mkdirSync(`${backupLocation}${databaseBotVersion}/`, { recursive: true });
+	  }
 
-  updateReactRolesWhileOffline(); // Update all react roles while bot was offline
+	  sql.backup(`${backupLocation}${databaseBotVersion}/database-${databaseBotVersion}.sqlite`)
+	  .then(() => {
+	    if (DEBUG == 1) console.log('Database backup complete!');
+	    finishSetup();
+	  })
+	  .catch((err) => {
+	    console.log('Database backup failed:', err);
+	    finishSetup();
+	  });
+  }
+	else {
+		// First runtime, no database exists.
+		finishSetup();
+	}
 
-	console.log('The bot is now online!');
+	async function finishSetup() {
+		await databaseSetup(client, sql);
+		client.newNotificationListAuthorName = `⚠️ New Notification List ⚠️`;
+
+	  online = true;
+		await checkForVersionChanges(); //Check For New Version Change and Trigger any notifications.
+
+	  const tautulliService = await tautulli(config, config.node_hook_port); // start the tautulli webhook service
+
+		updateNumberOfActiveUsers(); // Update numberOfActiveUsers variable with proper Stream Count
+
+	  updateReactRolesWhileOffline(); // Update all react roles while bot was offline
+
+		console.log('The bot is now online!');
+	}
 });
 
 client.on('message', async message => {
@@ -167,7 +209,7 @@ client.on("debug", (e) => {
 var setActivity = schedule.scheduleJob('*/10 * * * * *', async function() {
 	// Change the Status every 10 seconds.
 	if (!client || !online) {
-		console.log("Client not reeady yet");
+		if (DEBUG != 0) console.log("Client not ready yet, activity update was skipped.");
 		return;
 	}
 	if (setActivityToggle == 0) {
@@ -185,6 +227,52 @@ var setActivity = schedule.scheduleJob('*/10 * * * * *', async function() {
 	else {
 		setActivityToggle = 0; // just in case the variable gets changed to something it shouldn't
 	}
+});
+
+var runningDatabaseBackup = schedule.scheduleJob('0 */8 * * *', async function() {
+	// Backup the Database every 8 hours and delete any excess files.
+	var backupLocation = './config/backups/database/scheduled_backups/';
+	var maxNumBackups = 21; // enough backups to equal 7 days worth.
+
+	if (!fs.existsSync(`${backupLocation}`)) {
+		process.umask(0);    // Needed to set permissions properly in new folder
+		fs.mkdirSync(`${backupLocation}`, { recursive: true });
+	}
+
+	sql.backup(`${backupLocation}${Date.now()}.sqlite`)
+	.then(() => {
+		if (DEBUG == 1) console.log(`Scheduled Database Job - Save was successfull. Completed at ${Date.now()}.`);
+
+		var files = fs.readdirSync(backupLocation);
+		var fileNames = [];
+
+		for (var i = 0; i < files.length; i++) {
+			if (files[i].indexOf(`.sqlite`) != -1) {
+				var timeStamp = files[i].slice(0, files[i].indexOf(`.sqlite`));
+				fileNames.push(timeStamp);
+			}
+		}
+		fileNames.sort((a, b) => b - a); // Sort file names numerically in descending order to delete oldest ones later
+
+		if (files.length > maxNumBackups) {
+			for (var i = ( files.length - 1 ); i >= maxNumBackups; i--) {
+        fs.unlink(`${backupLocation}${fileNames[i]}.sqlite`, (err) => {
+					// File deleted
+					if (DEBUG == 1) console.log(`Scheduled Database Job - File ${fileNames[i]}.sqlite was deleted successfuly.`);
+          if (err) {
+						console.log('Could not delete old backup file for reason:');
+            console.error(err);
+            return;
+          }
+        });
+			}
+		}
+
+	})
+	.catch((err) => {
+		console.log('Scheduled database save failed:', err);
+	});
+
 });
 
 var tautulliCheck = schedule.scheduleJob('0 */2 * * * *', async function() {
@@ -574,20 +662,78 @@ process.on('SIGTERM', function onSigterm () {
 });
 
 function shutdown() {
-  console.log('Received kill signal, shutting down gracefully');
+  console.info('Received kill signal, shutting down gracefully');
   try {
 		setActivity.cancel();
     tautulliCheck.cancel();
-	  sql.close();
+		runningDatabaseBackup.cancel();
+
+		var backupLocation = './config/backups/database/';
+	  var databaseBotVersion = 'unknown_version';
+		const tableGuildSettings = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'guildSettings';").get();
+
+		if (tableGuildSettings['count(*)']) {
+	    // Table exists, we need to check for necessary changes and apply them on startup.
+	    const tableInfo = sql.pragma('table_info(guildSettings)', { simple: false });
+	    var nameList = [];
+	    for (let i = 0; i < tableInfo.length; i++) {
+	      nameList.push(tableInfo[i].name);
+	    }
+
+	    if (nameList.indexOf("botVersion") != -1) {
+				for (const guildSettings of sql.prepare("SELECT * FROM guildSettings").iterate()) {
+					guildSettings.logChannelBoolean === "on"
+					databaseBotVersion = `v${guildSettings.botVersion}`;
+					break;
+				}
+	    }
+
+			if (!fs.existsSync(`${backupLocation}${databaseBotVersion}/`)) {
+				process.umask(0);    // Needed to set permissions properly in new folder
+		    fs.mkdirSync(`${backupLocation}${databaseBotVersion}/`, { recursive: true });
+		  }
+
+		  sql.backup(`${backupLocation}${databaseBotVersion}/database-${databaseBotVersion}.sqlite`)
+		  .then(() => {
+				sql.close();
+		    console.log('Database was closed and saved successfully. Shutting down now.');
+				console.log('');
+
+				setTimeout(() => {
+			    console.error('Could not close connections in time, forcefully shutting down');
+					console.log('');
+			    process.exit(1);
+			  }, 10000);
+			  process.exit();
+
+		  })
+		  .catch((err) => {
+		    console.log('Database save failed:', err);
+				console.log('');
+		    sql.close();
+
+				setTimeout(() => {
+			    console.error('Could not close connections in time, forcefully shutting down.');
+					console.log('');
+			    process.exit(1);
+			  }, 10000);
+			  process.exit();
+
+		  });
+	  }
+		else {
+			console.log('Database structure seems invalid! Does the database exist?');
+			sql.close();
+
+			setTimeout(() => {
+				console.error('Could not close connections in time, forcefully shutting down.');
+				console.log('');
+				process.exit(1);
+			}, 10000);
+			process.exit();
+		}
   } catch (error) {
 	  console.error(error);
 	  process.exit(1);
   }
-
-  setTimeout(() => {
-    console.error('Could not close connections in time, forcefully shutting down');
-    process.exit(1);
-  }, 10000);
-
-  process.exit();
 }
