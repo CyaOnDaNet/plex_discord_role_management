@@ -81,26 +81,27 @@ docker run -d \
 
 1. After all cofiguration settings have been applied, the bot has been invited to the server, and the bot is online with no errors in the console; you are ready to configure its discord settings. First off, if you want to change the prefix, do it with `!bot prefix newprefix` where newprefix is the actual new prefix.
 
-2. In some sort of Admin only channel, do all the following stuff until the last step. We want to run `!link @DiscordUser PlexUsername` for every user in the server, you can verify the settings with `!linklist` and use `!unlink @DiscordUser` to unlink someone. If you don't know the exact spelling of someone's plex username, the command `!users` will pull a list for you. Now create a Watching Role in Discord and make sure the Mentionable box is ticked. Run this command with the Role you just created `!role @WatchingRole`. If you want to see if its working, run `!bot logchannel #channel` to get a log of the auto-assigning of the role. Run `!bot logchannel off` to disable logging.
+2. In some sort of Admin only channel, do all the following stuff until the last step. We want to run `!link @DiscordUser PlexUsername` for every user in the server, you can verify the settings with `!linklist` and use `!unlink @DiscordUser` to unlink someone. If you don't know the exact spelling of someone's plex username, the command `!users` will pull a list for you. Now create a Watching Role in Discord and make sure the Mentionable box is ticked. Run this command with the Role you just created `!role @WatchingRole`. If you want to see if its working, run `!notify` and setup the logchannel to get a log of the auto-assigning of the role. Run `!notify` again if you want to disable logging.
 
 3. Run the `!notifications edit` command to setup some notification preferences now. If you have any custom Discord Roles you would like to be React-Roles (so users can opt in and out of them) use the `!notifications custom add @mentionedRole Optional Description` command. Run `!notifications library` to exclude any Plex libraries from recently added notifications.
 
 4. Test the Sonarr connection and generate the database with `!notifications preview`. A database with all shows on Sonarr was just created but only continuing (airing) shows automatically received a discord Role. Now you can edit this list with `!notifications exclude show` or `!notifications include show`. You can even group or ungroup common shows with `!notifications group New Group Name for Shows [show1] [show2] [etc.]` and `!notifications ungroup [show1] [show2] [etc.]`. You can re-call `!notifications preview` to see your changes and once you are satisfied with this list you can continue onto the final step.
 
-5. Finally, you should setup a `#notifications` channel and a `#notifications_settings` channel in Discord. In the channel permissions, non-Admin users should be able to read these messages but not be able to send anything. Also, default server notification settings should be set to @mentions only so people are not spammed by `#notifications` but rather only get notifications on things they want. Use `!notifications channel #notifications` to set the bots recently added notifications to go to the newly created channel and head over to `#notification_settings` and type `!notifications list` to generate all the React-Role embeds. You are now done, and people can receive show specific notifications in your Discord Server!
+5. Finally, you should setup a `#notifications` channel and a `#notifications_settings` channel in Discord. In the channel permissions, non-Admin users should be able to read these messages but not be able to send anything. Also, default server notification settings should be set to @mentions only so people are not spammed by `#notifications` but rather only get notifications on things they want. Use `!notify` in the desired `#notifications` channel and select the emoji option corresponding with `Content Notifications` to set the bots recently added notification alerts to go to the current channel. Head over to `#notification_settings` channel and type `!notifications list` to generate all the React-Role embeds. You are now done, and people can receive show specific notifications in your Discord Server!
 
 ***
 
 ## Discord Bot Commands
 -  `!help` : Lists information about commands.
 -  `!help [command name]` : Lists information about a specific command.
--  `!showlist` : Lists all the shows on Sonarr that are still marked as continuing.
 -  `!bot [subcommand]` : Various bot commands
       - `!bot info` : Lists current info like logging channel, recently added channel, etc.
       - `!bot prefix newprefix` : Allows you to change the bot prefix
-      - `!bot logchannel #channel` : Allows you top set the logchannel or turn off logging with `!bot logchannel off`
+      - `!bot recentlyadded on/off` : Allows you to set whether recently added shows automatically receive a discord role with role react page displayed in the same channel as `!notifications list`.
+-  `!notify` : Different notification options that can be enabled in the channel that it was called in.
+-  `!showlist` : Lists all the shows on Sonarr that are still marked as continuing.
 -  `!link @DiscordUser PlexUsername` : Links a Discord User Tag with their respective Plex username
--  `!unlink @DiscordUser PlexUsername` : Unlinks a Discord User Tag with a Plex username
+-  `!unlink @DiscordUser` : Unlinks a Discord User Tag with a Plex username
 -  `!linklist` : Shows a list of all linked Plex-Discord Users
 -  `!users` : Lists all Plex usernames that have shared access to the Server, to be used to easily call the `!link @DiscordUser PlexUsername` command.
 -  `!notifications [subcommand]` : 
@@ -114,22 +115,12 @@ docker run -d \
       - `!notifications ungroup [show1] [show2] [etc.]` : Ungroups previously grouped shows.
       - `!notifications list` : Lists the react-role embeds to be used for role specified notifications. Should be called in its own channel that others can view but not send in. For now, it needs to be recalled to reflect new changes.
       - `!notifications preview` : Same as `!notifications list` but does not store embeds in database for emoji recheck on start. Should be used when experimenting in a different channel than the primary `#notification_settings`.
-      - `!notifications channel` : Sets the channel that recently added shows are notified in.
 -  `!role @WatchingRole` : Assigns the Watching Role that the bot assigns to Users when they are watching Plex. *NOTE: The Bot's Role needs to be higher than the Watching Role*
 -  `!delete` : Deletes all Discord Roles managed by this bot, to be used prior to removing the bot from Server for easy cleanup.
 
 ***
 
 ## To Do:
-* [ ] Automate auto-updating of TV show react roles somehow so `!notifications list` doesn't need to be called each time we want to have a new show listed. The problem here is that if I simply edit the existing embeds, people's react-role clicks will be off.
-
-***
-
-## Completed:
-* [x] Finished Everything I initially intended this bot to be able to do.
-* [x] Added a delete command for cleanup prior to bot removal from a server.
-* [x] Cleaned up and tested bot configuration when in multiple Discord servers. The bot can now properly handle being in multiple servers. 
-* [x] Added a way to update Role-React mentions while bot was offline. Potentially negative side-effect (depending on how you look at it) is that calling `!notifications list` again will reset everyones role settings after bot reboot if they have not already clicked on their new preferences from the freshly generated `!notifications list`.
-* [x] Added error handling when reaching Discord Server Role Limit.
-* [x] Added the ability to have multiple sonarr instances.
-* [x] Added retry to Tautulli webhook connection so at system startup there is no conflict if the bot finishes starting before Tautulli
+* [ ] Add quiet hours setting as discord server setting. Allows for caching of messages during certain hours and then sending out those messages after quiet hours are over.
+* [ ] Add inactive plex user role/notification. Set an inacticve length in a discord server (like say 1 month). Take Tautulli user data and whenever a user hasn't watched anything in the set period of time, give them an inactive role and potentially a notification to specified channel. This allows the server owner to easily identify inactive users.
+* [ ] Edit the react role page 1 so that custom react roles have their own page and can therfore be edited easily without having to recall `!notifications list`.
