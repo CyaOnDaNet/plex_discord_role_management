@@ -20,6 +20,11 @@ module.exports = async(client, sql) => {
       sql.prepare("ALTER TABLE guildSettings ADD COLUMN changelogChannelBoolean TEXT;").run();
       console.log("Database updated! Added column \"changelogChannelBoolean\" to the \"guildSettings\" table. This change was implemented in Bot v2.0.0");
     }
+    if (nameList.indexOf("recentlyAddedBoolean") == -1) {
+      // Alter Table For necesary changes
+      sql.prepare("ALTER TABLE guildSettings ADD COLUMN recentlyAddedBoolean TEXT;").run();
+      console.log("Database updated! Added column \"recentlyAddedBoolean\" to the \"guildSettings\" table. This change was implemented in Bot v2.0.0");
+    }
     if (nameList.indexOf("botVersion") == -1) {
       // Alter Table For necesary changes
       sql.prepare("ALTER TABLE guildSettings ADD COLUMN botVersion TEXT;").run();
@@ -28,7 +33,7 @@ module.exports = async(client, sql) => {
   }
   else if (!tableGuildSettings['count(*)']) {
     // If the table isn't there`, create it and setup the database correctly.
-    sql.prepare("CREATE TABLE guildSettings (id TEXT PRIMARY KEY, guild TEXT, prefix TEXT, logChannel TEXT, logChannelBoolean TEXT, notificationChannel TEXT, notificationChannelBoolean TEXT, adminRole TEXT, watchingRole TEXT, customRoleCount INTEGER, changelogChannel TEXT, changelogChannelBoolean TEXT, botVersion TEXT);").run();
+    sql.prepare("CREATE TABLE guildSettings (id TEXT PRIMARY KEY, guild TEXT, prefix TEXT, logChannel TEXT, logChannelBoolean TEXT, notificationChannel TEXT, notificationChannelBoolean TEXT, adminRole TEXT, watchingRole TEXT, customRoleCount INTEGER, changelogChannel TEXT, changelogChannelBoolean TEXT, recentlyAddedBoolean TEXT, botVersion TEXT);").run();
     // Ensure that the "id" row is always unique and indexed.
     sql.prepare("CREATE UNIQUE INDEX idx_guildSettings_id ON guildSettings (id);").run();
     sql.pragma("synchronous = 1");
@@ -38,7 +43,7 @@ module.exports = async(client, sql) => {
   // And then we have prepared statements to get and set guildSettings data.
   client.getGuildSettings = sql.prepare("SELECT * FROM guildSettings WHERE guild = ?");
   client.searchGuildSettings = sql.prepare("SELECT * FROM guildSettings");
-  client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, notificationChannel, notificationChannelBoolean, adminRole, watchingRole, customRoleCount, changelogChannel, changelogChannelBoolean, botVersion) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @notificationChannel, @notificationChannelBoolean, @adminRole, @watchingRole, @customRoleCount, @changelogChannel, @changelogChannelBoolean, @botVersion);");
+  client.setGuildSettings = sql.prepare("INSERT OR REPLACE INTO guildSettings (id, guild, prefix, logChannel, logChannelBoolean, notificationChannel, notificationChannelBoolean, adminRole, watchingRole, customRoleCount, changelogChannel, changelogChannelBoolean, recentlyAddedBoolean, botVersion) VALUES (@id, @guild, @prefix, @logChannel, @logChannelBoolean, @notificationChannel, @notificationChannelBoolean, @adminRole, @watchingRole, @customRoleCount, @changelogChannel, @changelogChannelBoolean, @recentlyAddedBoolean, @botVersion);");
   // END OF TABLE
 
 
@@ -165,5 +170,26 @@ module.exports = async(client, sql) => {
   client.getNewListInactiveUsers = sql.prepare("SELECT * FROM newListInactiveUsers WHERE id = ?");
   client.searchNewListInactiveUsers = sql.prepare("SELECT * FROM newListInactiveUsers");
   client.setNewListInactiveUsers = sql.prepare("INSERT OR REPLACE INTO newListInactiveUsers (id, guild, discordUserID, inactive, wipeRoleReactions) VALUES (@id, @guild, @discordUserID, @inactive, @wipeRoleReactions);");
+  // END OF TABLE
+
+
+
+  // Check if the table "recentlyAddedShows" exists.
+  const recentlyAddedShows = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'recentlyAddedShows';").get();
+  if (!recentlyAddedShows['count(*)']) {
+    // If the table isn't there, create it and setup the database correctly.
+    sql.prepare("CREATE TABLE recentlyAddedShows (id TEXT PRIMARY KEY, guild TEXT, channelID TEXT, messageID TEXT, pageNumber TEXT, emojiNumber TEXT);").run();
+    // Ensure that the "id" row is always unique and indexed.
+    sql.prepare("CREATE UNIQUE INDEX idx_recentlyAddedShows_id ON recentlyAddedShows (id);").run();
+    sql.pragma("synchronous = 1");
+    sql.pragma("journal_mode = wal");
+  }
+
+  // And then we have prepared statements to get and set recentlyAddedShows data.
+  client.clearRecentlyAddedShows = sql.prepare("DELETE FROM recentlyAddedShows WHERE guild = ?");
+	client.deleteRecentlyAddedShows = sql.prepare("DELETE FROM recentlyAddedShows WHERE id = ?");
+  client.getRecentlyAddedShows = sql.prepare("SELECT * FROM recentlyAddedShows WHERE id = ?");
+  client.searchRecentlyAddedShows = sql.prepare("SELECT * FROM recentlyAddedShows");
+  client.setNewRecentlyAddedShows = sql.prepare("INSERT OR REPLACE INTO recentlyAddedShows (id, guild, channelID, messageID, pageNumber, emojiNumber) VALUES (@id, @guild, @channelID, @messageID, @pageNumber, @emojiNumber);");
   // END OF TABLE
 }

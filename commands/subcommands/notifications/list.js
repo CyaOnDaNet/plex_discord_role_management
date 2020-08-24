@@ -16,7 +16,7 @@ module.exports = {
 		const updateShowList = require('../../../src/functions/updateShowList.js');
     await updateShowList(message, client);
 
-		let processingPage = await message.channel.send("Preparing notifiaction list...");
+		let processingPage = await message.channel.send("Preparing notification list...");
 
 		// Clear Previous Notifier List and Delete the old messages
 		var previousNotifierList = [];
@@ -52,6 +52,8 @@ module.exports = {
 	  		}
 			}
 	  }
+
+		await client.clearRecentlyAddedShows.run(`${message.guild.id}`);  //clear clearRecentlyAddedShows list too
 
 		// Iterate through React Role List and set everything to true
 		var userActiveCount = 0;

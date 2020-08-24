@@ -83,6 +83,7 @@ const defaultGuildSettings = {
 	customRoleCount: 0,
 	changelogChannel: "",
 	changelogChannelBoolean: "off",
+	recentlyAddedBoolean: "on",
 	botVersion: pjson.version
 }
 
@@ -156,7 +157,7 @@ client.on('message', async message => {
     // Sets default server settings
     guildSettings = client.getGuildSettings.get(message.guild.id);
     if (!guildSettings) {
-      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, logChannelBoolean: defaultGuildSettings.logChannelBoolean, notificationChannel: defaultGuildSettings.notificationChannel, notificationChannelBoolean: defaultGuildSettings.notificationChannelBoolean, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole, customRoleCount: defaultGuildSettings.customRoleCount, changelogChannel: defaultGuildSettings.changelogChannel, changelogChannelBoolean: defaultGuildSettings.changelogChannelBoolean };
+      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, logChannelBoolean: defaultGuildSettings.logChannelBoolean, notificationChannel: defaultGuildSettings.notificationChannel, notificationChannelBoolean: defaultGuildSettings.notificationChannelBoolean, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole, customRoleCount: defaultGuildSettings.customRoleCount, changelogChannel: defaultGuildSettings.changelogChannel, changelogChannelBoolean: defaultGuildSettings.changelogChannelBoolean, recentlyAddedBoolean: defaultGuildSettings.recentlyAddedBoolean, botVersion: defaultGuildSettings.botVersion };
       client.setGuildSettings.run(guildSettings);
       guildSettings = client.getGuildSettings.get(message.guild.id);
     }
@@ -302,6 +303,15 @@ var tautulliCheck = schedule.scheduleJob('0 */2 * * * *', async function() {
 				return;
 			}
 		}
+	}
+	if (result && result.data && result.data.stream_count && result.data.sessions) {
+		// Valid result
+	}
+	else {
+		// Invalid result
+		console.log("~Scheduled Watching Check Failed!~ Invalid result received from Tautulli. If this error continues, check your settings. Below is the info received: ");
+		console.log(result);
+		return;
 	}
 
 	numberOfActiveUsers = result.data.stream_count; // Update Stream Count

@@ -33,6 +33,12 @@ module.exports = async(config, port) => {
         else console.log(`Tautulli connection was unreachable, is it offline?`);
       }
     }
+    else if (error.code == `ECONNRESET`) {
+      if (DEBUG == 4) {
+        if (optionalTag && optionalTag != "") console.log(`~${optionalTag}~ Tautulli connection was unreachable, is it offline?`);
+        else console.log(`Tautulli connection was unreachable, is it offline?`);
+      }
+    }
     else {
       console.log(error);
     }

@@ -21,6 +21,12 @@ module.exports = async() => {
       guildSettings = client.getGuildSettings.get(guilds[i].guild);
 		}
 
+    if (guildSettings.recentlyAddedBoolean == null || guildSettings.recentlyAddedBoolean == undefined || guildSettings.recentlyAddedBoolean == "") {
+			guildSettings.recentlyAddedBoolean = "on"; // This database setting did not exist because it was added in version 2.0.0; we need a valid setting.
+			client.setGuildSettings.run(guildSettings);
+      guildSettings = client.getGuildSettings.get(guilds[i].guild);
+		}
+
 		let compare = await compareVersionNumbers(pjson.version, guildSettings.botVersion);
 		let versionMessage = "";
 

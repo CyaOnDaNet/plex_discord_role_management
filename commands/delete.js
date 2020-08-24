@@ -119,6 +119,7 @@ module.exports = {
 									}
 
 									await client.clearPreviousNotifierList.run(`${message.guild.id}`);  //clear notifier list too
+									await client.clearRecentlyAddedShows.run(`${message.guild.id}`);  //clear clearRecentlyAddedShows list too
 
 								}
 								count++;
