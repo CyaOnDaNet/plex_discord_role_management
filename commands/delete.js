@@ -116,10 +116,17 @@ module.exports = {
 										guildSettings.customRoleCount = guildSettings.customRoleCount - 1;
 										client.setGuildSettings.run(guildSettings);
 										guildSettings = client.getGuildSettings.get(message.guild.id);
+										if (guildSettings.customRoleCount < 0) {
+											guildSettings.customRoleCount = 0;
+											client.setGuildSettings.run(guildSettings);
+											guildSettings = client.getGuildSettings.get(message.guild.id);
+											console.log("guildSettings.customRoleCount was out of bounds and reset to 0. Why did this happen?");
+										}
 									}
 
 									await client.clearPreviousNotifierList.run(`${message.guild.id}`);  //clear notifier list too
 									await client.clearRecentlyAddedShows.run(`${message.guild.id}`);  //clear clearRecentlyAddedShows list too
+									await client.clearCustomReactRolePage.run(`${message.guild.id}`);  //clear clearCustomReactRolePage list too
 
 								}
 								count++;

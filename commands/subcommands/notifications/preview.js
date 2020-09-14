@@ -28,24 +28,44 @@ module.exports = {
 
     var tenNumbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 
-    var page1Description = "";
-    var page1Count = 0;
-    var addLine = false;
+		var customPageDescription = "";
+    var customPageCount = 0;
 
     for (const notificationSettings of client.searchNotificationSettings.iterate()) {
       if (notificationSettings.category === "custom" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
         if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.roleID}`) {
           //Check to make sure client id is the same, in case using a different bot token
-          addLine = true;
-          page1Description = page1Description + `\n${tenNumbers[page1Count]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
-          page1Count++;
+          customPageDescription = customPageDescription + `\n${tenNumbers[customPageCount]} <@&${notificationSettings.roleID}> ${notificationSettings.description}`;
+          customPageCount++;
         }
       }
     }
-    if (addLine) {
-      addLine = false;
-      page1Description = page1Description + `\n`;
+
+		embed = new Discord.MessageEmbed()
+      .setAuthor('Choose which custom roles you want:')
+      .setDescription(customPageDescription)
+      .setColor(0x00AE86);
+
+    if (customPageCount >= 1) {
+      let customPageSentMessage = await message.channel.send({embed});
+			previewEmbedExpire(Discord, customPageSentMessage, prefix, ogCommand, 255000);
+			customPageSentMessage.react(tenNumbers[0])
+        .then(async () => { if (customPageCount > 1) await customPageSentMessage.react(tenNumbers[1]) })
+        .then(async () => { if (customPageCount > 2) await customPageSentMessage.react(tenNumbers[2]) })
+        .then(async () => { if (customPageCount > 3) await customPageSentMessage.react(tenNumbers[3]) })
+        .then(async () => { if (customPageCount > 4) await customPageSentMessage.react(tenNumbers[4]) })
+        .then(async () => { if (customPageCount > 5) await customPageSentMessage.react(tenNumbers[5]) })
+        .then(async () => { if (customPageCount > 6) await customPageSentMessage.react(tenNumbers[6]) })
+        .then(async () => { if (customPageCount > 7) await customPageSentMessage.react(tenNumbers[7]) })
+        .then(async () => { if (customPageCount > 8) await customPageSentMessage.react(tenNumbers[8]) })
+        .then(async () => { if (customPageCount > 9) await customPageSentMessage.react(tenNumbers[9]) })
+        .catch(() => console.error('One of the emojis failed to react.'));
     }
+
+    var page1Description = "";
+    var page1Count = 0;
+    var addLine = false;
+
     for (const notificationSettings of client.searchNotificationSettings.iterate()) {
       if (notificationSettings.category === "movies" && (notificationSettings.roleID != null || notificationSettings.roleID != undefined)) {
         if (notificationSettings.id === `${message.guild.id}-${client.user.id}-${notificationSettings.name}`) {

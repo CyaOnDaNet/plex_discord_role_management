@@ -192,4 +192,25 @@ module.exports = async(client, sql) => {
   client.searchRecentlyAddedShows = sql.prepare("SELECT * FROM recentlyAddedShows");
   client.setNewRecentlyAddedShows = sql.prepare("INSERT OR REPLACE INTO recentlyAddedShows (id, guild, channelID, messageID, pageNumber, emojiNumber) VALUES (@id, @guild, @channelID, @messageID, @pageNumber, @emojiNumber);");
   // END OF TABLE
+
+
+
+  // Check if the table "customReactRolePage" exists.
+  const customReactRolePage = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'customReactRolePage';").get();
+  if (!customReactRolePage['count(*)']) {
+    // If the table isn't there, create it and setup the database correctly.
+    sql.prepare("CREATE TABLE customReactRolePage (id TEXT PRIMARY KEY, guild TEXT, channelID TEXT, messageID TEXT, roleCount INTEGER);").run();
+    // Ensure that the "id" row is always unique and indexed.
+    sql.prepare("CREATE UNIQUE INDEX idx_customReactRolePage_id ON customReactRolePage (id);").run();
+    sql.pragma("synchronous = 1");
+    sql.pragma("journal_mode = wal");
+  }
+
+  // And then we have prepared statements to get and set customReactRolePage data.
+  client.clearCustomReactRolePage = sql.prepare("DELETE FROM customReactRolePage WHERE guild = ?");
+	client.deleteCustomReactRolePage = sql.prepare("DELETE FROM customReactRolePage WHERE id = ?");
+  client.getCustomReactRolePage = sql.prepare("SELECT * FROM customReactRolePage WHERE id = ?");
+  client.searchCustomReactRolePage = sql.prepare("SELECT * FROM customReactRolePage");
+  client.setNewCustomReactRolePage = sql.prepare("INSERT OR REPLACE INTO customReactRolePage (id, guild, channelID, messageID, roleCount) VALUES (@id, @guild, @channelID, @messageID, @roleCount);");
+  // END OF TABLE
 }
