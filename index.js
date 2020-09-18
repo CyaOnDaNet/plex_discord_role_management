@@ -66,7 +66,7 @@ for (const file of commandFiles) {
 var undefinedStreamers = [];
 var online = false;
 var exemptEmbedReactRoles = [];
-var unenrollFromReactRoleListActive = false;
+//var unenrollFromReactRoleListActive = false;
 var numberOfActiveUsers = "0";
 var setActivityToggle = 0;
 var failed2StartCount = 0;
@@ -143,7 +143,7 @@ client.on('ready', async ()=> {
 
 		updateNumberOfActiveUsers(); // Update numberOfActiveUsers variable with proper Stream Count
 
-	  updateReactRolesWhileOffline(); // Update all react roles while bot was offline
+	  updateReactRolesWhileOffline(true, false); // Update all react roles while bot was offline
 
 		console.log('The bot is now online!');
 	}
@@ -566,7 +566,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 				inactiveDatabaseCheck.inactive = "false";
 				inactiveDatabaseCheck.wipeRoleReactions = "false";
 				client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
-				updateReactRolesWhileOffline(); // remove roles from old list
+				updateReactRolesWhileOffline(false, false); // remove roles from old list
 			}
 		}
 	}
@@ -621,7 +621,7 @@ client.on('messageReactionRemove', async (reaction, user) => {
 				inactiveDatabaseCheck.inactive = "false";
 				inactiveDatabaseCheck.wipeRoleReactions = "false";
 				client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
-				updateReactRolesWhileOffline(); // remove roles from old list
+				updateReactRolesWhileOffline(false, false); // remove roles from old list
 			}
 		}
 	}
@@ -657,7 +657,7 @@ module.exports.client = client;
 module.exports.sonarr = sonarr;
 module.exports.DEBUG = DEBUG;
 module.exports.undefinedStreamers = undefinedStreamers;
-module.exports.unenrollFromReactRoleListActive = unenrollFromReactRoleListActive;
+//module.exports.unenrollFromReactRoleListActive = unenrollFromReactRoleListActive;
 
 process.on('SIGINT', function onSigint () {
   console.info('Got SIGTERM. Graceful shutdown start', new Date().toISOString())

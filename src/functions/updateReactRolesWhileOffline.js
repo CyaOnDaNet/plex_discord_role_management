@@ -1,10 +1,8 @@
-module.exports = async() => {
+module.exports = async(startUp, unenrollFromReactRoleListActive) => {
   const mainProgram = require("../../index.js");
   const client = mainProgram.client;
-  //const unenrollFromReactRoleList = mainProgram.unenrollFromReactRoleList;
   const unenrollFromReactRoleList = require('./unenrollFromReactRoleList.js');
   var DEBUG = mainProgram.DEBUG;
-  var unenrollFromReactRoleListActive = mainProgram.unenrollFromReactRoleListActive;
 
 	var previousNotifierList = [];
 	for (let previousNotifierListObject of client.searchPreviousNotifierList.iterate()) {
@@ -31,8 +29,10 @@ module.exports = async() => {
       									if (reactions) {
       										await reactions.each(async user => {
       											if (user.id != client.user.id) {
-      												if (DEBUG == 3) console.log("Unenroll was clicked while offline, processing...");
-      												unenrollFromReactRoleList(message);
+                              if (startUp) {
+                                if (DEBUG == 3) console.log("Unenroll was clicked while offline, processing...");
+        												return unenrollFromReactRoleList(message);
+                              }
       											}
       										});
       									}
@@ -62,12 +62,43 @@ module.exports = async() => {
 
       										await client.guilds.cache.get(previousNotifierList[i].guild).members.fetch(user.id)
       										  .then(async member => {
-      												let preserveredCallbackRoleID = roleID; // needed because the roleID will sometimes change faster then it can process,
-      												let preservedReaction = reaction; // needed because the reaction will sometimes change faster then it can process,
+      												let preserveredCallbackRoleID = roleID; // needed because it seems that the roleID will sometimes change faster then it can process,
+      												let preservedReaction = reaction; // needed because it seems that the reaction will sometimes change faster then it can process,
 
       												var userRole = await member.roles.cache.get(preserveredCallbackRoleID);
 
-      												if (userRole === "" || userRole === null || userRole === undefined) {
+                              if (unenrollFromReactRoleListActive) {
+                                // unenroll from react role list is active. the role has yet to be removed from the user but unenrollFromReactRoleList() should take care of that.
+                                // we need to remove the users emoji click to prevent the role from being reassigned.
+                                if (DEBUG == 3) console.log("Attempting to remove reaction clicks.")
+                                await preservedReaction.users.remove(user); // remove emoji click by user
+                              }
+                              else if (startUp) {
+                                /* If we have gotten to this point it means there is a reaction by a user detected during startup that was not the unenroll emoji ❌
+                                 * Thus, if they were inactive, they are now not. Also, if they had unenrolled, role reactions would have been wiped already.
+                                 * Therefore, the logical thing to do is treat the user as active and add the role.
+                                 */
+
+                                let inactiveDatabaseCheck = await client.getNewListInactiveUsers.get(`${message.guild.id}-${user.id}`);
+      													if (inactiveDatabaseCheck === undefined || inactiveDatabaseCheck === "" || inactiveDatabaseCheck === null) {
+      														// user not in database so create entry
+      														inactiveDatabaseCheck = { id: `${message.guild.id}-${user.id}`, guild: `${message.guild.id}`, discordUserID: `${user.id}`, inactive: `false`, wipeRoleReactions: `false` };
+      														client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
+      														inactiveDatabaseCheck = await client.getNewListInactiveUsers.get(`${message.guild.id}-${user.id}`);
+      													}
+
+                                inactiveDatabaseCheck.inactive = "false";
+                                inactiveDatabaseCheck.wipeRoleReactions = "false";
+                                client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
+                                inactiveDatabaseCheck = await client.getNewListInactiveUsers.get(`${message.guild.id}-${user.id}`);
+
+                                if (DEBUG == 3) console.log(`Adding role to ${user.username}:     RoleID: ${preserveredCallbackRoleID}`);
+                                let userToModify = message.guild.members.resolve(user.id);
+                                userToModify.roles.add(preserveredCallbackRoleID)
+                                  .catch(console.error);
+
+                              }
+                              else if (userRole === "" || userRole === null || userRole === undefined) {
       													let inactiveDatabaseCheck = await client.getNewListInactiveUsers.get(`${message.guild.id}-${user.id}`);
       													if (inactiveDatabaseCheck === undefined || inactiveDatabaseCheck === "" || inactiveDatabaseCheck === null) {
       														// user not in database so create entry
@@ -102,18 +133,6 @@ module.exports = async() => {
       															console.log(`Name did not exist, role info is below:`);
       															console.log(userRole.name);
       														}
-      													}
-      												}
-
-      												// iterate and reset wipe role
-      												if (unenrollFromReactRoleListActive && x == (previousNotifierList.length - 1) ) {
-      													var inactiveUsersList = [];
-      													for (let inactiveUsersListObject of client.searchNewListInactiveUsers.iterate()) {
-      														if (inactiveUsersListObject.wipeRoleReactions == "true") await inactiveUsersList.push(inactiveUsersListObject);
-      													}
-      													for (var y = 0; y < inactiveUsersList.length; y++) {
-      														inactiveUsersList[y].wipeRoleReactions = "false";
-      														client.setNewListInactiveUsers.run(inactiveUsersList[y]);
       													}
       												}
       											});

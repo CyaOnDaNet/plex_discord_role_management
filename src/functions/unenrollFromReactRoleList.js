@@ -2,7 +2,6 @@ module.exports = async(message) => {
   const mainProgram = require("../../index.js");
   const client = mainProgram.client;
   const updateReactRolesWhileOffline = require('./updateReactRolesWhileOffline.js');
-  var unenrollFromReactRoleListActive = mainProgram.unenrollFromReactRoleListActive;
 
 	if (message.embeds[0].author.name == client.newNotificationListAuthorName) {
 		//let reaction = message.reactions.cache.get(`❌`);
@@ -57,13 +56,12 @@ module.exports = async(message) => {
 
 									// remove all react role clicks and resume.
 									await reaction[i].users.remove(user); // remove emoji click by user, this is also important to not have an endless loop.
-									if (!unenrollFromReactRoleListActive) unenrollFromReactRoleListActive = true;
 								});
 						}
 					});
 				}
 			}
 		}
-		await updateReactRolesWhileOffline();
+		await updateReactRolesWhileOffline(false, true);
 	}
 }
