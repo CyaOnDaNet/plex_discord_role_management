@@ -123,4 +123,3 @@ docker run -d \
 ## To Do:
 * [ ] Add quiet hours setting as discord server setting. Allows for caching of messages during certain hours and then sending out those messages after quiet hours are over.
 * [ ] Add inactive plex user role/notification. Set an inacticve length in a discord server (like say 1 month). Take Tautulli user data and whenever a user hasn't watched anything in the set period of time, give them an inactive role and potentially a notification to specified channel. This allows the server owner to easily identify inactive users.
-* [ ] Edit the react role page 1 so that custom react roles have their own page and can therfore be edited easily without having to recall `!notifications list`.
