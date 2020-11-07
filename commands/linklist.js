@@ -12,7 +12,7 @@ module.exports = {
 		var linkListPage = 1;
 
     embed = new Discord.MessageEmbed()
-      .setAuthor(client.user.username, client.user.avatarURL)
+      .setAuthor(client.user.username, client.user.displayAvatarURL())
       .setDescription("**Below is a list of linked Discord-Plex accounts:**\n\n")
       .setFooter("Fetched")
       .setTimestamp(new Date())
@@ -27,7 +27,7 @@ module.exports = {
 				  linkListPage++;
 
 					embed = new Discord.MessageEmbed()
-						.setAuthor(client.user.username, client.user.avatarURL)
+						.setAuthor(client.user.username, client.user.displayAvatarURL())
 						.setDescription(`**Link List __Page ${linkListPage}__**\n\n`)
 						.setFooter("Fetched")
 						.setTimestamp(new Date())

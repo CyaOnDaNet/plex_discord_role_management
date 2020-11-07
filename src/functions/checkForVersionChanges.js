@@ -53,6 +53,42 @@ module.exports = async() => {
 		    // positive if v1 > v2; This means an upgrade occured
 				versionMessage = `The bot was upgraded from \`v${guildSettings.botVersion}\` to \`v${pjson.version}!\``;
 
+        let memberIntentNotifyCheck = await compareVersionNumbers(`2.0.1`, pjson.version);
+        switch (memberIntentNotifyCheck) {
+          case -1:
+            // Negative if v1 < v2; This means the current version running is greater than v2.0.1
+            // Now lets check if the old version was below v2.0.1.
+            let memberIntentNotify = await compareVersionNumbers(`2.0.1`, guildSettings.botVersion);
+            switch (memberIntentNotify) {
+              case 0:
+                // Version numbers are identical; This means we used to be on v2.0.1 and upgraded higher. Continue on.
+              case 1:
+                // positive if v1 > v2; This means the old version was below v2.0.1. We need to send a DM to the owner telling them about intent changes
+                client.fetchApplication()
+                  .then(async (clientApp) => {
+                    clientApp.owner.createDM()
+                      .then(async (dmChannel) => {
+                        //send message
+                        let messsage = "Sorry to bother you and thanks for using this bot!\n\n With `discord.js v12`, privileged gateway intents for server members were introduced. What this means for you is that the `@Watching` role will no longer work until you edit your bot to have the server members intent. The instructions to do so are below:\n\n> **1.** Login to the [Discord Developer Portal](https://discord.com/developers/applications)\n> **2.** Go to `Applications` in the sidebar.\n> **3.** Find this bot and click on it. \n> **4.** Click on `Bot` under the settings sidebar. \n> **5.** Look for the `Privileged Gateway Intents` section.\n> **6.** Check the box for `SERVER MEMBERS INTENT`\n> **7.** Check the box for `PRESENCE INTENT` <- (**Optional Step!** *The bot does not use this yet but if you enable it now and I use it later you won't have to worry.*)\n> **8.** Click **Save Changes** on the bottom of the page.\n> **9.** Restart the bot to ensure changes take effect.";
+
+                    		let embed = new Discord.MessageEmbed()
+                    			.setTitle("⚠️ Important Notice ⚠️")
+                    			.setDescription(messsage)
+                    			.setImage('https://i.imgur.com/ZEVVvJ7.png')
+                    			.setFooter(`Bot Updated to v${pjson.version}`)
+                    			.setTimestamp(new Date())
+                    			.setColor(0x00AE86);
+
+                        dmChannel.send({embed: embed});
+                      })
+                      .catch(console.error);
+                  })
+                  .catch(console.error);
+                break;
+              }
+            break;
+        }
+
 				alertConsole(versionMessage);
 				sendChangelogNotification(versionMessage);
 				updateVersionColumn();

@@ -47,7 +47,7 @@ module.exports = {
 			if (tempStringCountCheck.length >= 2048) {  //Checks For Discord Embed Description Limit
 				if (userListPage === 1) {
 					embed = new Discord.MessageEmbed()
-						.setAuthor(client.user.username, client.user.avatarURL)
+						.setAuthor(client.user.username, client.user.displayAvatarURL())
 						.setDescription(`**Below is a list of the __${userTotalCount}__ users with access to the Plex Server:**\n${userList}`)
 						.setFooter("Fetched")
 						.setTimestamp(new Date())
@@ -59,7 +59,7 @@ module.exports = {
 				}
 				else {
 					embed = new Discord.MessageEmbed()
-						.setAuthor(client.user.username, client.user.avatarURL)
+						.setAuthor(client.user.username, client.user.displayAvatarURL())
 						.setDescription(`**User List __Page ${userListPage}__**:\n` + userList)
 						.setFooter("Fetched")
 						.setTimestamp(new Date())
@@ -75,7 +75,7 @@ module.exports = {
 
 		if (userListPage === 1) {
 			embed = new Discord.MessageEmbed()
-				.setAuthor(client.user.username, client.user.avatarURL)
+				.setAuthor(client.user.username, client.user.displayAvatarURL())
 				.setDescription(`**Below is a list of the __${userTotalCount}__ users with access to the Plex Server:**\n${userList}`)
 				.setFooter("Fetched")
 				.setTimestamp(new Date())
@@ -83,7 +83,7 @@ module.exports = {
 		}
 		else {
 			embed = new Discord.MessageEmbed()
-				.setAuthor(client.user.username, client.user.avatarURL)
+				.setAuthor(client.user.username, client.user.displayAvatarURL())
 				.setDescription(`**User List __Page ${userListPage}__**:\n` + userList)
 				.setFooter("Fetched")
 				.setTimestamp(new Date())
