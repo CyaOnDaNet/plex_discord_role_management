@@ -1,6 +1,6 @@
 {
   "name": "plex_discord_role_management",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "description": "A discord bot that synchronizes with Tautulli and Sonarr to deliver tailored notifications.",
   "main": "index.js",
   "scripts": {
@@ -14,19 +14,19 @@
   "author": "CyaOnDaNet",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.20.0",
-    "better-sqlite3": "^7.1.0",
+    "axios": "^0.21.0",
+    "better-sqlite3": "^7.1.1",
     "body-parser": "^1.19.0",
-    "bufferutil": "^4.0.1",
-    "discord.js": "^12.3.1",
+    "bufferutil": "^4.0.2",
+    "discord.js": "^12.4.1",
     "erlpack": "^0.1.3",
     "express": "^4.17.1",
     "is-docker": "^2.1.1",
     "json-to-form-data": "^1.0.0",
     "libsodium-wrappers": "^0.7.8",
     "lodash": "^4.17.20",
-    "node-fetch": "^2.6.0",
-    "@discordjs/opus": "^0.3.2",
+    "node-fetch": "^2.6.1",
+    "@discordjs/opus": "^0.3.3",
     "node-schedule": "^1.3.2",
     "opusscript": "^0.0.7",
     "process": "^0.11.10"
@@ -35,5 +35,5 @@
     "url": "https://github.com/CyaOnDaNet/plex_discord_role_management/issues"
   },
   "homepage": "https://github.com/CyaOnDaNet/plex_discord_role_management#readme",
-  "changeLog": "New stuff"
+  "changeLog": "**New Features:**\n> - Added Recently Added Notifications. Use command `!bot recentlyadded off` to disable it\n> - Added tvdb link to notifications show react role pages\n> - The `!notifications preview` list now expires after 5 minutes to make it more clear that it is a temporary command\n> - Bot now deletes old `!notifications list` messages on new call\n> - The `!notifications list` command now preserves people's settings from the old list until they become active on the new list\n> - The `!users` command now states the number of users in the embed message\n> - Created a version changelog notifier\n> - Database is backed up on shutdown and startup to allow for version saving between bot upgrades\n> - Database is automatically backed up every 8 hours and kept for up to 7 days\n> - Custom React Role Page can now be edited without recalling `!notifications list`\n\n**Changes:**\n> - Discord.js v12 refactor\n> - Reworked react role events to work better with Discord.js v12 (Because of occasional emoji error)\n> - Split up notifications command, index.js, and database setup into multiple files for easier editing later\n> - Changed setActivity to toggle between help command, number of people watching plex, and the bot version. Changes every 10 seconds\n> - Improved Tautulli error handling\n> - Notifier re-work. All channel related settings were moved to the `!notifiy` command\n\n**Fixes:**\n> - Fixed double watching log notifications (Update - Might Not Be Completely Fixed)\n> - Fixed show notifications resulting in null role if networks not enabled\n> - Fixed alphabetical order being inaccurate with grouped shows\n> - (Untested) Implemented a theoretical fix for discord outages crashing the bot\n> - Fixed unintended bug causing errors during unenroll from react list\n> - Fixed a role react bug where an emoji click during list creation would break the new list from generating"
 }
