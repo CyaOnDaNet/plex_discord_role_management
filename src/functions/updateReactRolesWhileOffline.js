@@ -139,6 +139,11 @@ module.exports = async(startUp, unenrollFromReactRoleListActive, listCreated) =>
       	                }
       	              });
 
+                      var roleStillExistsCheck = await client.guilds.cache.get(previousNotifierList[i].guild).roles.resolve(roleID);
+                      if (!roleStillExistsCheck || roleStillExistsCheck === null || roleStillExistsCheck === undefined) {
+                        // role no longer exists that is listed in embed, skip over it.
+                        continue;
+                      }
       	              var roleUser = await client.guilds.cache.get(previousNotifierList[i].guild).roles.resolve(roleID).members.each(async member => {
       	                var removeRole = true;
       	                for (var i = 0; i < roleList.length; i++) {
