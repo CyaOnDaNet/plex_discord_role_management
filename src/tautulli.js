@@ -9,7 +9,7 @@ var establishedConnection = false;
 
 const mainProgram = require("../index.js");
 const processHook = require('./functions/processHook.js');
-const apiName = 'Plex-Discord Role Management API - Beta';
+const apiName = 'Plex-Discord Role Management API';
 
 var DEBUG = 0;  // Ignored if defined in config or env variable, 1 for database debugging, 2 for sonarr instance debugging, 3 for startup role checking, 4 for tautulli connection logging
 
