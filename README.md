@@ -5,16 +5,34 @@
 1. Make sure you have Tautulli and Sonarr setup.
 2. Get a Discord Bot Token. To do that go here: https://discordapp.com/developers/applications/me
     1. Log in or create an account
-    2. Click **New App**
-    3. Fill in App Name and anything else you'd like to include
-    4. Click **Create App**
-    5. Click **Create Bot User**
-        * This will provide you with your Bot Token which you will need later
+    2. Click **New Application**
+    3. Fill in an Application Name and click create.
+    4. This will bring you to the **General Information** section, enter in a description and upload an app icon if you want.
+    5. Go to the **Bot** section in the settings sidebar. Next to **Build-A-Bot**, click the **Add Bot** button.
+        * Scroll down to the **Privileged Gateway Intents** section.
+        * Check the box for **SERVER MEMBERS INTENT**
+        * Check the box for **PRESENCE INTENT** <- (***Optional Step!*** *The bot does not use this yet but if you enable it now and I use it later you won't have to worry.*)
+        * Click **Save Changes** on the bottom of the page.
+    5. At the top of the **Bot** section in the settings sidebar, click the button that says **Click to Reveal Token**. Copy this and keep it safe for later, this is your Bot Token.
 3. Once you have created your bot, you'll need to authorize your bot on a server you have administrative access to. For documentation, you can read: https://discordapp.com/developers/docs/topics/oauth2#bots. The steps are as follows:
-    1. Go to `https://discordapp.com/api/oauth2/authorize?client_id=[CLIENT_ID]&scope=bot&permissions=1` where [CLIENT_ID] is the Discord App Client ID
+    1. Go to `https://discordapp.com/api/oauth2/authorize?client_id=[CLIENT_ID]&permissions=8&scope=bot` where [CLIENT_ID] is the Discord App Client ID found under the **OAuth2** section in the settings sidebar
     2. Select **Add a bot to a server** and select the server to add it to
     3. Click **Authorize**
     4. You should now see your bot in your server listed as *Offline*
+
+
+## Important Note for existing users who upgrade from bot v1.x.x to v2.0.0 and higher.
+With **discord.js v12**, privileged gateway intents for server members were introduced. What this means for you is that the @Watching role will no longer work until you edit your bot to have the server members intent. The instructions to do so are below:
+
+1. Login to the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Go to **Applications** in the sidebar.
+3. Find this bot and click on it.
+4. Click on **Bot** under the settings sidebar.
+5. Look for the **Privileged Gateway Intents** section.
+6. Check the box for **SERVER MEMBERS INTENT**
+7. Check the box for **PRESENCE INTENT** <- (***Optional Step!*** *The bot does not use this yet but if you enable it now and I use it later you won't have to worry.*)
+8. Click **Save Changes** on the bottom of the page.
+9. Restart the bot to ensure changes take effect.
 
 
 ## Important Note about Configuration
