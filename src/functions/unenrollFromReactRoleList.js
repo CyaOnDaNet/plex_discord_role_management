@@ -62,6 +62,6 @@ module.exports = async(message) => {
 				}
 			}
 		}
-		await updateReactRolesWhileOffline(false, true);
+		await updateReactRolesWhileOffline(false, true, false);
 	}
 }

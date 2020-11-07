@@ -17,6 +17,9 @@ module.exports = {
     await updateShowList(message, client);
 
 		let processingPage = await message.channel.send("Preparing notification list...");
+		guildSettings.listCreationActive = "on";
+		client.setGuildSettings.run(guildSettings);
+		guildSettings = client.getGuildSettings.get(message.guild.id);
 
 		// Clear Previous Notifier List and Delete the old messages
 		var previousNotifierList = [];
@@ -25,26 +28,40 @@ module.exports = {
 		}
 		for (var i = 0; i < previousNotifierList.length; i++) {
 			if (message.guild.id == previousNotifierList[i].guild) {
-				// Check if previousNotifierList entry is in the same guild as the message that caled the command.
-				var channelsWithRole = client.guilds.cache.get(previousNotifierList[i].guild).channels.cache.array();
-				for (let index = 0; index < channelsWithRole.length; index++) {
-					if (channelsWithRole[index].type == "text") {
-		        await channelsWithRole[index].messages.fetch(`${previousNotifierList[i].messageID}`)
-		          .then(async message => {
+				// Check if previousNotifierList entry is in the same guild as the message that called the command.
+				var channelsInGuild = client.guilds.cache.get(previousNotifierList[i].guild).channels.cache.array();
+				for (let index = 0; index < channelsInGuild.length; index++) {
+					if (channelsInGuild[index].type == "text") {
+						//gets stuck inside the await from below...
+		        await channelsInGuild[index].messages.fetch(`${previousNotifierList[i].messageID}`)
+		          .then(async messageFromList => {
 								// Delete a message
 								let preserveredNotifierList = previousNotifierList[i]; // needed because the notifierList will sometimes change faster then it can process in the callback
-								client.deletePreviousNotifier.run(`${preserveredNotifierList.id}`);  // Clear Previous Notifier
-								message.delete()
-	  							.then(msg => {
-										//console.log(`Cleared message from old notifier list`)
+								// Moved this to the .then block after message delete. This ensures its only cleared once it has deleted successfully
+								//client.deletePreviousNotifier.run(`${preserveredNotifierList.id}`);  // Clear Previous Notifier
+								messageFromList.delete()
+									.then(msg => {
+										client.deletePreviousNotifier.run(`${preserveredNotifierList.id}`);  // Clear Previous Notifier
+										//let thisIsStupid = true; // I'm not really sure why (this didn't use to be an issue), but the catch block below won't work without a .then block and the .then also can't be empty.
 									})
-	  							.catch(console.error);
+	  							.catch(() => {
+										// List Creation failed. Reset database variable
+										guildSettings.listCreationActive = "off";
+										client.setGuildSettings.run(guildSettings);
+										guildSettings = client.getGuildSettings.get(message.guild.id);
+										console.error;
+									});
 		          })
 		          .catch(function(error) {
 		            if (error.code == 10008) {
 		              //unknown message, therefore not the right channel, do not log this.
 		            }
 		            else {
+									// List Creation failed. Reset database variable
+									guildSettings.listCreationActive = "off";
+									client.setGuildSettings.run(guildSettings);
+									guildSettings = client.getGuildSettings.get(message.guild.id);
+
 		              console.log(error);
 		            }
 		          });
@@ -73,7 +90,13 @@ module.exports = {
 			.then(msg => {
 				//
 			})
-			.catch(console.error);
+			.catch(() => {
+				// List Creation failed. Reset database variable
+				guildSettings.listCreationActive = "off";
+				client.setGuildSettings.run(guildSettings);
+				guildSettings = client.getGuildSettings.get(message.guild.id);
+				console.error;
+			});
 
 		if (userActiveCount == 0) {
 			// Presumably first time !n list is called since no one is in the database
@@ -162,7 +185,13 @@ module.exports = {
         .then(async () => { if (customPageCount > 7) await customPageSentMessage.react(tenNumbers[7]) })
         .then(async () => { if (customPageCount > 8) await customPageSentMessage.react(tenNumbers[8]) })
         .then(async () => { if (customPageCount > 9) await customPageSentMessage.react(tenNumbers[9]) })
-        .catch(() => console.error('One of the emojis failed to react.'));
+				.catch(() => {
+					// List Creation failed. Reset database variable
+					guildSettings.listCreationActive = "off";
+					client.setGuildSettings.run(guildSettings);
+					guildSettings = client.getGuildSettings.get(message.guild.id);
+					console.error('One of the emojis failed to react.');
+				});
     }
 
     var page1Description = "";
@@ -211,7 +240,13 @@ module.exports = {
         .then(async () => { if (page1Count > 7) await page1SentMessage.react(tenNumbers[7]) })
         .then(async () => { if (page1Count > 8) await page1SentMessage.react(tenNumbers[8]) })
         .then(async () => { if (page1Count > 9) await page1SentMessage.react(tenNumbers[9]) })
-        .catch(() => console.error('One of the emojis failed to react.'));
+				.catch(() => {
+					// List Creation failed. Reset database variable
+					guildSettings.listCreationActive = "off";
+					client.setGuildSettings.run(guildSettings);
+					guildSettings = client.getGuildSettings.get(message.guild.id);
+					console.error('One of the emojis failed to react.');
+				});
     }
 
     var page2Description = "";
@@ -245,7 +280,13 @@ module.exports = {
         .then(async () => { if (page2Count > 7) await page2SentMessage.react(tenNumbers[7]) })
         .then(async () => { if (page2Count > 8) await page2SentMessage.react(tenNumbers[8]) })
         .then(async () => { if (page2Count > 9) await page2SentMessage.react(tenNumbers[9]) })
-        .catch(() => console.error('One of the emojis failed to react.'));
+				.catch(() => {
+					// List Creation failed. Reset database variable
+					guildSettings.listCreationActive = "off";
+					client.setGuildSettings.run(guildSettings);
+					guildSettings = client.getGuildSettings.get(message.guild.id);
+					console.error('One of the emojis failed to react.');
+				});
     }
 
 
@@ -348,8 +389,23 @@ module.exports = {
       for (var i = 0; i < emojiCount; i++) {
         await emojiTime.react(tenNumbers[i])
           .then()
-          .catch(console.error);
+					.catch(() => {
+						// List Creation failed. Reset database variable
+						guildSettings.listCreationActive = "off";
+						client.setGuildSettings.run(guildSettings);
+						guildSettings = client.getGuildSettings.get(message.guild.id);
+						console.error;
+					});
       }
     }
+
+		// List Creation is complete
+		guildSettings.listCreationActive = "off";
+		await client.setGuildSettings.run(guildSettings);    //await here to insure emoji events gets the new guildSettings before we call updateReactRolesWhileOffline.
+		guildSettings = client.getGuildSettings.get(message.guild.id);
+
+		// we must call updateReactRolesWhileOffline() after list creation because if someone clicked a react role during list creation, it was skipped
+		const updateReactRolesWhileOffline = require('../../../src/functions/updateReactRolesWhileOffline.js');
+		updateReactRolesWhileOffline(false, false, true);
   },
 };

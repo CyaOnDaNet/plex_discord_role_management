@@ -1,5 +1,5 @@
 module.exports = async() => {
-	// The isPositiveInteger and compareVersionNumbers was taken from the internet off a quick google search, the URL's are referenced below.
+	// The isPositiveInteger() and compareVersionNumbers() functions were taken from the internet off a quick google search, the URL's are referenced below.
 
   var pjson = require('../../package.json');
   const Discord = require('discord.js');
@@ -7,7 +7,7 @@ module.exports = async() => {
   const client = mainProgram.client;
 
 	let guilds = [];
-	let alertedConsole = false;  // Used to prevent duplicate messages in the logs if bot isin multiple servers
+	let alertedConsole = false;  // Used to prevent duplicate messages in the logs if bot is in multiple servers
 
 	for (const guildSettings of client.searchGuildSettings.iterate()) {
 		guilds.push(guildSettings);
@@ -23,6 +23,12 @@ module.exports = async() => {
 
     if (guildSettings.recentlyAddedBoolean == null || guildSettings.recentlyAddedBoolean == undefined || guildSettings.recentlyAddedBoolean == "") {
 			guildSettings.recentlyAddedBoolean = "on"; // This database setting did not exist because it was added in version 2.0.0; we need a valid setting.
+			client.setGuildSettings.run(guildSettings);
+      guildSettings = client.getGuildSettings.get(guilds[i].guild);
+		}
+
+    if (guildSettings.listCreationActive == null || guildSettings.listCreationActive == undefined || guildSettings.listCreationActive == "") {
+			guildSettings.listCreationActive = "off"; // This database setting did not exist because it was added in version 2.0.0; we need a valid setting.
 			client.setGuildSettings.run(guildSettings);
       guildSettings = client.getGuildSettings.get(guilds[i].guild);
 		}
@@ -93,7 +99,7 @@ module.exports = async() => {
 		}
 	}
 
-	// The isPositiveInteger and compareVersionNumbers was taken from the internet off a quick google search, the URL's are referenced below.
+	// The isPositiveInteger() and compareVersionNumbers() functions were taken from the internet off a quick google search, the URL's are referenced below.
 
 	function isPositiveInteger(x) {
 	    // http://stackoverflow.com/a/1019526/11236

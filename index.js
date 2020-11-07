@@ -66,7 +66,6 @@ for (const file of commandFiles) {
 var undefinedStreamers = [];
 var online = false;
 var exemptEmbedReactRoles = [];
-//var unenrollFromReactRoleListActive = false;
 var numberOfActiveUsers = "0";
 var setActivityToggle = 0;
 var failed2StartCount = 0;
@@ -84,7 +83,8 @@ const defaultGuildSettings = {
 	changelogChannel: "",
 	changelogChannelBoolean: "off",
 	recentlyAddedBoolean: "on",
-	botVersion: pjson.version
+	botVersion: pjson.version,
+	listCreationActive: "off"
 }
 
 client.login(config.botToken);
@@ -143,7 +143,7 @@ client.on('ready', async ()=> {
 
 		updateNumberOfActiveUsers(); // Update numberOfActiveUsers variable with proper Stream Count
 
-	  updateReactRolesWhileOffline(true, false); // Update all react roles while bot was offline
+	  updateReactRolesWhileOffline(true, false, false); // Update all react roles while bot was offline
 
 		console.log('The bot is now online!');
 	}
@@ -157,7 +157,7 @@ client.on('message', async message => {
     // Sets default server settings
     guildSettings = client.getGuildSettings.get(message.guild.id);
     if (!guildSettings) {
-      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, logChannelBoolean: defaultGuildSettings.logChannelBoolean, notificationChannel: defaultGuildSettings.notificationChannel, notificationChannelBoolean: defaultGuildSettings.notificationChannelBoolean, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole, customRoleCount: defaultGuildSettings.customRoleCount, changelogChannel: defaultGuildSettings.changelogChannel, changelogChannelBoolean: defaultGuildSettings.changelogChannelBoolean, recentlyAddedBoolean: defaultGuildSettings.recentlyAddedBoolean, botVersion: defaultGuildSettings.botVersion };
+      guildSettings = { id: `${message.guild.id}-${client.user.id}`, guild: message.guild.id, prefix: defaultGuildSettings.prefix, logChannel: defaultGuildSettings.logChannel, logChannelBoolean: defaultGuildSettings.logChannelBoolean, notificationChannel: defaultGuildSettings.notificationChannel, notificationChannelBoolean: defaultGuildSettings.notificationChannelBoolean, adminRole: defaultGuildSettings.adminRole, watchingRole: defaultGuildSettings.watchingRole, customRoleCount: defaultGuildSettings.customRoleCount, changelogChannel: defaultGuildSettings.changelogChannel, changelogChannelBoolean: defaultGuildSettings.changelogChannelBoolean, recentlyAddedBoolean: defaultGuildSettings.recentlyAddedBoolean, botVersion: defaultGuildSettings.botVersion, listCreationActive: defaultGuildSettings.listCreationActive };
       client.setGuildSettings.run(guildSettings);
       guildSettings = client.getGuildSettings.get(message.guild.id);
     }
@@ -521,6 +521,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 	}
 	// Now the message has been cached and is fully available
 	const message = reaction.message;
+	let guildSettings = client.getGuildSettings.get(message.guild.id);
 
 	if (client.user.id != message.author.id) return; //Only continue if react was to a message by this bot.
 	if (message.embeds[0] === undefined || message.embeds[0] === null) return; //Only continue if react was to a message embed.
@@ -531,7 +532,13 @@ client.on('messageReactionAdd', async (reaction, user) => {
 			if (reaction.emoji.name === '❌') {
 				// Clear Users Roles.
 				if (DEBUG == 3) console.log(`${user.username} clicked the ❌ emoji`);
-				await unenrollFromReactRoleList(message);
+				if (guildSettings && guildSettings.listCreationActive && guildSettings.listCreationActive == "on") {
+					// a new list is being generated, doing something now could jeopardize things so we will skip calling unenrollFromReactRoleList();
+					// we will call updateReactRolesWhileOffline() after the list is generated to account for any changes here.
+				}
+				else {
+					await unenrollFromReactRoleList(message);
+				}
 				return;
 			}
 		}
@@ -563,10 +570,19 @@ client.on('messageReactionAdd', async (reaction, user) => {
 				client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
 			}
 			else if (inactiveDatabaseCheck.inactive == "true") {
-				inactiveDatabaseCheck.inactive = "false";
-				inactiveDatabaseCheck.wipeRoleReactions = "false";
-				client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
-				updateReactRolesWhileOffline(false, false); // remove roles from old list
+				if (guildSettings && guildSettings.listCreationActive && guildSettings.listCreationActive == "on") {
+					// a new list is being generated, doing something now could jeopardize things so we will skip calling updateReactRolesWhileOffline()
+					// we will call updateReactRolesWhileOffline() after the list is generated to account for any changes here.
+					inactiveDatabaseCheck.inactive = "false";
+					inactiveDatabaseCheck.wipeRoleReactions = "false";
+					client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
+				}
+				else {
+					inactiveDatabaseCheck.inactive = "false";
+					inactiveDatabaseCheck.wipeRoleReactions = "false";
+					client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
+					updateReactRolesWhileOffline(false, false, false); // remove roles from old list
+				}
 			}
 		}
 	}
@@ -618,10 +634,19 @@ client.on('messageReactionRemove', async (reaction, user) => {
 				client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
 			}
 			else if (inactiveDatabaseCheck.inactive == "true" && inactiveDatabaseCheck.wipeRoleReactions != "true") {
-				inactiveDatabaseCheck.inactive = "false";
-				inactiveDatabaseCheck.wipeRoleReactions = "false";
-				client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
-				updateReactRolesWhileOffline(false, false); // remove roles from old list
+				if (guildSettings && guildSettings.listCreationActive && guildSettings.listCreationActive == "on") {
+					// a new list is being generated, doing something now could jeopardize things so we will skip calling updateReactRolesWhileOffline()
+					// we will call updateReactRolesWhileOffline() after the list is generated to account for any changes here.
+					inactiveDatabaseCheck.inactive = "false";
+					inactiveDatabaseCheck.wipeRoleReactions = "false";
+					client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
+				}
+				else {
+					inactiveDatabaseCheck.inactive = "false";
+					inactiveDatabaseCheck.wipeRoleReactions = "false";
+					client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
+					updateReactRolesWhileOffline(false, false, false); // remove roles from old list
+				}
 			}
 		}
 	}
@@ -657,7 +682,6 @@ module.exports.client = client;
 module.exports.sonarr = sonarr;
 module.exports.DEBUG = DEBUG;
 module.exports.undefinedStreamers = undefinedStreamers;
-//module.exports.unenrollFromReactRoleListActive = unenrollFromReactRoleListActive;
 
 process.on('SIGINT', function onSigint () {
   console.info('Got SIGTERM. Graceful shutdown start', new Date().toISOString())

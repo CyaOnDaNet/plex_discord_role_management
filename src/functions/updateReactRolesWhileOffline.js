@@ -1,4 +1,4 @@
-module.exports = async(startUp, unenrollFromReactRoleListActive) => {
+module.exports = async(startUp, unenrollFromReactRoleListActive, listCreated) => {
   const mainProgram = require("../../index.js");
   const client = mainProgram.client;
   const unenrollFromReactRoleList = require('./unenrollFromReactRoleList.js');
@@ -29,7 +29,7 @@ module.exports = async(startUp, unenrollFromReactRoleListActive) => {
       									if (reactions) {
       										await reactions.each(async user => {
       											if (user.id != client.user.id) {
-                              if (startUp) {
+                              if (startUp || listCreated) {
                                 if (DEBUG == 3) console.log("Unenroll was clicked while offline, processing...");
         												return unenrollFromReactRoleList(message);
                               }
@@ -83,13 +83,13 @@ module.exports = async(startUp, unenrollFromReactRoleListActive) => {
       													if (inactiveDatabaseCheck === undefined || inactiveDatabaseCheck === "" || inactiveDatabaseCheck === null) {
       														// user not in database so create entry
       														inactiveDatabaseCheck = { id: `${message.guild.id}-${user.id}`, guild: `${message.guild.id}`, discordUserID: `${user.id}`, inactive: `false`, wipeRoleReactions: `false` };
-      														client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
+      														await client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
       														inactiveDatabaseCheck = await client.getNewListInactiveUsers.get(`${message.guild.id}-${user.id}`);
       													}
 
                                 inactiveDatabaseCheck.inactive = "false";
                                 inactiveDatabaseCheck.wipeRoleReactions = "false";
-                                client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
+                                await client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
                                 inactiveDatabaseCheck = await client.getNewListInactiveUsers.get(`${message.guild.id}-${user.id}`);
 
                                 if (DEBUG == 3) console.log(`Adding role to ${user.username}:     RoleID: ${preserveredCallbackRoleID}`);
@@ -103,13 +103,13 @@ module.exports = async(startUp, unenrollFromReactRoleListActive) => {
       													if (inactiveDatabaseCheck === undefined || inactiveDatabaseCheck === "" || inactiveDatabaseCheck === null) {
       														// user not in database so create entry
       														inactiveDatabaseCheck = { id: `${message.guild.id}-${user.id}`, guild: `${message.guild.id}`, discordUserID: `${user.id}`, inactive: `false`, wipeRoleReactions: `false` };
-      														client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
+      														await client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
       														inactiveDatabaseCheck = await client.getNewListInactiveUsers.get(`${message.guild.id}-${user.id}`);
       													}
       													else if (inactiveDatabaseCheck.inactive == "true" && inactiveDatabaseCheck.wipeRoleReactions != "true") {
       														inactiveDatabaseCheck.inactive = "false";
       														//inactiveDatabaseCheck.wipeRoleReactions = "false"; //not ideal to reset it here but realistically, if they were inactive then they have no roles to clear anyways
-      														client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
+      														await client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
       														inactiveDatabaseCheck = await client.getNewListInactiveUsers.get(`${message.guild.id}-${user.id}`);
       													}
 
@@ -151,7 +151,7 @@ module.exports = async(startUp, unenrollFromReactRoleListActive) => {
       										if (inactiveDatabaseCheck === undefined || inactiveDatabaseCheck === "" || inactiveDatabaseCheck === null) {
       											// user not in database so create entry
       											inactiveDatabaseCheck = { id: `${message.guild.id}-${member.id}`, guild: `${message.guild.id}`, discordUserID: `${member.id}`, inactive: `true`, wipeRoleReactions: `false` };
-      											client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
+      											await client.setNewListInactiveUsers.run(inactiveDatabaseCheck);
       										}
       										else if (inactiveDatabaseCheck.inactive == "false") {
       											// user is actively clicking new react role page and made changes since offline, remove those roles.
