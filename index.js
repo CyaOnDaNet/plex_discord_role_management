@@ -365,7 +365,7 @@ var tautulliCheck = schedule.scheduleJob('0 */2 * * * *', async function() {
             let userToModify = client.guilds.cache.get(userList.guild).members.resolve(userList.discordUserID);
             var bypass = false;
 
-            if (userToModify === undefined) {
+            if (userToModify === undefined || userToModify === null) {
         			// User no longer exists in the Discord Server, we can't modify it at all so skip over them
         			continue;
         		}
