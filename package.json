@@ -24,7 +24,7 @@
     "is-docker": "^2.1.1",
     "json-to-form-data": "^1.0.0",
     "libsodium-wrappers": "^0.7.8",
-    "lodash": "^4.17.20",
+    "lodash": "^4.17.21",
     "node-fetch": "^2.6.1",
     "@discordjs/opus": "^0.3.3",
     "node-schedule": "^1.3.2",
