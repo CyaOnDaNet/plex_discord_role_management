@@ -17,10 +17,10 @@ class SonarrService {
 
     var lastChar = this.baseURL[this.baseURL.length -1];
     if (lastChar == "/") {
-      this.baseURL = `${this.baseURL}api/`;
+      this.baseURL = `${this.baseURL}api/v3/`;
     }
     else {
-      this.baseURL = `${this.baseURL}/api/`;
+      this.baseURL = `${this.baseURL}/api/v3/`;
     }
 
     if (!this.baseURL.startsWith("http://") && !this.baseURL.startsWith("https://")) {
